@@ -1,0 +1,13 @@
+{
+  "name": "peopleclaw",
+  "version": "0.0.1",
+  "description": "PeopleClaw — People-centric workflow automation for SMEs, small businesses & freelancer ITs. Human-in-the-loop AI workflows.",
+  "main": "index.js",
+  "keywords": ["workflow", "automation", "sme", "human-in-the-loop", "ai", "peopleclaw", "openclaw"],
+  "author": "Exis <gotexis@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exisz/peopleclaw.git"
+  }
+}
