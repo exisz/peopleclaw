@@ -45,6 +45,9 @@ export default function AddStepModal({ onAdd, onClose }: AddStepModalProps) {
               <option value="human">👤 Human</option>
               <option value="agent">🤖 Agent</option>
               <option value="subflow">📂 Subflow</option>
+              <option value="condition">🔀 Condition</option>
+              <option value="input">📝 Data Input</option>
+              <option value="notification">🔔 Notification</option>
             </select>
           </label>
 

@@ -171,9 +171,10 @@ function layoutNodes(
   return { nodes, edges };
 }
 
-export default function WorkflowView({ workflow, selectedCase }: {
+export default function WorkflowView({ workflow, selectedCase, onWorkflowUpdate }: {
   workflow: Workflow;
   selectedCase: Case | null;
+  onWorkflowUpdate?: (updated: Workflow) => void;
 }) {
   const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
   const [expandedSubflows, setExpandedSubflows] = useState<Set<string>>(new Set());
@@ -215,6 +216,13 @@ export default function WorkflowView({ workflow, selectedCase }: {
     setLocalSteps(prev => [...prev, step]);
     setShowAddModal(false);
   }, []);
+
+  // Auto-save workflow changes
+  useEffect(() => {
+    if (localSteps !== workflow.steps) {
+      onWorkflowUpdate?.({ ...workflow, steps: localSteps });
+    }
+  }, [localSteps]);
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
     () => layoutNodes(localSteps, selectedCase, expandedSubflows, {
@@ -305,7 +313,7 @@ export default function WorkflowView({ workflow, selectedCase }: {
               const data = n.data as any;
               if (!data?.step) return '#475569';
               const t = data.step.type;
-              return t === 'human' ? '#f0a500' : t === 'agent' ? '#00d2ff' : t === 'trigger' ? '#ff6b35' : '#8b5cf6';
+              return t === 'human' ? '#f0a500' : t === 'agent' ? '#00d2ff' : t === 'trigger' ? '#ff6b35' : t === 'condition' ? '#ec4899' : t === 'input' ? '#14b8a6' : t === 'notification' ? '#facc15' : '#8b5cf6';
             }}
             maskColor="rgba(15,15,35,0.8)"
             style={{ background: '#0f0f23', border: '1px solid rgba(255,255,255,0.05)' }}

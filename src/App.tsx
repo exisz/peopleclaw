@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { workflows as initialWorkflows } from './data/workflows';
 import { cases } from './data/cases';
 import type { Workflow, Case } from './data/types';
@@ -7,11 +7,33 @@ import TopBar from './components/TopBar';
 import WorkflowView from './components/WorkflowView';
 import CasesView from './components/CasesView';
 
+function loadWorkflows(): Workflow[] {
+  try {
+    const saved = localStorage.getItem('peopleclaw-workflows');
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return initialWorkflows;
+}
+
+function saveWorkflows(wfs: Workflow[]) {
+  try {
+    localStorage.setItem('peopleclaw-workflows', JSON.stringify(wfs));
+  } catch { /* ignore */ }
+}
+
 export default function App() {
-  const [workflows] = useState<Workflow[]>(initialWorkflows);
+  const [workflows, setWorkflows] = useState<Workflow[]>(loadWorkflows);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow>(workflows[0]);
   const [activeTab, setActiveTab] = useState<'workflow' | 'cases'>('workflow');
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+
+  const handleWorkflowUpdate = useCallback((updated: Workflow) => {
+    setWorkflows(prev => {
+      const next = prev.map(w => w.id === updated.id ? updated : w);
+      saveWorkflows(next);
+      return next;
+    });
+  }, []);
 
   const workflowCases = cases.filter(c => c.workflowId === selectedWorkflow.id);
 
@@ -31,7 +53,7 @@ export default function App() {
         />
         <main className="flex-1 overflow-hidden" style={{ background: '#1a1a2e' }}>
           {activeTab === 'workflow' ? (
-            <WorkflowView workflow={selectedWorkflow} selectedCase={selectedCase} />
+            <WorkflowView workflow={selectedWorkflow} selectedCase={selectedCase} onWorkflowUpdate={handleWorkflowUpdate} />
           ) : (
             <CasesView
               cases={workflowCases}

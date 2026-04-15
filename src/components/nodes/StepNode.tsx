@@ -7,6 +7,9 @@ const typeConfig: Record<string, { badge: string; label: string; border: string;
   agent: { badge: '🤖', label: 'Agent', border: '#00d2ff', bg: 'linear-gradient(145deg, rgba(0,210,255,0.12) 0%, rgba(0,210,255,0.04) 100%)', bgFlat: 'rgba(0,210,255,0.08)', glow: 'rgba(0,210,255,0.25)', accent: '#00d2ff' },
   subflow: { badge: '📂', label: 'Subflow', border: '#8b5cf6', bg: 'linear-gradient(145deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.04) 100%)', bgFlat: 'rgba(139,92,246,0.08)', glow: 'rgba(139,92,246,0.25)', accent: '#8b5cf6' },
   trigger: { badge: '⚡', label: 'Trigger', border: '#ff6b35', bg: 'linear-gradient(145deg, rgba(255,107,53,0.15) 0%, rgba(255,107,53,0.05) 100%)', bgFlat: 'rgba(255,107,53,0.10)', glow: 'rgba(255,107,53,0.30)', accent: '#ff6b35' },
+  condition: { badge: '🔀', label: 'Condition', border: '#ec4899', bg: 'linear-gradient(145deg, rgba(236,72,153,0.12) 0%, rgba(236,72,153,0.04) 100%)', bgFlat: 'rgba(236,72,153,0.08)', glow: 'rgba(236,72,153,0.25)', accent: '#ec4899' },
+  input: { badge: '📝', label: 'Data Input', border: '#14b8a6', bg: 'linear-gradient(145deg, rgba(20,184,166,0.12) 0%, rgba(20,184,166,0.04) 100%)', bgFlat: 'rgba(20,184,166,0.08)', glow: 'rgba(20,184,166,0.25)', accent: '#14b8a6' },
+  notification: { badge: '🔔', label: 'Notify', border: '#facc15', bg: 'linear-gradient(145deg, rgba(250,204,21,0.12) 0%, rgba(250,204,21,0.04) 100%)', bgFlat: 'rgba(250,204,21,0.08)', glow: 'rgba(250,204,21,0.25)', accent: '#facc15' },
 };
 
 const statusColors: Record<string, string> = {
