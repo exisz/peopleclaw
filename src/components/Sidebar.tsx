@@ -22,8 +22,8 @@ export default function Sidebar({ workflows, selected, onSelect }: {
   return (
     <aside className="w-72 flex-shrink-0 flex flex-col overflow-hidden" style={{ background: '#0f0f23' }}>
       {/* Logo */}
-      <div className="p-6 border-b border-white/5">
-        <div className="flex items-center gap-3">
+      <div className="p-6 pb-5 border-b border-white/5">
+        <div className="flex items-center gap-3 pl-2">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shadow-lg" style={{ background: 'linear-gradient(135deg, #f0a500, #00d2ff)' }}>
             P
           </div>
@@ -35,7 +35,7 @@ export default function Sidebar({ workflows, selected, onSelect }: {
       </div>
 
       {/* Search */}
-      <div className="px-3 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-2">
         <input
           type="text"
           placeholder="Search workflows..."
@@ -47,15 +47,15 @@ export default function Sidebar({ workflows, selected, onSelect }: {
       </div>
 
       {/* Workflow list */}
-      <nav className="flex-1 overflow-y-auto py-2 px-3">
+      <nav className="flex-1 overflow-y-auto py-2 px-4">
         {grouped.map(g => (
           <div key={g.category} className="mb-5">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-500 px-3 mb-2">{g.category}</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-500 px-4 mb-2">{g.category}</p>
             {g.items.map(w => (
               <button
                 key={w.id}
                 onClick={() => onSelect(w)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl mb-1 flex items-center gap-3 transition-all text-sm ${
+                className={`w-full text-left px-4 py-2.5 rounded-xl mb-1 flex items-center gap-3 transition-all text-sm ${
                   selected.id === w.id
                     ? 'bg-white/10 text-white shadow-sm'
                     : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'

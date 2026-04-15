@@ -193,18 +193,26 @@ export default function WorkflowView({ workflow, selectedCase }: {
       onSelect: handleSelect,
       onDelete: handleDelete,
       onToggleSubflow: handleToggleSubflow,
-    }, selectedStep?.id || null),
-    [localSteps, selectedCase, expandedSubflows, handleSelect, handleDelete, handleToggleSubflow, selectedStep?.id]
+    }, null),
+    [localSteps, selectedCase, expandedSubflows, handleSelect, handleDelete, handleToggleSubflow]
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
-  // Sync layout when deps change
+  // Sync layout when workflow structure changes (NOT on selection change)
   useEffect(() => {
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
   }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
+
+  // Update selection highlighting in-place without resetting positions
+  useEffect(() => {
+    setNodes(nds => nds.map(n => {
+      const data = n.data as any;
+      return { ...n, data: { ...data, selected: selectedStep?.id === n.id } };
+    }));
+  }, [selectedStep?.id, setNodes]);
 
   const onPaneClick = useCallback(() => {
     setSelectedStep(null);
@@ -269,7 +277,7 @@ export default function WorkflowView({ workflow, selectedCase }: {
               const data = n.data as any;
               if (!data?.step) return '#475569';
               const t = data.step.type;
-              return t === 'human' ? '#f0a500' : t === 'agent' ? '#00d2ff' : '#8b5cf6';
+              return t === 'human' ? '#f0a500' : t === 'agent' ? '#00d2ff' : t === 'trigger' ? '#ff6b35' : '#8b5cf6';
             }}
             maskColor="rgba(15,15,35,0.8)"
             style={{ background: '#0f0f23', border: '1px solid rgba(255,255,255,0.05)' }}

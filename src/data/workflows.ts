@@ -8,6 +8,7 @@ export const workflows: Workflow[] = [
     icon: '🛍️',
     category: '电商运营',
     steps: [
+      { id: 'e0', name: '新品需求提交', type: 'trigger', assignee: '产品经理', description: '产品经理提交需求表单触发选品流程', estimatedTime: '—' },
       { id: 'e1', name: '市场调研', type: 'agent', assignee: 'MarketBot', description: '分析目标市场趋势、竞品数据和消费者偏好', estimatedTime: '2h', tools: ['Google Trends', 'Jungle Scout'] },
       { id: 'e2', name: '选品分析', type: 'agent', assignee: 'ProductAI', description: '基于市场数据筛选高潜力产品', estimatedTime: '1h', tools: ['数据分析引擎'] },
       { id: 'e3', name: '供应商询价', type: 'human', assignee: '采购员小李', description: '联系1688/阿里巴巴供应商获取报价', estimatedTime: '2d', tools: ['WeChat', '1688'] },
@@ -29,6 +30,7 @@ export const workflows: Workflow[] = [
     icon: '📱',
     category: '营销推广',
     steps: [
+      { id: 's0', name: '热点事件触发', type: 'trigger', assignee: 'AI热点监控系统', description: 'AI热点监控系统检测到热点事件自动触发', estimatedTime: '—' },
       { id: 's1', name: '热点监控', type: 'agent', assignee: 'TrendBot', description: '实时追踪社交媒体热点话题', estimatedTime: '持续', tools: ['Twitter API', '微博热搜'] },
       { id: 's2', name: '选题策划', type: 'human', assignee: '内容主编', description: '根据热点制定本周内容计划', estimatedTime: '2h' },
       { id: 's3', name: '内容创作', type: 'human', assignee: '内容创作者', description: '撰写文案、脚本、拍摄素材', estimatedTime: '4h', tools: ['Notion', 'Canva'] },
@@ -55,6 +57,7 @@ export const workflows: Workflow[] = [
     icon: '🏠',
     category: '资产管理',
     steps: [
+      { id: 'r0', name: '新房源登记', type: 'trigger', assignee: '业主', description: '业主提交房源信息触发租赁流程', estimatedTime: '—' },
       { id: 'r1', name: '房源发布', type: 'agent', assignee: 'ListingBot', description: '自动生成房源描述并发布到各平台', estimatedTime: '30m', tools: ['Domain', 'REA'] },
       { id: 'r2', name: '询盘回复', type: 'agent', assignee: 'InquiryBot', description: '自动回复租客咨询，筛选合格申请', estimatedTime: '持续', tools: ['Email', 'SMS'] },
       { id: 'r3', name: '预约看房', type: 'human', assignee: '物业经理', description: '安排看房时间，确认租客身份', estimatedTime: '30m' },
@@ -73,6 +76,7 @@ export const workflows: Workflow[] = [
     icon: '📊',
     category: '销售管理',
     steps: [
+      { id: 'q0', name: '客户询价', type: 'trigger', assignee: '客户', description: '网站询价表单/Email触发报价流程', estimatedTime: '—' },
       { id: 'q1', name: '需求收集', type: 'human', assignee: '客户经理', description: '与客户沟通明确项目需求', estimatedTime: '2h', tools: ['Zoom', 'Notion'] },
       { id: 'q2', name: '需求分析', type: 'agent', assignee: 'AnalysisAI', description: '分析需求复杂度和可行性', estimatedTime: '30m' },
       { id: 'q3', name: '方案设计', type: 'human', assignee: '方案架构师', description: '制定技术方案和实施计划', estimatedTime: '1d' },
@@ -91,6 +95,7 @@ export const workflows: Workflow[] = [
     icon: '👥',
     category: '人力资源',
     steps: [
+      { id: 'o0', name: 'Offer签署', type: 'trigger', assignee: 'HR系统', description: 'HR系统确认Offer签署后触发入职流程', estimatedTime: '—' },
       { id: 'o1', name: 'Offer发出', type: 'human', assignee: 'HR经理', description: '发出正式offer letter', estimatedTime: '1h', tools: ['Email'] },
       { id: 'o2', name: '背景调查', type: 'agent', assignee: 'BGCheckBot', description: '自动进行背景调查和学历验证', estimatedTime: '2d', tools: ['背调系统'] },
       { id: 'o3', name: '文档准备', type: 'agent', assignee: 'DocBot', description: '自动生成入职文档包', estimatedTime: '30m' },
@@ -118,6 +123,7 @@ export const workflows: Workflow[] = [
     icon: '🔧',
     category: '技术支持',
     steps: [
+      { id: 'it0', name: '用户报修', type: 'trigger', assignee: '用户', description: 'ServiceNow/Email/Chat提交报修触发工单', estimatedTime: '—' },
       { id: 'it1', name: '工单创建', type: 'human', assignee: '用户', description: '用户提交IT支持请求', estimatedTime: '5m', tools: ['ServiceNow'] },
       { id: 'it2', name: 'AI初步诊断', type: 'agent', assignee: 'DiagBot', description: '自动分析问题类型和可能原因', estimatedTime: '2m', tools: ['知识库AI'] },
       { id: 'it3', name: '优先级分类', type: 'agent', assignee: 'TriageBot', description: '基于影响范围自动分配优先级', estimatedTime: '1m' },
@@ -136,6 +142,7 @@ export const workflows: Workflow[] = [
     icon: '📦',
     category: '供应链',
     steps: [
+      { id: 'inv0', name: '库存预警', type: 'trigger', assignee: '库存系统', description: '库存系统自动触发补货流程', estimatedTime: '—' },
       { id: 'inv1', name: '采购需求预测', type: 'agent', assignee: 'ForecastBot', description: '基于销售数据预测补货需求', estimatedTime: '1h', tools: ['预测引擎'] },
       { id: 'inv2', name: '采购审批', type: 'human', assignee: '采购经理', description: '审核采购计划和预算', estimatedTime: '2h' },
       { id: 'inv3', name: '供应商下单', type: 'human', assignee: '采购员', description: '向供应商发出采购订单', estimatedTime: '1h', tools: ['ERP'] },
@@ -153,6 +160,7 @@ export const workflows: Workflow[] = [
     icon: '🎨',
     category: '创意设计',
     steps: [
+      { id: 'd0', name: '项目立项', type: 'trigger', assignee: '客户经理', description: '客户签约后触发设计项目', estimatedTime: '—' },
       { id: 'd1', name: '需求Brief', type: 'human', assignee: '客户经理', description: '与客户沟通设计需求和期望', estimatedTime: '2h' },
       { id: 'd2', name: '竞品分析', type: 'agent', assignee: 'ResearchAI', description: '自动收集分析竞品设计风格', estimatedTime: '1h', tools: ['Dribbble', 'Behance'] },
       { id: 'd3', name: '情绪板制作', type: 'human', assignee: '设计总监', description: '制作设计方向的情绪板', estimatedTime: '3h', tools: ['Figma', 'Pinterest'] },
@@ -171,6 +179,7 @@ export const workflows: Workflow[] = [
     icon: '💰',
     category: '财务管理',
     steps: [
+      { id: 'f0', name: '月初自动触发', type: 'trigger', assignee: '定时任务', description: '定时任务 Cron 每月初自动触发结算', estimatedTime: '—' },
       { id: 'f1', name: '交易数据汇总', type: 'agent', assignee: 'DataBot', description: '自动汇总本月所有交易数据', estimatedTime: '30m', tools: ['Xero', 'Stripe'] },
       { id: 'f2', name: '发票核对', type: 'human', assignee: '会计', description: '核对发票与交易记录', estimatedTime: '4h' },
       { id: 'f3', name: '费用分类', type: 'agent', assignee: 'ClassifyBot', description: 'AI自动分类各项费用', estimatedTime: '15m' },
@@ -188,6 +197,7 @@ export const workflows: Workflow[] = [
     icon: '🚀',
     category: '产品研发',
     steps: [
+      { id: 'l0', name: '发布审批通过', type: 'trigger', assignee: 'Jira', description: 'Jira ticket状态变更触发发布流程', estimatedTime: '—' },
       { id: 'l1', name: '发布Checklist', type: 'agent', assignee: 'CheckBot', description: '自动生成发布前检查清单', estimatedTime: '15m' },
       { id: 'l2', name: '文档更新', type: 'human', assignee: '技术写手', description: '更新用户文档和API文档', estimatedTime: '4h', tools: ['GitBook'] },
       {

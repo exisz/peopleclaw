@@ -1,4 +1,4 @@
-export type StepType = 'human' | 'agent' | 'subflow';
+export type StepType = 'human' | 'agent' | 'subflow' | 'trigger';
 
 export interface WorkflowStep {
   id: string;

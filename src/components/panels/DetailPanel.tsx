@@ -7,10 +7,11 @@ export interface DetailPanelProps {
   onUpdate: (updated: WorkflowStep) => void;
 }
 
-const typeConfig = {
+const typeConfig: Record<string, { badge: string; label: string; color: string }> = {
   human: { badge: '👤', label: 'Human', color: '#f0a500' },
   agent: { badge: '🤖', label: 'Agent', color: '#00d2ff' },
   subflow: { badge: '📂', label: 'Subflow', color: '#8b5cf6' },
+  trigger: { badge: '⚡', label: 'Trigger', color: '#ff6b35' },
 };
 
 const statusColors: Record<string, { bg: string; text: string; label: string }> = {

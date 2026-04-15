@@ -2,10 +2,11 @@ import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { WorkflowStep } from '../../data/types';
 
-const typeConfig = {
+const typeConfig: Record<string, { badge: string; label: string; border: string; bg: string; bgFlat: string; glow: string; accent: string }> = {
   human: { badge: '👤', label: 'Human', border: '#f0a500', bg: 'linear-gradient(145deg, rgba(240,165,0,0.12) 0%, rgba(240,165,0,0.04) 100%)', bgFlat: 'rgba(240,165,0,0.08)', glow: 'rgba(240,165,0,0.25)', accent: '#f0a500' },
   agent: { badge: '🤖', label: 'Agent', border: '#00d2ff', bg: 'linear-gradient(145deg, rgba(0,210,255,0.12) 0%, rgba(0,210,255,0.04) 100%)', bgFlat: 'rgba(0,210,255,0.08)', glow: 'rgba(0,210,255,0.25)', accent: '#00d2ff' },
   subflow: { badge: '📂', label: 'Subflow', border: '#8b5cf6', bg: 'linear-gradient(145deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.04) 100%)', bgFlat: 'rgba(139,92,246,0.08)', glow: 'rgba(139,92,246,0.25)', accent: '#8b5cf6' },
+  trigger: { badge: '⚡', label: 'Trigger', border: '#ff6b35', bg: 'linear-gradient(145deg, rgba(255,107,53,0.15) 0%, rgba(255,107,53,0.05) 100%)', bgFlat: 'rgba(255,107,53,0.10)', glow: 'rgba(255,107,53,0.30)', accent: '#ff6b35' },
 };
 
 const statusColors: Record<string, string> = {
@@ -36,14 +37,15 @@ export type StepNodeData = {
 
 function StepNode({ data }: NodeProps) {
   const { step, status, isExpanded, onToggleSubflow, onSelect, onDelete, selected, stepIndex, totalSteps } = data as unknown as StepNodeData;
-  const cfg = typeConfig[step.type];
+  const cfg = typeConfig[step.type] || typeConfig.human;
+  const isTrigger = step.type === 'trigger';
   const borderColor = status ? statusColors[status] || cfg.border : cfg.border;
   const isInProgress = status === 'in-progress';
   const isDone = status === 'done';
 
   return (
     <div
-      className={`step-node ${isInProgress ? 'step-node--pulse' : ''} ${selected ? 'step-node--selected' : ''} ${isDone ? 'step-node--done' : ''}`}
+      className={`step-node ${isTrigger ? 'step-node--trigger' : ''} ${isInProgress ? 'step-node--pulse' : ''} ${selected ? 'step-node--selected' : ''} ${isDone ? 'step-node--done' : ''}`}
       style={{
         background: cfg.bg,
         borderColor,
@@ -72,6 +74,11 @@ function StepNode({ data }: NodeProps) {
 
       {/* Top accent line */}
       <div className="step-node__accent" style={{ background: `linear-gradient(90deg, ${cfg.accent}, transparent)` }} />
+
+      {/* Trigger icon overlay */}
+      {isTrigger && (
+        <div className="step-node__trigger-icon">⚡</div>
+      )}
 
       {/* Status indicator */}
       {status && (

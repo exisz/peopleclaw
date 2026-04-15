@@ -7,14 +7,14 @@ export default function TopBar({ workflow, caseCount, activeTab, onTabChange }: 
   onTabChange: (t: 'workflow' | 'cases') => void;
 }) {
   return (
-    <header className="flex items-center justify-between px-8 py-4 border-b border-white/5" style={{ background: '#16213e' }}>
+    <header className="flex items-center justify-between px-10 py-5 border-b border-white/5" style={{ background: '#16213e' }}>
       <div className="flex items-center gap-5">
         <span className="text-3xl">{workflow.icon}</span>
         <div>
           <h2 className="text-lg font-bold text-white leading-tight">{workflow.name}</h2>
           <p className="text-xs text-gray-400 mt-0.5">{workflow.description}</p>
         </div>
-        <span className="font-mono text-[10px] px-3 py-1 rounded-lg bg-white/5 text-gray-400 uppercase tracking-wider">{workflow.category}</span>
+        <span className="font-mono text-[10px] px-4 py-1.5 rounded-lg bg-white/5 text-gray-400 uppercase tracking-wider">{workflow.category}</span>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex bg-white/5 rounded-xl p-1">
