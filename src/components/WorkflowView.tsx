@@ -18,7 +18,7 @@ import type { StepNodeData } from './nodes/StepNode';
 import DetailPanel from './panels/DetailPanel';
 import AddStepModal from './panels/AddStepModal';
 
-const NODE_WIDTH = 200;
+const NODE_WIDTH = 220;
 const NODE_HEIGHT = 120;
 const H_GAP = 80;
 const V_GAP = 40;
@@ -56,6 +56,8 @@ function layoutNodes(
       onSelect: () => callbacks.onSelect(step),
       onDelete: () => callbacks.onDelete(step.id),
       selected: selectedStepId === step.id,
+      stepIndex: i,
+      totalSteps: steps.length,
     };
 
     nodes.push({
@@ -69,13 +71,19 @@ function layoutNodes(
     // Edge to next step
     if (i < steps.length - 1) {
       const nextStep = steps[i + 1];
+      const nextCol = (i + 1) % COLS;
+      const isRowWrap = nextCol === 0;
+      // Color edge based on source step type
+      const edgeColor = step.type === 'human' ? '#f0a50060' : step.type === 'agent' ? '#00d2ff60' : '#8b5cf650';
       edges.push({
         id: `e-${step.id}-${nextStep.id}`,
         source: step.id,
         target: nextStep.id,
+        type: isRowWrap ? 'smoothstep' : 'default',
         animated: true,
-        style: { stroke: '#475569', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#475569', width: 16, height: 16 },
+        style: { stroke: edgeColor, strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: edgeColor, width: 14, height: 14 },
+        label: isRowWrap ? '' : undefined,
       });
     }
   });
@@ -212,13 +220,33 @@ export default function WorkflowView({ workflow, selectedCase }: {
   return (
     <div className="workflow-container">
       {/* Case overlay banner */}
-      {selectedCase && (
-        <div className="workflow-case-banner">
-          <span className={`workflow-case-dot ${selectedCase.status === 'active' ? 'workflow-case-dot--active' : selectedCase.status === 'completed' ? 'workflow-case-dot--done' : 'workflow-case-dot--paused'}`} />
-          <span className="workflow-case-name">{selectedCase.name}</span>
-          <span className="workflow-case-status">{selectedCase.status}</span>
-        </div>
-      )}
+      {selectedCase && (() => {
+        const totalSteps = localSteps.length;
+        const doneSteps = Object.values(selectedCase.stepStatuses).filter(s => s === 'done').length;
+        const blockedSteps = Object.values(selectedCase.stepStatuses).filter(s => s === 'blocked').length;
+        const progress = Math.round((doneSteps / totalSteps) * 100);
+        const currentStep = localSteps.find(s => s.id === selectedCase.currentStepId);
+        return (
+          <div className="workflow-case-banner">
+            <span className={`workflow-case-dot ${selectedCase.status === 'active' ? 'workflow-case-dot--active' : selectedCase.status === 'completed' ? 'workflow-case-dot--done' : 'workflow-case-dot--paused'}`} />
+            <div className="workflow-case-info">
+              <div className="workflow-case-top">
+                <span className="workflow-case-name">{selectedCase.name}</span>
+                <span className="workflow-case-status">{selectedCase.status}</span>
+              </div>
+              <div className="workflow-case-bottom">
+                <span className="workflow-case-progress-text">{doneSteps}/{totalSteps} steps · {progress}%</span>
+                {blockedSteps > 0 && <span className="workflow-case-blocked">⚠ {blockedSteps} blocked</span>}
+                {currentStep && <span className="workflow-case-current">→ {currentStep.name}</span>}
+              </div>
+              <div className="workflow-case-progress-bar">
+                <div className="workflow-case-progress-fill" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+            <button className="workflow-case-dismiss" onClick={() => { /* parent handles */ }}>✕</button>
+          </div>
+        );
+      })()}
 
       <div className="workflow-flow-wrapper">
         <ReactFlow

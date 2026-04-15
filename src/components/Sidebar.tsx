@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Workflow } from '../data/types';
 
 const categories = ['电商运营', '营销推广', '资产管理', '销售管理', '人力资源', '技术支持', '供应链', '创意设计', '财务管理', '产品研发'];
@@ -7,9 +8,15 @@ export default function Sidebar({ workflows, selected, onSelect }: {
   selected: Workflow;
   onSelect: (w: Workflow) => void;
 }) {
+  const [search, setSearch] = useState('');
+  
+  const filtered = search.trim()
+    ? workflows.filter(w => w.name.toLowerCase().includes(search.toLowerCase()) || w.description.toLowerCase().includes(search.toLowerCase()))
+    : workflows;
+
   const grouped = categories.map(cat => ({
     category: cat,
-    items: workflows.filter(w => w.category === cat),
+    items: filtered.filter(w => w.category === cat),
   })).filter(g => g.items.length > 0);
 
   return (
@@ -17,7 +24,7 @@ export default function Sidebar({ workflows, selected, onSelect }: {
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold" style={{ background: 'linear-gradient(135deg, #f0a500, #00d2ff)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shadow-lg" style={{ background: 'linear-gradient(135deg, #f0a500, #00d2ff)' }}>
             P
           </div>
           <div>
@@ -27,8 +34,20 @@ export default function Sidebar({ workflows, selected, onSelect }: {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="px-3 pt-4 pb-2">
+        <input
+          type="text"
+          placeholder="Search workflows..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/5 text-gray-300 placeholder-gray-600 outline-none transition-colors focus:border-white/15 focus:bg-white/[0.07]"
+          style={{ fontFamily: 'DM Sans, sans-serif' }}
+        />
+      </div>
+
       {/* Workflow list */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
+      <nav className="flex-1 overflow-y-auto py-2 px-3">
         {grouped.map(g => (
           <div key={g.category} className="mb-5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-gray-500 px-3 mb-2">{g.category}</p>

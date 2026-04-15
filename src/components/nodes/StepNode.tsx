@@ -3,9 +3,9 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { WorkflowStep } from '../../data/types';
 
 const typeConfig = {
-  human: { badge: '👤', label: 'Human', border: '#f0a500', bg: 'rgba(240,165,0,0.08)', glow: 'rgba(240,165,0,0.25)' },
-  agent: { badge: '🤖', label: 'Agent', border: '#00d2ff', bg: 'rgba(0,210,255,0.08)', glow: 'rgba(0,210,255,0.25)' },
-  subflow: { badge: '📂', label: 'Subflow', border: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', glow: 'rgba(139,92,246,0.25)' },
+  human: { badge: '👤', label: 'Human', border: '#f0a500', bg: 'linear-gradient(145deg, rgba(240,165,0,0.12) 0%, rgba(240,165,0,0.04) 100%)', bgFlat: 'rgba(240,165,0,0.08)', glow: 'rgba(240,165,0,0.25)', accent: '#f0a500' },
+  agent: { badge: '🤖', label: 'Agent', border: '#00d2ff', bg: 'linear-gradient(145deg, rgba(0,210,255,0.12) 0%, rgba(0,210,255,0.04) 100%)', bgFlat: 'rgba(0,210,255,0.08)', glow: 'rgba(0,210,255,0.25)', accent: '#00d2ff' },
+  subflow: { badge: '📂', label: 'Subflow', border: '#8b5cf6', bg: 'linear-gradient(145deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.04) 100%)', bgFlat: 'rgba(139,92,246,0.08)', glow: 'rgba(139,92,246,0.25)', accent: '#8b5cf6' },
 };
 
 const statusColors: Record<string, string> = {
@@ -30,25 +30,28 @@ export type StepNodeData = {
   onSelect?: () => void;
   onDelete?: () => void;
   selected?: boolean;
+  stepIndex?: number;
+  totalSteps?: number;
 };
 
 function StepNode({ data }: NodeProps) {
-  const { step, status, isExpanded, onToggleSubflow, onSelect, onDelete, selected } = data as unknown as StepNodeData;
+  const { step, status, isExpanded, onToggleSubflow, onSelect, onDelete, selected, stepIndex, totalSteps } = data as unknown as StepNodeData;
   const cfg = typeConfig[step.type];
   const borderColor = status ? statusColors[status] || cfg.border : cfg.border;
   const isInProgress = status === 'in-progress';
+  const isDone = status === 'done';
 
   return (
     <div
-      className={`step-node ${isInProgress ? 'step-node--pulse' : ''} ${selected ? 'step-node--selected' : ''}`}
+      className={`step-node ${isInProgress ? 'step-node--pulse' : ''} ${selected ? 'step-node--selected' : ''} ${isDone ? 'step-node--done' : ''}`}
       style={{
         background: cfg.bg,
         borderColor,
         boxShadow: selected
-          ? `0 0 0 2px ${cfg.border}, 0 0 20px ${cfg.glow}`
+          ? `0 0 0 2px ${cfg.border}, 0 0 24px ${cfg.glow}, 0 8px 32px rgba(0,0,0,0.4)`
           : isInProgress
-          ? `0 0 12px ${statusColors['in-progress']}40`
-          : `0 2px 8px rgba(0,0,0,0.3)`,
+          ? `0 0 16px ${statusColors['in-progress']}50, 0 4px 16px rgba(0,0,0,0.3)`
+          : `0 4px 16px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)`,
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -67,24 +70,35 @@ function StepNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} className="step-handle" />
       <Handle type="source" position={Position.Right} className="step-handle" />
 
+      {/* Top accent line */}
+      <div className="step-node__accent" style={{ background: `linear-gradient(90deg, ${cfg.accent}, transparent)` }} />
+
       {/* Status indicator */}
       {status && (
-        <div className="step-node__status" style={{ background: statusColors[status] }}>
+        <div className="step-node__status" style={{ background: statusColors[status], boxShadow: `0 0 8px ${statusColors[status]}60` }}>
           {statusIcons[status]}
         </div>
       )}
 
       {/* Header */}
       <div className="step-node__header">
-        <span className="step-node__badge">{cfg.badge} {cfg.label}</span>
-        {step.estimatedTime && <span className="step-node__time">{step.estimatedTime}</span>}
+        <span className="step-node__badge" style={{ borderLeft: `2px solid ${cfg.accent}` }}>{cfg.badge} {cfg.label}</span>
+        <div className="step-node__meta">
+          {stepIndex !== undefined && totalSteps !== undefined && (
+            <span className="step-node__index">{stepIndex + 1}/{totalSteps}</span>
+          )}
+          {step.estimatedTime && <span className="step-node__time">⏱ {step.estimatedTime}</span>}
+        </div>
       </div>
 
       {/* Name */}
       <h3 className="step-node__name">{step.name}</h3>
 
       {/* Assignee */}
-      <p className="step-node__assignee">{step.assignee}</p>
+      <p className="step-node__assignee">
+        <span className="step-node__assignee-icon">→</span>
+        {step.assignee}
+      </p>
 
       {/* Tools */}
       {step.tools && step.tools.length > 0 && (
@@ -92,7 +106,7 @@ function StepNode({ data }: NodeProps) {
           {step.tools.slice(0, 3).map(t => (
             <span key={t} className="step-node__tool">{t}</span>
           ))}
-          {step.tools.length > 3 && <span className="step-node__tool">+{step.tools.length - 3}</span>}
+          {step.tools.length > 3 && <span className="step-node__tool step-node__tool--more">+{step.tools.length - 3}</span>}
         </div>
       )}
 

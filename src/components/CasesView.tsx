@@ -17,10 +17,11 @@ export default function CasesView({ cases, workflow, selectedCase, onSelectCase 
 
   if (cases.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500 p-8">
+      <div className="flex items-center justify-center h-full text-gray-500 p-8">
         <div className="text-center">
-          <p className="text-4xl mb-4">📭</p>
-          <p className="text-lg">No cases for this workflow yet.</p>
+          <div className="text-6xl mb-6 opacity-60">📭</div>
+          <p className="text-lg font-semibold text-gray-400 mb-2">No cases yet</p>
+          <p className="text-sm text-gray-600 max-w-xs">Start a case from this workflow to track real work through these steps.</p>
         </div>
       </div>
     );
