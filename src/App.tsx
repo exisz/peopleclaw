@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { workflows } from './data/workflows';
+import { workflows as initialWorkflows } from './data/workflows';
 import { cases } from './data/cases';
 import type { Workflow, Case } from './data/types';
 import Sidebar from './components/Sidebar';
@@ -8,6 +8,7 @@ import WorkflowView from './components/WorkflowView';
 import CasesView from './components/CasesView';
 
 export default function App() {
+  const [workflows] = useState<Workflow[]>(initialWorkflows);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow>(workflows[0]);
   const [activeTab, setActiveTab] = useState<'workflow' | 'cases'>('workflow');
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -28,7 +29,7 @@ export default function App() {
           activeTab={activeTab}
           onTabChange={(t) => { setActiveTab(t); if (t === 'workflow') setSelectedCase(null); }}
         />
-        <main className="flex-1 overflow-auto p-6" style={{ background: '#1a1a2e' }}>
+        <main className="flex-1 overflow-hidden" style={{ background: '#1a1a2e' }}>
           {activeTab === 'workflow' ? (
             <WorkflowView workflow={selectedWorkflow} selectedCase={selectedCase} />
           ) : (
