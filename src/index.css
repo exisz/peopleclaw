@@ -650,6 +650,60 @@ textarea:focus-visible {
   -webkit-box-orient: vertical;
 }
 
+/* ===== Subflow Group Node ===== */
+.subflow-group {
+  border: 2px dashed #8b5cf6;
+  border-radius: 16px;
+  background: rgba(139,92,246,0.05);
+  position: relative;
+  pointer-events: all;
+}
+.subflow-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(139,92,246,0.15);
+  background: rgba(139,92,246,0.08);
+  border-radius: 14px 14px 0 0;
+}
+.subflow-group__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subflow-group__icon {
+  font-size: 14px;
+}
+.subflow-group__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c4b5fd;
+}
+.subflow-group__count {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #7c3aed;
+  background: rgba(139,92,246,0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.subflow-group__collapse {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #8b5cf6;
+  background: rgba(139,92,246,0.1);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: all 0.15s;
+}
+.subflow-group__collapse:hover {
+  color: #a78bfa;
+  background: rgba(139,92,246,0.2);
+}
+
 /* ===== Trigger Node ===== */
 .step-node--trigger {
   border-width: 2px;

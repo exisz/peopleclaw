@@ -15,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 import type { Workflow, WorkflowStep, Case } from '../data/types';
 import StepNode from './nodes/StepNode';
 import type { StepNodeData } from './nodes/StepNode';
+import SubflowGroupNode from './nodes/SubflowGroupNode';
 import DetailPanel from './panels/DetailPanel';
 import AddStepModal from './panels/AddStepModal';
 
@@ -24,7 +25,7 @@ const H_GAP = 80;
 const V_GAP = 40;
 const COLS = 5;
 
-const nodeTypes = { stepNode: StepNode };
+const nodeTypes = { stepNode: StepNode, subflowGroup: SubflowGroupNode };
 
 function layoutNodes(
   steps: WorkflowStep[],
@@ -88,16 +89,41 @@ function layoutNodes(
     }
   });
 
-  // Layout expanded subflows
+  // Layout expanded subflows as group containers
   const mainRows = Math.ceil(steps.length / COLS);
   yOffset += mainRows * (NODE_HEIGHT + V_GAP) + 40;
+
+  const GROUP_PADDING_X = 32;
+  const GROUP_PADDING_TOP = 56; // header height
+  const GROUP_PADDING_BOTTOM = 28;
 
   steps.forEach((step) => {
     if (step.type === 'subflow' && step.subflow && expandedSubflows.has(step.id)) {
       const subSteps = step.subflow.steps;
+      const groupId = `group-${step.id}`;
+      const groupWidth = subSteps.length * (NODE_WIDTH + H_GAP) - H_GAP + GROUP_PADDING_X * 2;
+      const groupHeight = NODE_HEIGHT + GROUP_PADDING_TOP + GROUP_PADDING_BOTTOM;
+
+      // Group container node
+      nodes.push({
+        id: groupId,
+        type: 'subflowGroup',
+        position: { x: 20, y: yOffset },
+        data: {
+          label: step.subflow.name || step.name,
+          stepCount: subSteps.length,
+          onCollapse: () => callbacks.onToggleSubflow(step.id),
+          width: groupWidth,
+          height: groupHeight,
+        } as any,
+        draggable: true,
+        style: { width: groupWidth, height: groupHeight, zIndex: -1 },
+      });
+
+      // Child nodes positioned relative to the group
       subSteps.forEach((ss, si) => {
-        const x = si * (NODE_WIDTH + H_GAP) + 40;
-        const y = yOffset;
+        const x = GROUP_PADDING_X + si * (NODE_WIDTH + H_GAP);
+        const y = GROUP_PADDING_TOP;
 
         const nodeData: StepNodeData = {
           step: ss,
@@ -110,6 +136,8 @@ function layoutNodes(
           id: ss.id,
           type: 'stepNode',
           position: { x, y },
+          parentId: groupId,
+          extent: 'parent' as const,
           data: nodeData as any,
           draggable: true,
         });
@@ -126,17 +154,17 @@ function layoutNodes(
         }
       });
 
-      // Edge from parent to subflow first step
+      // Dashed edge from parent step to group
       edges.push({
-        id: `e-sub-${step.id}-${subSteps[0].id}`,
+        id: `e-sub-${step.id}-${groupId}`,
         source: step.id,
-        target: subSteps[0].id,
+        target: groupId,
         animated: true,
         style: { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '5 5' },
         markerEnd: { type: MarkerType.ArrowClosed, color: '#8b5cf6', width: 16, height: 16 },
       });
 
-      yOffset += NODE_HEIGHT + V_GAP + 40;
+      yOffset += groupHeight + V_GAP;
     }
   });
 
