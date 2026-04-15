@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import WorkflowView from './components/WorkflowView';
 import CasesView from './components/CasesView';
+import LandingPage from './components/LandingPage';
 
 function loadWorkflows(): Workflow[] {
   try {
@@ -22,10 +23,18 @@ function saveWorkflows(wfs: Workflow[]) {
 }
 
 export default function App() {
+  const [view, setView] = useState<'landing' | 'app'>(
+    window.location.hash === '#app' ? 'app' : 'landing'
+  );
   const [workflows, setWorkflows] = useState<Workflow[]>(loadWorkflows);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow>(workflows[0]);
   const [activeTab, setActiveTab] = useState<'workflow' | 'cases'>('workflow');
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+
+  const handleLaunchApp = useCallback(() => {
+    window.location.hash = 'app';
+    setView('app');
+  }, []);
 
   const handleWorkflowUpdate = useCallback((updated: Workflow) => {
     setWorkflows(prev => {
@@ -36,6 +45,10 @@ export default function App() {
   }, []);
 
   const workflowCases = cases.filter(c => c.workflowId === selectedWorkflow.id);
+
+  if (view === 'landing') {
+    return <LandingPage onLaunchApp={handleLaunchApp} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
