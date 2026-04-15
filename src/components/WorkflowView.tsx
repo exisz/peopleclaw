@@ -74,7 +74,7 @@ function layoutNodes(
       const nextCol = (i + 1) % COLS;
       const isRowWrap = nextCol === 0;
       // Color edge based on source step type
-      const edgeColor = step.type === 'human' ? '#f0a50060' : step.type === 'agent' ? '#00d2ff60' : '#8b5cf650';
+      const edgeColor = step.type === 'human' ? '#f0a50080' : step.type === 'agent' ? '#00d2ff80' : '#8b5cf670';
       edges.push({
         id: `e-${step.id}-${nextStep.id}`,
         source: step.id,

@@ -421,6 +421,7 @@ body {
 .detail-panel__textarea:focus {
   border-color: rgba(0,210,255,0.5);
   box-shadow: 0 0 0 3px rgba(0,210,255,0.08);
+  outline: none;
 }
 .detail-panel__textarea {
   resize: vertical;
@@ -530,6 +531,7 @@ body {
 .modal-input:focus {
   border-color: rgba(0,210,255,0.5);
   box-shadow: 0 0 0 3px rgba(0,210,255,0.08);
+  outline: none;
 }
 .modal-textarea {
   resize: vertical;
@@ -611,6 +613,39 @@ body {
 .react-flow__pane {
   cursor: grab;
 }
+.react-flow__pane:active {
+  cursor: grabbing;
+}
 .react-flow__node {
   cursor: pointer !important;
+}
+
+/* ===== Select dropdown fix for dark theme ===== */
+select option {
+  background: #16213e;
+  color: #e2e8f0;
+}
+
+/* ===== Focus-visible accessibility ===== */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(0,210,255,0.5);
+  outline-offset: 2px;
+}
+
+/* ===== Minimap polish ===== */
+.react-flow__minimap {
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
+/* ===== Step node name truncation ===== */
+.step-node__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }

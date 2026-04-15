@@ -41,7 +41,7 @@ export default function Sidebar({ workflows, selected, onSelect }: {
           placeholder="Search workflows..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/5 text-gray-300 placeholder-gray-600 outline-none transition-colors focus:border-white/15 focus:bg-white/[0.07]"
+          className="w-full px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/5 text-gray-300 placeholder-gray-600 outline-none transition-all duration-200 focus:border-[#00d2ff]/30 focus:bg-white/[0.07] focus:shadow-[0_0_0_3px_rgba(0,210,255,0.08)]"
           style={{ fontFamily: 'DM Sans, sans-serif' }}
         />
       </div>
