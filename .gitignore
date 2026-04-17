@@ -12,3 +12,4 @@ apps/admin/prisma/dev.db-journal
 apps/admin/src/server/generated
 apps/admin/api-dist
 .astro/
+.env*.local

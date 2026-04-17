@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -60,14 +60,26 @@ export default function Dashboard() {
               已登录 · GET /api/me
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => logtoClient.signOut(postSignOutRedirectUri)}
-          >
-            <LogOut className="h-4 w-4" />
-            退出登录
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/workflows" data-testid="nav-workflows">
+                <Workflow className="h-4 w-4" /> Workflows
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/cases" data-testid="nav-cases">
+                <ListChecks className="h-4 w-4" /> Cases
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => logtoClient.signOut(postSignOutRedirectUri)}
+            >
+              <LogOut className="h-4 w-4" />
+              退出登录
+            </Button>
+          </div>
         </header>
 
         {loading && (
