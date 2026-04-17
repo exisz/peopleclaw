@@ -9,10 +9,68 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  logtoId   String   @unique
-  email     String?
-  visits    Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  logtoId          String   @unique
+  email            String?
+  visits           Int      @default(0)
+  credits          Int      @default(10)
+  stripeCustomerId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  cases            Case[]
+  usageLogs        UsageLog[]
+}
+
+model Workflow {
+  id         String   @id
+  name       String
+  category   String?
+  definition String   // JSON serialized {nodes, edges}
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  cases      Case[]
+}
+
+model Case {
+  id            String     @id @default(cuid())
+  workflowId    String
+  workflow      Workflow   @relation(fields: [workflowId], references: [id])
+  ownerId       Int
+  owner         User       @relation(fields: [ownerId], references: [id])
+  title         String
+  status        String     @default("running") // running|waiting_human|done|failed|cancelled
+  currentStepId String?
+  payload       String     @default("{}") // JSON
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  steps         CaseStep[]
+}
+
+model CaseStep {
+  id          String    @id @default(cuid())
+  caseId      String
+  case        Case      @relation(fields: [caseId], references: [id])
+  stepId      String
+  stepType    String
+  kind        String    // auto|human
+  status      String    @default("pending")
+  input       String    @default("{}") // JSON
+  output      String    @default("{}") // JSON
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model UsageLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  action       String
+  creditsUsed  Int      @default(0)
+  creditsAdded Int      @default(0)
+  packId       String?
+  amountPaid   Int?
+  metadata     String   @default("{}") // JSON
+  createdAt    DateTime @default(now())
 }

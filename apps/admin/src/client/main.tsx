@@ -8,6 +8,9 @@ import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import Workflows from './pages/Workflows';
 import Cases from './pages/Cases';
+import Credits from './pages/Credits';
+import CreditsSuccess from './pages/CreditsSuccess';
+import RunWorkflow from './pages/RunWorkflow';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,8 +22,11 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workflows" element={<Workflows />} />
         <Route path="/workflows/:id" element={<Workflows />} />
+        <Route path="/workflows/:id/run" element={<RunWorkflow />} />
         <Route path="/cases" element={<Cases />} />
         <Route path="/cases/:id" element={<Cases />} />
+        <Route path="/credits" element={<Credits />} />
+        <Route path="/credits/success" element={<CreditsSuccess />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

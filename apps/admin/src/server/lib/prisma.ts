@@ -14,6 +14,9 @@ export function getPrisma(): PC {
     const adapter = new PrismaLibSQL({ url: tursoUrl, authToken: tursoToken });
     singleton = new PrismaClient({ adapter });
   } else {
+    // Set a placeholder to silence Prisma's datasource URL validation when
+    // running in adapter mode (we never actually hit the local DB in prod).
+    if (!process.env.LOCAL_DATABASE_URL) process.env.LOCAL_DATABASE_URL = 'file:./dev.db';
     singleton = new PrismaClient();
   }
   return singleton;
