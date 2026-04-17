@@ -1,0 +1,33 @@
+---
+const tiers = [
+  { name: 'Solo SME', price: 'Free', desc: 'During beta', features: ['Up to 3 workflows', 'Up to 25 cases / month', 'Community support'] },
+  { name: 'Team', price: 'Coming soon', desc: 'For growing SMEs', features: ['Unlimited workflows', 'Unlimited cases', 'Team collaboration', 'Email + chat support'], featured: true },
+  { name: 'Agency', price: 'Coming soon', desc: 'For freelance IT', features: ['Multi-tenant management', 'Client billing portal', 'White-label option', 'Priority support'] },
+];
+---
+<section id="pricing" class="max-w-6xl mx-auto px-6 py-24">
+  <div class="text-center mb-16">
+    <h2 class="text-3xl md:text-4xl font-bold mb-4">Pricing <span class="gradient-text">coming soon.</span></h2>
+    <p class="text-gray-400 max-w-2xl mx-auto">
+      During the beta, PeopleClaw is free for solo SMEs. Team and Agency tiers will be priced when we launch GA.
+    </p>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-6">
+    {tiers.map((t) => (
+      <div class={`rounded-2xl p-7 ${t.featured ? 'bg-gradient-to-b from-amber-500/15 to-cyan-500/10 border border-amber-400/30' : 'glass'}`}>
+        <div class="text-sm text-gray-400 mb-2">{t.name}</div>
+        <div class="text-3xl font-bold mb-1">{t.price}</div>
+        <div class="text-sm text-gray-500 mb-6">{t.desc}</div>
+        <ul class="space-y-2.5">
+          {t.features.map((f) => (
+            <li class="flex items-start gap-2 text-sm text-gray-300">
+              <span class="text-cyan-400">✓</span>
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>

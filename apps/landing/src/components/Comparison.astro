@@ -1,0 +1,41 @@
+---
+const rows = [
+  { feature: 'Visual workflow canvas', traditional: '⚠️ Forms-based', peopleclaw: '✅ XYFlow drag-and-drop' },
+  { feature: 'AI-native steps',         traditional: '❌ Bolt-on',     peopleclaw: '✅ First-class' },
+  { feature: 'Human approval gates',    traditional: '⚠️ Plugins',     peopleclaw: '✅ Built in' },
+  { feature: 'Multi-tenant for agencies', traditional: '❌ Enterprise tier', peopleclaw: '✅ Day one' },
+  { feature: 'Setup cost',              traditional: '💰💰💰',          peopleclaw: '💰' },
+  { feature: 'Time to first workflow',  traditional: 'Weeks',           peopleclaw: 'Minutes' },
+];
+---
+<section class="max-w-5xl mx-auto px-6 py-24">
+  <div class="text-center mb-12">
+    <h2 class="text-3xl md:text-4xl font-bold mb-4">
+      Lighter than <span class="gradient-text">traditional BPM.</span>
+    </h2>
+    <p class="text-gray-400 max-w-2xl mx-auto">
+      We're not trying to replace SAP. We're replacing the spreadsheet, the Slack thread, and the half-built Zapier zap.
+    </p>
+  </div>
+
+  <div class="glass rounded-2xl overflow-hidden">
+    <table class="w-full text-left">
+      <thead class="bg-white/5">
+        <tr>
+          <th class="px-5 py-4 text-sm font-semibold text-gray-300"></th>
+          <th class="px-5 py-4 text-sm font-semibold text-gray-300">Traditional BPM</th>
+          <th class="px-5 py-4 text-sm font-semibold gradient-text">PeopleClaw</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        {rows.map((r) => (
+          <tr>
+            <td class="px-5 py-4 text-sm font-medium">{r.feature}</td>
+            <td class="px-5 py-4 text-sm text-gray-400">{r.traditional}</td>
+            <td class="px-5 py-4 text-sm text-white">{r.peopleclaw}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>

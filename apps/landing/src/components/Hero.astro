@@ -1,0 +1,44 @@
+---
+const appUrl = 'https://peopleclaw.vercel.app/#app';
+---
+<section class="relative overflow-hidden">
+  <!-- background glow -->
+  <div class="absolute inset-0 -z-10">
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-40 right-0 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-xs text-gray-300 mb-8">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+      Now in private beta — POC available today
+    </div>
+
+    <h1 class="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight mb-6">
+      Workflows that put<br />
+      <span class="gradient-text">people first.</span>
+    </h1>
+
+    <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10">
+      Design business workflows visually. AI assists at every step, humans approve what matters.
+      Built for SMEs and the freelancer ITs who support them.
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a
+        href={appUrl}
+        class="px-7 py-3.5 bg-gradient-to-r from-amber-500 to-cyan-500 hover:opacity-90 rounded-xl font-semibold text-ink-950 text-base transition-opacity"
+      >
+        Try the POC →
+      </a>
+      <a
+        href="#features"
+        class="px-7 py-3.5 glass hover:bg-white/10 rounded-xl font-semibold text-base transition-colors"
+      >
+        See how it works
+      </a>
+    </div>
+
+    <p class="text-xs text-gray-500 mt-6">No signup required · Open POC · Pricing coming soon</p>
+  </div>
+</section>

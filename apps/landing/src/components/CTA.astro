@@ -1,0 +1,22 @@
+---
+const appUrl = 'https://peopleclaw.vercel.app/#app';
+---
+<section class="max-w-4xl mx-auto px-6 py-24 text-center">
+  <div class="glass rounded-3xl p-12 relative overflow-hidden">
+    <div class="absolute -top-20 -right-20 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-20 -left-20 w-72 h-72 bg-cyan-500/15 rounded-full blur-3xl"></div>
+
+    <div class="relative">
+      <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to put people back in the loop?</h2>
+      <p class="text-gray-400 mb-8 max-w-xl mx-auto">
+        Try the open POC right now — no signup, no credit card. Build a workflow in five minutes.
+      </p>
+      <a
+        href={appUrl}
+        class="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-cyan-500 hover:opacity-90 rounded-xl font-semibold text-ink-950 transition-opacity"
+      >
+        Launch PeopleClaw POC →
+      </a>
+    </div>
+  </div>
+</section>

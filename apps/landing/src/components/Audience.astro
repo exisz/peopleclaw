@@ -1,0 +1,53 @@
+---
+const audiences = [
+  {
+    badge: 'For SMEs',
+    title: 'Small businesses that need automation without a dev team.',
+    points: [
+      'Document the workflows already running in your head',
+      'Let AI handle repetitive steps — approve the important ones',
+      'Track every customer case from intake to delivery',
+      'Onboard new staff with a runnable playbook, not a wiki',
+    ],
+    accent: 'from-amber-400 to-amber-500',
+  },
+  {
+    badge: 'For Freelancer IT',
+    title: 'Build, operate, and bill multi-client workflow automation.',
+    points: [
+      'One dashboard, many client tenants',
+      'Reuse workflow templates across SMEs',
+      'Charge for design + ongoing operation',
+      'Replace ten Zapier subscriptions with one platform',
+    ],
+    accent: 'from-cyan-400 to-cyan-500',
+  },
+];
+---
+<section id="audience" class="max-w-6xl mx-auto px-6 py-24">
+  <div class="text-center mb-16">
+    <h2 class="text-3xl md:text-4xl font-bold mb-4">Built for two sides of the same job.</h2>
+    <p class="text-gray-400 max-w-2xl mx-auto">
+      The SMEs who need workflows, and the freelance ITs who build them.
+    </p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    {audiences.map((a) => (
+      <div class="glass rounded-2xl p-8">
+        <div class={`inline-block px-3 py-1 mb-4 rounded-full text-xs font-bold text-ink-950 bg-gradient-to-r ${a.accent}`}>
+          {a.badge}
+        </div>
+        <h3 class="text-2xl font-semibold mb-5">{a.title}</h3>
+        <ul class="space-y-3">
+          {a.points.map((p) => (
+            <li class="flex items-start gap-3 text-gray-300">
+              <span class="text-amber-400 mt-1">✓</span>
+              <span>{p}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>

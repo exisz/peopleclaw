@@ -1,0 +1,22 @@
+---
+const appUrl = 'https://peopleclaw.vercel.app/#app';
+---
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-ink-900/80 border-b border-white/5">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-xl font-bold">
+      <span class="text-2xl">🐾</span>
+      <span>PeopleClaw</span>
+    </a>
+    <div class="flex items-center gap-4">
+      <a href="#features" class="hidden sm:inline text-sm text-gray-300 hover:text-white">Features</a>
+      <a href="#audience" class="hidden sm:inline text-sm text-gray-300 hover:text-white">Who it's for</a>
+      <a href="#pricing" class="hidden sm:inline text-sm text-gray-300 hover:text-white">Pricing</a>
+      <a
+        href={appUrl}
+        class="px-4 py-2 bg-gradient-to-r from-amber-500 to-cyan-500 hover:opacity-90 rounded-lg text-sm font-semibold text-ink-950 transition-opacity"
+      >
+        Try the POC
+      </a>
+    </div>
+  </div>
+</nav>

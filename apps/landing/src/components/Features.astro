@@ -1,0 +1,39 @@
+---
+const features = [
+  {
+    icon: '🔀',
+    title: 'Visual Workflow Designer',
+    desc: 'Drag-and-drop canvas powered by XYFlow. Mix human steps, AI agents, subflows, and triggers — no code required.',
+  },
+  {
+    icon: '📋',
+    title: 'Case-Based Tracking',
+    desc: 'Every workflow run is a tracked case. Step-by-step progress, notes, status history, and audit trail out of the box.',
+  },
+  {
+    icon: '🤝',
+    title: 'Agent Integration',
+    desc: 'Wire in LLM calls, tool invocations, and approval gates. Humans stay in control of every consequential decision.',
+  },
+];
+---
+<section id="features" class="max-w-6xl mx-auto px-6 py-24">
+  <div class="text-center mb-16">
+    <h2 class="text-3xl md:text-4xl font-bold mb-4">
+      Three things, done <span class="gradient-text">really well.</span>
+    </h2>
+    <p class="text-gray-400 max-w-2xl mx-auto">
+      PeopleClaw is opinionated about what matters: visual design, traceable execution, and humans-in-the-loop.
+    </p>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-6">
+    {features.map((f) => (
+      <div class="glass rounded-2xl p-7 hover:border-white/20 transition-colors">
+        <div class="text-4xl mb-4">{f.icon}</div>
+        <h3 class="text-xl font-semibold mb-3">{f.title}</h3>
+        <p class="text-gray-400 leading-relaxed">{f.desc}</p>
+      </div>
+    ))}
+  </div>
+</section>
