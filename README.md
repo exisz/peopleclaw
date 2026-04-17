@@ -1,73 +1,46 @@
-# React + TypeScript + Vite
+# PeopleClaw
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Workflow automation for SMEs and freelance IT.
 
-Currently, two official plugins are available:
+A pnpm monorepo with two independent Vercel deployments:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **`apps/landing`** — Astro + Tailwind + DaisyUI marketing site (static + markdown blog).
+- **`apps/admin`** — Vite/React SPA + Express API, Logto auth, Prisma + Turso persistence.
 
-## React Compiler
+Built on the [`genstack-astro-spa-api-2deploys`](https://github.com/exisz/genstack-astro-spa-api-2deploys) template. Original template docs live in `ROADMAP.md` and `docs/`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quickstart
 
-## Expanding the ESLint configuration
+Requirements: Node 20+, pnpm 10.30.3 (`corepack enable` or `npx pnpm@10.30.3`).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+pnpm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Marketing site (Astro)
+pnpm run dev:landing      # http://localhost:4321
+pnpm run build:landing
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Admin app (Vite SPA + Express API)
+cp .env.example apps/admin/.env   # fill in Logto + DB
+pnpm run dev:admin                # http://localhost:5173
+pnpm run build:admin
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Layout
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+apps/
+  landing/   Astro marketing site → deploys to peopleclaw.com
+  admin/     SPA + API → deploys to app.peopleclaw.com
+docs/        Architecture / deploy notes (inherited from template)
+scripts/     Shared utility scripts (e.g. db-push-remote.mjs)
+.archive/    Pre-template POC code, kept for reference
+```
+
+## Deployment
+
+Each app deploys as its own Vercel project, both pointing at this repo with a per-app `rootDirectory`. See `ROADMAP.md` and `docs/` for full deploy notes.
+
+## License
+
+See `LICENSE`.

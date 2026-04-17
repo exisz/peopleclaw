@@ -1,33 +1,14 @@
 {
-  "name": "peopleclaw-poc",
+  "name": "peopleclaw",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@xyflow/react": "^12.10.2",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@tailwindcss/vite": "^4.2.2",
-    "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.4.0",
-    "tailwindcss": "^4.2.2",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.0",
-    "vite": "^8.0.4"
+    "dev:landing": "pnpm --filter landing dev",
+    "dev:admin": "pnpm --filter @peopleclaw/admin dev",
+    "build:landing": "pnpm --filter landing build",
+    "build:admin": "pnpm --filter @peopleclaw/admin build",
+    "db:generate": "pnpm --filter @peopleclaw/admin exec prisma generate",
+    "db:push-remote": "pnpm --filter @peopleclaw/admin exec node ../../scripts/db-push-remote.mjs"
   }
 }

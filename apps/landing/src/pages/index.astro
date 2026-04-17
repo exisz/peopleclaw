@@ -1,23 +1,48 @@
 ---
-import Base from '../layouts/Base.astro';
-import Nav from '../components/Nav.astro';
-import Hero from '../components/Hero.astro';
-import Features from '../components/Features.astro';
-import Audience from '../components/Audience.astro';
-import Comparison from '../components/Comparison.astro';
-import Pricing from '../components/Pricing.astro';
-import CTA from '../components/CTA.astro';
-import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
 ---
-<Base>
-  <Nav />
-  <main>
-    <Hero />
-    <Features />
-    <Audience />
-    <Comparison />
-    <Pricing />
-    <CTA />
-  </main>
-  <Footer />
-</Base>
+<BaseLayout title="PeopleClaw — Workflow automation for SMEs and freelance IT" description="PeopleClaw — workflow automation for SMEs and freelance IT.">
+  <section class="hero bg-base-200 rounded-box p-12 mb-12">
+    <div class="hero-content text-center">
+      <div class="max-w-2xl">
+        <h1 class="text-5xl font-bold">PeopleClaw</h1>
+        <p class="py-6 opacity-80">
+          Workflow automation for SMEs and freelance IT. Stop juggling spreadsheets, chat threads, and ad-hoc scripts — let PeopleClaw run the routine work for you.
+        </p>
+        <div class="flex gap-3 justify-center flex-wrap">
+          <a href={appUrl} class="btn btn-primary">Launch App →</a>
+          <a href="/blog" class="btn btn-outline">Read Blog</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid md:grid-cols-3 gap-6">
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">🤖 Automate the routine</h2>
+        <p class="opacity-80 text-sm">Onboarding, ticket triage, status reports — codify the boring bits once and let PeopleClaw run them.</p>
+      </div>
+    </div>
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">🧰 Built for small teams</h2>
+        <p class="opacity-80 text-sm">SMEs and freelance IT shops first. No enterprise bloat, no per-seat tax, no quarterly account review.</p>
+      </div>
+    </div>
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">🔐 Yours to own</h2>
+        <p class="opacity-80 text-sm">Modern auth (Logto), Postgres / Turso storage, clean APIs. Your data, your workflows, no lock-in.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="text-2xl font-bold mb-4">Latest posts</h2>
+    <p class="opacity-70 mb-4">Field notes, build logs, and how we think about workflow automation.</p>
+    <a href="/blog" class="btn btn-outline">Browse all →</a>
+  </section>
+</BaseLayout>
