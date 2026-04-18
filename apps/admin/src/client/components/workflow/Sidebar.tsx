@@ -1,22 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Workflow } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 import { cn } from '../../lib/utils';
+import { useI18nField } from '../../i18n/useI18nField';
+import { apiClient } from '../../lib/api';
 import LEGACY_ZH_TO_KEY from '../../i18n/locales/zh/legacy-category-map.json';
 
-// Stable category keys (English slugs). Mapped from DB `category` values
-// (which may be either English slug or legacy Chinese label) to a key for i18n.
 const CATEGORY_KEYS = [
   'ecommerce', 'marketing', 'asset', 'sales', 'hr',
   'support', 'supply', 'design', 'finance', 'product',
 ] as const;
-
-// Legacy DB rows may carry Chinese category labels; lookup table lives
-// under i18n/locales/zh/legacy-category-map.json so this file stays ASCII-only.
 
 function categoryToKey(category: string | undefined | null): string {
   if (!category) return 'product';
@@ -24,16 +29,33 @@ function categoryToKey(category: string | undefined | null): string {
   return (LEGACY_ZH_TO_KEY as Record<string, string>)[category] ?? category;
 }
 
+export interface StepTemplate {
+  id: string;
+  category: string; // shopify | ai | generic | human
+  domain: string;
+  label: { en?: string; zh?: string };
+  description: { en?: string; zh?: string };
+  icon: string; // lucide-react icon name
+  kind: 'auto' | 'human' | 'subflow';
+  handler: string;
+  defaultConfig: Record<string, unknown>;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
+}
+
 export default function Sidebar({
   workflows,
   selected,
   onSelect,
+  onAddStepTemplate,
 }: {
   workflows: Workflow[];
   selected: Workflow;
   onSelect: (w: Workflow) => void;
+  onAddStepTemplate?: (template: StepTemplate) => void;
 }) {
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'workflows' | 'library'>('workflows');
   const { t } = useTranslation('workflow');
 
   const filtered = search.trim()
@@ -69,60 +91,194 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-5 pt-4 pb-2">
-        <Input
-          type="text"
-          placeholder={t('searchPlaceholder')}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="h-9 text-xs"
-          data-testid="sidebar-search"
-        />
+      {/* Tabs */}
+      <div className="px-3 pt-3 grid grid-cols-2 gap-1">
+        <Button
+          size="sm"
+          variant={tab === 'workflows' ? 'secondary' : 'ghost'}
+          className="text-xs"
+          onClick={() => setTab('workflows')}
+          data-testid="sidebar-tab-workflows"
+        >
+          {t('tabs.workflows', { defaultValue: 'Workflows' })}
+        </Button>
+        <Button
+          size="sm"
+          variant={tab === 'library' ? 'secondary' : 'ghost'}
+          className="text-xs"
+          onClick={() => setTab('library')}
+          data-testid="sidebar-tab-library"
+        >
+          {t('tabs.library', { defaultValue: 'Step Library' })}
+        </Button>
       </div>
 
-      {/* Workflow list */}
-      <ScrollArea className="flex-1 px-3">
-        <nav className="py-2">
+      {tab === 'workflows' ? (
+        <>
+          {/* Search */}
+          <div className="px-5 pt-3 pb-2">
+            <Input
+              type="text"
+              placeholder={t('searchPlaceholder')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-9 text-xs"
+              data-testid="sidebar-search"
+            />
+          </div>
+
+          {/* Workflow list */}
+          <ScrollArea className="flex-1 px-3">
+            <nav className="py-2">
+              {grouped.map((g, gi) => (
+                <div key={g.key} className="mb-3">
+                  <p
+                    className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 px-2"
+                    data-testid={`sidebar-category-${g.key}`}
+                  >
+                    {g.label}
+                  </p>
+                  {g.items.map(w => (
+                    <Button
+                      key={w.id}
+                      variant={selected.id === w.id ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className={cn(
+                        'w-full justify-start gap-3 h-auto py-2 px-3 text-sm font-normal',
+                        selected.id === w.id && 'font-medium',
+                      )}
+                      onClick={() => onSelect(w)}
+                      data-testid={`sidebar-workflow-${w.id}`}
+                    >
+                      <span className="text-lg leading-none">{w.icon}</span>
+                      <span className="truncate flex-1 text-left">{w.name}</span>
+                      <span className="font-mono text-[9px] text-muted-foreground">
+                        {w.steps.length}
+                      </span>
+                    </Button>
+                  ))}
+                  {gi < grouped.length - 1 && <Separator className="my-2" />}
+                </div>
+              ))}
+            </nav>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="px-5 py-3 border-t border-border">
+            <p className="text-[10px] font-mono text-muted-foreground text-center">
+              {t('footerCount', { count: workflows.length })}
+            </p>
+          </div>
+        </>
+      ) : (
+        <StepLibraryPanel onAdd={onAddStepTemplate} />
+      )}
+    </aside>
+  );
+}
+
+function StepLibraryPanel({ onAdd }: { onAdd?: (template: StepTemplate) => void }) {
+  const { t } = useTranslation('workflow');
+  const [templates, setTemplates] = useState<StepTemplate[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<{ templates: StepTemplate[] }>('/api/step-templates')
+      .then((d) => { if (!cancelled) setTemplates(d.templates); })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const grouped = useMemo(() => {
+    if (!templates) return [];
+    const order = ['shopify', 'ai', 'generic', 'human'];
+    const buckets = new Map<string, StepTemplate[]>();
+    for (const t of templates) {
+      const k = t.category;
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k)!.push(t);
+    }
+    return order
+      .filter((k) => buckets.has(k))
+      .map((k) => ({ key: k, items: buckets.get(k)! }));
+  }, [templates]);
+
+  if (error) {
+    return (
+      <div className="p-4 text-xs text-destructive" data-testid="step-library-error">
+        Failed to load step library: {error}
+      </div>
+    );
+  }
+  if (!templates) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground" data-testid="step-library-loading">
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="flex-1 px-3 pt-2">
+      <TooltipProvider delayDuration={200}>
+        <div className="py-2">
           {grouped.map((g, gi) => (
             <div key={g.key} className="mb-3">
               <p
                 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 px-2"
-                data-testid={`sidebar-category-${g.key}`}
+                data-testid={`step-library-cat-${g.key}`}
               >
-                {g.label}
+                {t(`stepLibrary.cat.${g.key}`, { defaultValue: g.key })}
               </p>
-              {g.items.map(w => (
-                <Button
-                  key={w.id}
-                  variant={selected.id === w.id ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    'w-full justify-start gap-3 h-auto py-2 px-3 text-sm font-normal',
-                    selected.id === w.id && 'font-medium',
-                  )}
-                  onClick={() => onSelect(w)}
-                  data-testid={`sidebar-workflow-${w.id}`}
-                >
-                  <span className="text-lg leading-none">{w.icon}</span>
-                  <span className="truncate flex-1 text-left">{w.name}</span>
-                  <span className="font-mono text-[9px] text-muted-foreground">
-                    {w.steps.length}
-                  </span>
-                </Button>
+              {g.items.map((tpl) => (
+                <StepLibraryItem key={tpl.id} template={tpl} onAdd={onAdd} />
               ))}
               {gi < grouped.length - 1 && <Separator className="my-2" />}
             </div>
           ))}
-        </nav>
-      </ScrollArea>
+        </div>
+      </TooltipProvider>
+    </ScrollArea>
+  );
+}
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-border">
-        <p className="text-[10px] font-mono text-muted-foreground text-center">
-          {t('footerCount', { count: workflows.length })}
-        </p>
-      </div>
-    </aside>
+function StepLibraryItem({
+  template,
+  onAdd,
+}: {
+  template: StepTemplate;
+  onAdd?: (template: StepTemplate) => void;
+}) {
+  const label = useI18nField(template.label);
+  const description = useI18nField(template.description);
+  const Icon: LucideIcon =
+    (LucideIcons as unknown as Record<string, LucideIcon>)[template.icon] ??
+    (LucideIcons as unknown as Record<string, LucideIcon>).Box;
+
+  const button = (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="w-full justify-start gap-2 h-auto py-2 px-3 text-xs font-normal"
+      onClick={() => onAdd?.(template)}
+      data-testid={`step-library-item-${template.id}`}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="truncate flex-1 text-left">{label || template.id}</span>
+    </Button>
+  );
+
+  if (!description) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="right" className="max-w-xs text-xs">
+        {description}
+      </TooltipContent>
+    </Tooltip>
   );
 }

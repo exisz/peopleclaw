@@ -46,6 +46,20 @@ if (user.credits < 5) {
 }
 console.log('[demo] user:', user.id, 'credits:', user.credits);
 
+// Resolve default tenant (created by P3.8 migration / seed-demo) and ensure user
+// is a member — the engine deducts credits from Tenant, not User.
+const defaultTenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+if (!defaultTenant) throw new Error('default tenant missing — run seed-demo.mjs first');
+await prisma.tenantUser.upsert({
+  where: { tenantId_userId: { tenantId: defaultTenant.id, userId: user.id } },
+  create: { tenantId: defaultTenant.id, userId: user.id, role: 'owner' },
+  update: {},
+});
+if (defaultTenant.credits < 10) {
+  await prisma.tenant.update({ where: { id: defaultTenant.id }, data: { credits: 100 } });
+}
+console.log('[demo] tenant:', defaultTenant.id, 'credits:', defaultTenant.credits);
+
 // Get the demo (with-human-steps) workflow
 const args = process.argv.slice(2);
 const useFull = args.includes('--full');
@@ -58,6 +72,7 @@ console.log('[demo] workflow:', wf.name);
 const c = await prisma.case.create({
   data: {
     workflowId,
+    tenantId: defaultTenant.id,
     ownerId: user.id,
     title: `Acceptance Test ${new Date().toISOString().slice(0, 19)}`,
     payload: JSON.stringify({

@@ -106,6 +106,27 @@ model CaseStep {
   createdAt   DateTime  @default(now())
 }
 
+model StepTemplate {
+  id              String   @id // e.g. "shopify.list_product"
+  category        String   // "shopify" | "ai" | "generic" | "human"
+  domain          String   // "ecommerce" | "marketing" | "support" | "generic"
+  labelI18n       String   // JSON {en, zh}
+  descriptionI18n String   // JSON {en, zh}
+  icon            String   // lucide-react icon name
+  kind            String   // "auto" | "human" | "subflow" — engine gate
+  handler         String   // dispatch key, e.g. "shopify.list_product"
+  defaultConfig   String   @default("{}") // JSON object
+  inputSchema     String   @default("{}") // JSON Schema
+  outputSchema    String   @default("{}") // JSON Schema
+  enabled         Boolean  @default(true)
+  builtIn         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([domain, category])
+  @@index([enabled])
+}
+
 model UsageLog {
   id           Int      @id @default(autoincrement())
   tenantId     String?

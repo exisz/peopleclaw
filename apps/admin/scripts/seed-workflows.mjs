@@ -35,11 +35,11 @@ const c = createClient({
 
 const demoDef = {
   nodes: [
-    { id: 's1', type: 'create_case', kind: 'auto', config: { fields: ['title', 'features', 'vendor'] } },
+    { id: 's1', type: 'create_case', kind: 'auto', handler: 'create_case', config: { fields: ['title', 'features', 'vendor'] } },
     { id: 's2', type: 'human:review', kind: 'human', config: { prompt: 'Review the product input' } },
-    { id: 's3', type: 'ai_description', kind: 'auto', config: {} },
+    { id: 's3', type: 'ai_description', kind: 'auto', handler: 'ai.product_description', config: {} },
     { id: 's4', type: 'human:approve_copy', kind: 'human', config: { prompt: 'Approve the AI-generated copy?' } },
-    { id: 's5', type: 'shopify_upload', kind: 'auto', config: {} },
+    { id: 's5', type: 'shopify_upload', kind: 'auto', handler: 'shopify.list_product', config: {} },
   ],
   edges: [
     { source: 's1', target: 's2' },
@@ -63,9 +63,9 @@ const workflows = [
     category: 'E-commerce',
     definition: JSON.stringify({
       nodes: [
-        { id: 's1', type: 'create_case', kind: 'auto', config: {} },
-        { id: 's2', type: 'ai_description', kind: 'auto', config: {} },
-        { id: 's3', type: 'shopify_upload', kind: 'auto', config: {} },
+        { id: 's1', type: 'create_case', kind: 'auto', handler: 'create_case', config: {} },
+        { id: 's2', type: 'ai_description', kind: 'auto', handler: 'ai.product_description', config: {} },
+        { id: 's3', type: 'shopify_upload', kind: 'auto', handler: 'shopify.list_product', config: {} },
       ],
       edges: [
         { source: 's1', target: 's2' },

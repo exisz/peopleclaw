@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Workflow, Case, WorkflowStep } from '../types';
-import Sidebar from '../components/workflow/Sidebar';
+import Sidebar, { type StepTemplate } from '../components/workflow/Sidebar';
 import TopBar from '../components/workflow/TopBar';
 import WorkflowView from '../components/workflow/WorkflowView';
 import CasesView from '../components/workflow/CasesView';
@@ -177,6 +177,38 @@ export default function Workflows() {
     [reload],
   );
 
+  const handleAddStepFromTemplate = useCallback(
+    (template: StepTemplate) => {
+      if (!selectedWorkflow) return;
+      const stepId = `s_${(typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID().replace(/-/g, '')
+        : Math.random().toString(36).slice(2)
+      ).slice(0, 6)}`;
+      const labelEn = template.label?.en ?? template.id;
+      // Map StepTemplate.kind → UI WorkflowStep.type used by the static UI list.
+      const uiType: WorkflowStep['type'] =
+        template.kind === 'human' ? 'human' :
+        template.kind === 'subflow' ? 'subflow' : 'agent';
+      const newStep: WorkflowStep = {
+        id: stepId,
+        name: labelEn,
+        type: uiType,
+        assignee: template.handler,
+        description: template.description?.en ?? '',
+        // Carry handler/config in tools so it round-trips through the existing
+        // WorkflowStep shape until the schema gains a first-class `handler` field.
+        tools: [`handler:${template.handler}`],
+      };
+      const updated: Workflow = {
+        ...selectedWorkflow,
+        steps: [...selectedWorkflow.steps, newStep],
+      };
+      void handleWorkflowUpdate(updated);
+      toast.success(`Added: ${labelEn}`);
+    },
+    [selectedWorkflow, handleWorkflowUpdate],
+  );
+
   const handleCreate = useCallback(async () => {
     const name = window.prompt('New workflow name?');
     if (!name) return;
@@ -277,7 +309,12 @@ export default function Workflows() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <Sidebar workflows={workflows} selected={selectedWorkflow} onSelect={handleSelect} />
+      <Sidebar
+        workflows={workflows}
+        selected={selectedWorkflow}
+        onSelect={handleSelect}
+        onAddStepTemplate={handleAddStepFromTemplate}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar
           workflow={selectedWorkflow}

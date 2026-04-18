@@ -4,8 +4,24 @@ import { handlers } from './handlers/index.js';
 import type { CaseStep } from '../generated/prisma/index.js';
 
 export interface WorkflowDefinition {
-  nodes: Array<{ id: string; type: string; kind: 'auto' | 'human'; config?: Record<string, unknown> }>;
+  nodes: Array<{
+    id: string;
+    type: string;
+    kind: 'auto' | 'human';
+    /** Canonical handler id, e.g. "shopify.list_product". Falls back to `type` for legacy nodes. */
+    handler?: string;
+    config?: Record<string, unknown>;
+  }>;
   edges: Array<{ source: string; target: string }>;
+}
+
+/** Resolve dispatch key: prefer node.handler, then config.handler, then legacy node.type. */
+function resolveHandlerKey(node: WorkflowDefinition['nodes'][number]): string {
+  const cfgHandler =
+    node.config && typeof node.config.handler === 'string'
+      ? (node.config.handler as string)
+      : undefined;
+  return node.handler ?? cfgHandler ?? node.type;
 }
 
 export interface HandlerContext {
@@ -107,8 +123,9 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       return { status: 'waiting_human', lastStepId: node.id };
     }
 
-    // Auto step
-    const handler = handlers[node.type];
+    // Auto step — dispatch by canonical handler id with legacy `type` fallback
+    const handlerKey = resolveHandlerKey(node);
+    const handler = handlers[handlerKey];
     const stepRow = await prisma.caseStep.create({
       data: {
         caseId: c.id,
@@ -124,7 +141,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     if (!handler) {
       await prisma.caseStep.update({
         where: { id: stepRow.id },
-        data: { status: 'failed', error: `No handler for type ${node.type}`, completedAt: new Date() },
+        data: { status: 'failed', error: `No handler for ${handlerKey}`, completedAt: new Date() },
       });
       await prisma.case.update({ where: { id: caseId }, data: { status: 'failed', currentStepId: node.id } });
       return { status: 'failed', lastStepId: node.id };
