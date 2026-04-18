@@ -4,5 +4,36 @@
     "connections": "连接",
     "team": "团队",
     "billing": "账单"
+  },
+  "connections": {
+    "heading": "连接",
+    "subheading": "工作流步骤使用的工作区级集成。",
+    "addShopify": "添加 Shopify",
+    "empty": "暂无连接。",
+    "loading": "加载中…",
+    "type": "类型",
+    "details": "详情",
+    "status": "状态",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "delete": "删除",
+    "deleteConfirm": "确认删除该连接？",
+    "refreshNow": "立即刷新",
+    "refreshing": "刷新中…",
+    "tokenExpires": "Token 将于 {{when}} 过期",
+    "tokenExpiresUnknown": "Token 过期时间未知",
+    "tokenExpired": "Token 已过期",
+    "shopifyDialog": {
+      "title": "添加 Shopify 连接",
+      "description": "通过 Shopify Admin OAuth (client_credentials) 接入，admin token 每 12 小时自动刷新。",
+      "shopDomain": "店铺域名",
+      "shopDomainPlaceholder": "claw-eb6xipji.myshopify.com",
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "65b242d292548988daf877043e69f9b5",
+      "clientSecret": "Client Secret",
+      "clientSecretPlaceholder": "shpss_…",
+      "cancel": "取消",
+      "save": "保存"
+    }
   }
 }

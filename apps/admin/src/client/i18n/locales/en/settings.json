@@ -4,5 +4,36 @@
     "connections": "Connections",
     "team": "Team",
     "billing": "Billing"
+  },
+  "connections": {
+    "heading": "Connections",
+    "subheading": "Per-workspace integrations used by workflow steps.",
+    "addShopify": "Add Shopify",
+    "empty": "No connections yet.",
+    "loading": "Loading…",
+    "type": "Type",
+    "details": "Details",
+    "status": "Status",
+    "enabled": "enabled",
+    "disabled": "disabled",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this connection?",
+    "refreshNow": "Refresh now",
+    "refreshing": "Refreshing…",
+    "tokenExpires": "Token expires {{when}}",
+    "tokenExpiresUnknown": "Token expiry unknown",
+    "tokenExpired": "Token expired",
+    "shopifyDialog": {
+      "title": "Add Shopify connection",
+      "description": "Connect via Shopify Admin OAuth (client_credentials). The admin token is auto-refreshed every 12 hours.",
+      "shopDomain": "Shop domain",
+      "shopDomainPlaceholder": "claw-eb6xipji.myshopify.com",
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "65b242d292548988daf877043e69f9b5",
+      "clientSecret": "Client Secret",
+      "clientSecretPlaceholder": "shpss_…",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
   }
 }

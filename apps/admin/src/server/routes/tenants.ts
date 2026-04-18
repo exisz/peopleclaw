@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest, suggestSlug, uniqueSlug } from '../middleware/tenant.js';
+import { exchangeShopifyClientCredentials } from '../lib/shopifyAuth.js';
 
 export const tenantsRouter = Router();
 
@@ -47,16 +48,64 @@ tenantsRouter.get('/tenants/:slug/connections', async (req, res) => {
   });
 });
 
+/**
+ * Connection.config shape (type=shopify, PLANET-916):
+ *   { shop_domain, admin_token, client_id, client_secret, token_expires_at }
+ *
+ * On create, if client_id+client_secret are provided we immediately exchange them
+ * via Shopify Admin OAuth client_credentials and persist the resulting admin_token
+ * + token_expires_at. If exchange fails we return 400 (no silent partial writes).
+ */
 tenantsRouter.post('/tenants/:slug/connections', async (req, res) => {
   const r = req as unknown as TenantedRequest;
   if (r.tenantUser.role === 'member') { res.status(403).json({ error: 'admin/owner required' }); return; }
   const { type, config } = req.body ?? {};
-  if (!type || typeof config !== 'object') { res.status(400).json({ error: 'type and config required' }); return; }
+  if (!type || typeof config !== 'object' || config === null) {
+    res.status(400).json({ error: 'type and config required' });
+    return;
+  }
   const prisma = getPrisma();
+  let finalConfig: Record<string, unknown> = { ...(config as Record<string, unknown>) };
+
+  if (type === 'shopify') {
+    const shop_domain = String(finalConfig.shop_domain || '');
+    const client_id = String(finalConfig.client_id || '');
+    const client_secret = String(finalConfig.client_secret || '');
+    const admin_token = String(finalConfig.admin_token || '');
+    if (client_id && client_secret && shop_domain) {
+      try {
+        const exch = await exchangeShopifyClientCredentials({ shop_domain, client_id, client_secret });
+        finalConfig = {
+          shop_domain,
+          client_id,
+          client_secret,
+          admin_token: exch.admin_token,
+          token_expires_at: exch.token_expires_at,
+        };
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        res.status(400).json({ error: err });
+        return;
+      }
+    } else if (admin_token && shop_domain) {
+      // Legacy path: bare admin_token only (no auto-refresh possible).
+      finalConfig = {
+        shop_domain,
+        admin_token,
+        client_id: '',
+        client_secret: '',
+        token_expires_at: '',
+      };
+    } else {
+      res.status(400).json({ error: 'shop_domain + (client_id+client_secret OR admin_token) required' });
+      return;
+    }
+  }
+
   const c = await prisma.connection.upsert({
     where: { tenantId_type: { tenantId: r.tenant.id, type } },
-    create: { tenantId: r.tenant.id, type, config: JSON.stringify(config) },
-    update: { config: JSON.stringify(config), enabled: true },
+    create: { tenantId: r.tenant.id, type, config: JSON.stringify(finalConfig) },
+    update: { config: JSON.stringify(finalConfig), enabled: true },
   });
   res.json({
     connection: {
@@ -64,6 +113,49 @@ tenantsRouter.post('/tenants/:slug/connections', async (req, res) => {
       config: maskConfig(c.type, safeJSON(c.config)),
     },
   });
+});
+
+// Manual refresh — re-runs client_credentials for one connection.
+tenantsRouter.post('/tenants/:slug/connections/:id/refresh', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  if (r.tenantUser.role === 'member') { res.status(403).json({ error: 'admin/owner required' }); return; }
+  const prisma = getPrisma();
+  const conn = await prisma.connection.findUnique({ where: { id: req.params.id } });
+  if (!conn || conn.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  if (conn.type !== 'shopify') { res.status(400).json({ error: 'refresh only supported for type=shopify' }); return; }
+
+  const cfg = safeJSON(conn.config);
+  const shop_domain = String(cfg.shop_domain || '');
+  const client_id = String(cfg.client_id || '');
+  const client_secret = String(cfg.client_secret || '');
+  if (!shop_domain || !client_id || !client_secret) {
+    res.status(400).json({ error: 'connection missing client_id/client_secret/shop_domain' });
+    return;
+  }
+  try {
+    const exch = await exchangeShopifyClientCredentials({ shop_domain, client_id, client_secret });
+    const next = {
+      ...cfg,
+      shop_domain,
+      client_id,
+      client_secret,
+      admin_token: exch.admin_token,
+      token_expires_at: exch.token_expires_at,
+    };
+    const updated = await prisma.connection.update({
+      where: { id: conn.id },
+      data: { config: JSON.stringify(next) },
+    });
+    res.json({
+      connection: {
+        id: updated.id, type: updated.type, enabled: updated.enabled,
+        config: maskConfig(updated.type, safeJSON(updated.config)),
+      },
+    });
+  } catch (e) {
+    const err = e instanceof Error ? e.message : String(e);
+    res.status(400).json({ error: err });
+  }
 });
 
 tenantsRouter.delete('/tenants/:slug/connections/:id', async (req, res) => {

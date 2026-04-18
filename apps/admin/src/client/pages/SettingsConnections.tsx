@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -18,13 +19,30 @@ interface Connection {
   createdAt: string;
 }
 
+function formatRelative(iso: string | undefined, t: (k: string, o?: Record<string, unknown>) => string): string {
+  if (!iso) return t('connections.tokenExpiresUnknown');
+  const target = new Date(iso).getTime();
+  if (Number.isNaN(target)) return t('connections.tokenExpiresUnknown');
+  const diffMs = target - Date.now();
+  if (diffMs <= 0) return t('connections.tokenExpired');
+  const mins = Math.round(diffMs / 60000);
+  let when: string;
+  if (mins < 60) when = `in ${mins}m`;
+  else if (mins < 60 * 24) when = `in ${Math.round(mins / 60)}h`;
+  else when = `in ${Math.round(mins / 60 / 24)}d`;
+  return t('connections.tokenExpires', { when });
+}
+
 export default function SettingsConnections() {
+  const { t } = useTranslation('settings');
   const [list, setList] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [shop, setShop] = useState('');
-  const [token, setToken] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [busy, setBusy] = useState(false);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   async function reload() {
@@ -48,18 +66,35 @@ export default function SettingsConnections() {
       await apiJSON(`/api/tenants/${slug}/connections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'shopify', config: { shop_domain: shop, admin_token: token } }),
+        body: JSON.stringify({
+          type: 'shopify',
+          config: { shop_domain: shop, client_id: clientId, client_secret: clientSecret },
+        }),
       });
       setOpen(false);
-      setShop(''); setToken('');
+      setShop(''); setClientId(''); setClientSecret('');
       reload();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally { setBusy(false); }
   }
 
+  async function refreshOne(id: string) {
+    const slug = getCurrentTenantSlug();
+    if (!slug) return;
+    setRefreshingId(id);
+    try {
+      await apiJSON(`/api/tenants/${slug}/connections/${id}/refresh`, { method: 'POST' });
+      reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRefreshingId(null);
+    }
+  }
+
   async function del(id: string) {
-    if (!confirm('Delete this connection?')) return;
+    if (!confirm(t('connections.deleteConfirm'))) return;
     const slug = getCurrentTenantSlug();
     if (!slug) return;
     try {
@@ -74,47 +109,61 @@ export default function SettingsConnections() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-medium">Connections</h2>
-          <p className="text-sm text-muted-foreground">Per-workspace integrations used by workflow steps.</p>
+          <h2 className="text-lg font-medium">{t('connections.heading')}</h2>
+          <p className="text-sm text-muted-foreground">{t('connections.subheading')}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="connection-add-shopify"><Plus className="h-4 w-4" /> Add Shopify</Button>
+            <Button data-testid="connection-add-shopify">
+              <Plus className="h-4 w-4" /> {t('connections.addShopify')}
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Shopify connection</DialogTitle>
-              <DialogDescription>
-                Enter your Shopify shop domain and Admin API access token. Used by the
-                <code> shopify_upload </code> workflow step.
-              </DialogDescription>
+              <DialogTitle>{t('connections.shopifyDialog.title')}</DialogTitle>
+              <DialogDescription>{t('connections.shopifyDialog.description')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Shop domain</Label>
+                <Label>{t('connections.shopifyDialog.shopDomain')}</Label>
                 <Input
                   data-testid="shopify-shop-input"
-                  placeholder="claw-eb6xipji.myshopify.com"
+                  placeholder={t('connections.shopifyDialog.shopDomainPlaceholder')}
                   value={shop}
                   onChange={(e) => setShop(e.target.value)}
                 />
               </div>
               <div>
-                <Label>Admin access token</Label>
+                <Label>{t('connections.shopifyDialog.clientId')}</Label>
                 <Input
-                  data-testid="shopify-token-input"
-                  type="password"
-                  placeholder="shpat_..."
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  data-testid="shopify-client-id-input"
+                  placeholder={t('connections.shopifyDialog.clientIdPlaceholder')}
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
                 />
               </div>
-              {err && <p className="text-sm text-destructive">{err}</p>}
+              <div>
+                <Label>{t('connections.shopifyDialog.clientSecret')}</Label>
+                <Input
+                  data-testid="shopify-client-secret-input"
+                  type="password"
+                  placeholder={t('connections.shopifyDialog.clientSecretPlaceholder')}
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                />
+              </div>
+              {err && <p className="text-sm text-destructive break-all">{err}</p>}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={saveShopify} disabled={busy || !shop || !token} data-testid="shopify-save">
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                {t('connections.shopifyDialog.cancel')}
+              </Button>
+              <Button
+                onClick={saveShopify}
+                disabled={busy || !shop || !clientId || !clientSecret}
+                data-testid="shopify-save"
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t('connections.shopifyDialog.save')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -122,40 +171,72 @@ export default function SettingsConnections() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /> Loading…</p>
+        <p className="text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin inline" /> {t('connections.loading')}
+        </p>
       ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No connections yet.</p>
+        <p className="text-sm text-muted-foreground">{t('connections.empty')}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Config</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('connections.type')}</TableHead>
+              <TableHead>{t('connections.details')}</TableHead>
+              <TableHead>{t('connections.status')}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {list.map((c) => (
-              <TableRow key={c.id} data-testid={`connection-row-${c.type}`}>
-                <TableCell className="font-medium capitalize">{c.type}</TableCell>
-                <TableCell className="font-mono text-xs">{JSON.stringify(c.config)}</TableCell>
-                <TableCell>
-                  <Badge variant={c.enabled ? 'secondary' : 'outline'}>
-                    {c.enabled ? 'enabled' : 'disabled'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost" size="sm"
-                    onClick={() => del(c.id)}
-                    data-testid={`connection-delete-${c.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {list.map((c) => {
+              const cfg = c.config || {};
+              const shopDomain = typeof cfg.shop_domain === 'string' ? cfg.shop_domain : '';
+              const expiresAt = typeof cfg.token_expires_at === 'string' ? cfg.token_expires_at : '';
+              return (
+                <TableRow key={c.id} data-testid={`connection-row-${c.type}`}>
+                  <TableCell className="font-medium capitalize">{c.type}</TableCell>
+                  <TableCell className="text-xs">
+                    {c.type === 'shopify' ? (
+                      <div className="space-y-1">
+                        {shopDomain && (
+                          <Badge variant="outline" className="font-mono">{shopDomain}</Badge>
+                        )}
+                        <div className="text-muted-foreground">{formatRelative(expiresAt, t)}</div>
+                      </div>
+                    ) : (
+                      <span className="font-mono">{JSON.stringify(cfg)}</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={c.enabled ? 'secondary' : 'outline'}>
+                      {c.enabled ? t('connections.enabled') : t('connections.disabled')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    {c.type === 'shopify' && (
+                      <Button
+                        variant="ghost" size="sm"
+                        onClick={() => refreshOne(c.id)}
+                        disabled={refreshingId === c.id}
+                        data-testid={`connection-refresh-${c.id}`}
+                        title={t('connections.refreshNow')}
+                      >
+                        {refreshingId === c.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <RefreshCw className="h-4 w-4" />}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={() => del(c.id)}
+                      data-testid={`connection-delete-${c.id}`}
+                      title={t('connections.delete')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
