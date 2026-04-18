@@ -1,12 +1,13 @@
 ---
-import '../../styles/global.css';
-import BlogPost from '../../layouts/BlogPost.astro';
+import '../../../styles/global.css';
+import BlogPost from '../../../layouts/BlogPost.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const posts = (await getCollection('blog')).filter(p => (p.data.lang ?? 'en') === 'en');
+  const posts = (await getCollection('blog')).filter(p => p.data.lang === 'zh');
   return posts.map(post => ({
-    params: { slug: post.id },
+    // strip leading "zh/" so URL is /zh/blog/<slug>
+    params: { slug: post.id.replace(/^zh\//, '') },
     props: { post },
   }));
 }

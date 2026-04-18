@@ -1,0 +1,8 @@
+{
+  "title": "设置",
+  "tabs": {
+    "connections": "连接",
+    "team": "团队",
+    "billing": "账单"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "title": "PeopleClaw",
+  "tagline": "内部管理后台 · Logto SSO + Express + Prisma + Turso",
+  "intro": "本页为 admin 独立部署示例（见 {{path}}）。UI 使用 shadcn/ui + Radix primitives，不依赖 DaisyUI。"
+}

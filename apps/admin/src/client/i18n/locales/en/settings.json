@@ -1,0 +1,8 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "connections": "Connections",
+    "team": "Team",
+    "billing": "Billing"
+  }
+}

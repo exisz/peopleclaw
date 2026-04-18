@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -15,9 +16,8 @@ import {
 import { logtoClient, postSignOutRedirectUri } from '../lib/logto';
 import { apiJSON } from '../lib/api';
 import { ThemeToggle } from '../components/theme-toggle';
+import { LanguageToggle } from '../components/language-toggle';
 import TenantSwitcher from '../components/TenantSwitcher';
-// TODO: extract shared layout/header (P3.8 may add tenant switcher) — for now ThemeToggle
-// only lives on Dashboard. Mirror to Workflows/Cases/Credits/RunWorkflow once layout exists.
 
 type MeResponse = {
   user: {
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation(['dashboard', 'common', 'auth', 'nav']);
 
   useEffect(() => {
     (async () => {
@@ -54,32 +55,35 @@ export default function Dashboard() {
     })();
   }, [navigate]);
 
+  const dateLocale = i18n.language.startsWith('zh') ? 'zh-CN' : 'en-US';
+
   return (
     <div className="min-h-screen p-6 md:p-10">
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('dashboard:title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              已登录 · GET /api/me
+              {t('dashboard:subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <TenantSwitcher />
             <ThemeToggle />
+            <LanguageToggle />
             <Button asChild variant="outline" size="sm">
               <Link to="/workflows" data-testid="nav-workflows">
-                <Workflow className="h-4 w-4" /> Workflows
+                <Workflow className="h-4 w-4" /> {t('common:nav.workflows')}
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/cases" data-testid="nav-cases">
-                <ListChecks className="h-4 w-4" /> Cases
+                <ListChecks className="h-4 w-4" /> {t('common:nav.cases')}
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/settings" data-testid="nav-settings">
-                <Settings className="h-4 w-4" /> Settings
+                <Settings className="h-4 w-4" /> {t('common:nav.settings')}
               </Link>
             </Button>
             <Button
@@ -88,14 +92,14 @@ export default function Dashboard() {
               onClick={() => logtoClient.signOut(postSignOutRedirectUri)}
             >
               <LogOut className="h-4 w-4" />
-              退出登录
+              {t('auth:signOut')}
             </Button>
           </div>
         </header>
 
         {loading && (
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> 加载中…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('common:loading')}
           </div>
         )}
 
@@ -127,15 +131,15 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>账户信息</CardTitle>
-                <CardDescription>来自 Prisma + Turso 的用户记录</CardDescription>
+                <CardTitle>{t('dashboard:account.title')}</CardTitle>
+                <CardDescription>{t('dashboard:account.subtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-1/3">字段</TableHead>
-                      <TableHead>值</TableHead>
+                      <TableHead className="w-1/3">{t('dashboard:account.field')}</TableHead>
+                      <TableHead>{t('dashboard:account.value')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -159,18 +163,18 @@ export default function Dashboard() {
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" /> 创建时间
+                        <Calendar className="h-4 w-4 text-muted-foreground" /> {t('dashboard:account.createdAt')}
                       </TableCell>
                       <TableCell>
-                        {new Date(me.user.createdAt).toLocaleString('zh-CN')}
+                        {new Date(me.user.createdAt).toLocaleString(dateLocale)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" /> 状态
+                        <User className="h-4 w-4 text-muted-foreground" /> {t('dashboard:account.status')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">已登录</Badge>
+                        <Badge variant="secondary">{t('auth:loggedIn')}</Badge>
                       </TableCell>
                     </TableRow>
                   </TableBody>

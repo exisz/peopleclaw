@@ -111,6 +111,11 @@ async function main() {
       steps: w.steps,
       nodes: [],
       edges: [],
+      // i18n: { en, zh } objects, used by useI18nField hook on frontend.
+      // Falls back to top-level `name`/`category`/`description` if absent.
+      name_i18n: w.name_i18n,
+      category_i18n: w.category_i18n,
+      description_i18n: w.description_i18n,
     };
     await db.execute({
       sql: `INSERT INTO Workflow (id, tenantId, name, category, definition, createdAt, updatedAt)

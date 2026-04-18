@@ -1,23 +1,21 @@
 ---
-import '../../styles/global.css';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../../styles/global.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-import { getLang, t } from '../../i18n/utils';
+import { getLang, t } from '../../../i18n/utils';
 const lang = getLang(Astro.url);
 const posts = (await getCollection('blog'))
   .filter(p => (p.data.lang ?? 'en') === lang)
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 const dateLocale = lang === 'zh' ? 'zh-CN' : 'en-US';
-const linkPrefix = lang === 'zh' ? '/zh/blog/' : '/blog/';
 ---
 <BaseLayout title={t(lang, 'blog.title')} description={t(lang, 'blog.description')}>
   <h1 class="text-4xl font-bold mb-8">{t(lang, 'blog.heading')}</h1>
   <div class="space-y-4">
     {posts.map(post => {
-      // strip leading "zh/" so URL is /zh/blog/<slug>
       const slug = post.id.replace(/^zh\//, '');
       return (
-      <a href={`${linkPrefix}${slug}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+      <a href={`/zh/blog/${slug}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
         <div class="card-body">
           <h2 class="card-title">{post.data.title}</h2>
           <p class="opacity-80 text-sm">{post.data.description}</p>

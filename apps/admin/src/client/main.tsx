@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
+import './i18n';
 import { ThemeProvider } from './components/theme-provider';
 import { Toaster } from './components/ui/sonner';
 import Home from './pages/Home';

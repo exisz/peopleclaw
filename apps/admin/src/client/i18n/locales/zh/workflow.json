@@ -1,0 +1,28 @@
+{
+  "title": "工作流",
+  "searchPlaceholder": "搜索工作流...",
+  "footerCount": "v0.2 · {{count}} 个工作流",
+  "categories": {
+    "ecommerce": "电商运营",
+    "marketing": "营销推广",
+    "asset": "资产管理",
+    "sales": "销售管理",
+    "hr": "人力资源",
+    "support": "技术支持",
+    "supply": "供应链",
+    "design": "创意设计",
+    "finance": "财务管理",
+    "product": "产品研发"
+  },
+  "nodeTypes": {
+    "trigger": "触发器",
+    "agent": "智能体",
+    "human": "人工",
+    "subflow": "子流程"
+  },
+  "stepKinds": {
+    "auto": "自动",
+    "manual": "手动",
+    "approval": "审批"
+  }
+}

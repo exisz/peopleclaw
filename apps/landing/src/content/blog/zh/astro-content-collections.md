@@ -3,6 +3,7 @@ title: "Astro Content Collections 快速指南"
 description: "如何在 landing 端用 markdown 写 blog 而不引入任何 CMS"
 pubDate: 2026-04-18
 tags: ["astro", "markdown"]
+lang: "zh"
 ---
 
 # Astro Content Collections 快速指南

@@ -1,13 +1,18 @@
 ---
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import { getLang, t } from '../i18n/utils';
 export interface Props {
   title: string;
   description?: string;
 }
-const { title, description = 'PeopleClaw — workflow automation for SMEs and freelance IT.' } = Astro.props;
+const lang = getLang(Astro.url);
+const { title, description = t(lang, 'footer.tagline') } = Astro.props;
 const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
+const blogHref = lang === 'zh' ? '/zh/blog' : '/blog';
+const homeHref = lang === 'zh' ? '/zh/' : '/';
 ---
 <!doctype html>
-<html lang="en" data-theme="luxury">
+<html lang={lang} data-theme="luxury">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,11 +23,12 @@ const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
   <body class="min-h-screen bg-base-100">
     <div class="navbar bg-base-200 shadow">
       <div class="flex-1 px-4">
-        <a href="/" class="text-xl font-bold">PeopleClaw</a>
+        <a href={homeHref} class="text-xl font-bold">PeopleClaw</a>
       </div>
       <div class="flex-none gap-2 px-4">
-        <a href="/blog" class="btn btn-ghost btn-sm">Blog</a>
-        <a href={appUrl} class="btn btn-primary btn-sm">Launch App →</a>
+        <LanguageSwitcher />
+        <a href={blogHref} class="btn btn-ghost btn-sm">{t(lang, 'nav.blog')}</a>
+        <a href={appUrl} class="btn btn-primary btn-sm">{t(lang, 'nav.launchApp')}</a>
       </div>
     </div>
     <main class="container mx-auto px-4 py-10 max-w-4xl">
@@ -30,7 +36,7 @@ const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
     </main>
     <footer class="footer footer-center p-10 bg-base-200 text-base-content mt-20">
       <aside>
-        <p class="opacity-70 text-sm">PeopleClaw · workflow automation for SMEs and freelance IT</p>
+        <p class="opacity-70 text-sm">{t(lang, 'footer.tagline')}</p>
       </aside>
     </footer>
   </body>

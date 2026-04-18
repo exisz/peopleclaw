@@ -1,0 +1,10 @@
+---
+import { getLang, altLangPath, t } from '../i18n/utils';
+const lang = getLang(Astro.url);
+const enHref = altLangPath(Astro.url, 'en');
+const zhHref = altLangPath(Astro.url, 'zh');
+---
+<div class="join">
+  <a href={enHref} class:list={["btn", "btn-xs", "join-item", lang === 'en' ? 'btn-primary' : 'btn-ghost']} data-testid="lang-switcher-en">{t(lang, 'langSwitcher.en')}</a>
+  <a href={zhHref} class:list={["btn", "btn-xs", "join-item", lang === 'zh' ? 'btn-primary' : 'btn-ghost']} data-testid="lang-switcher-zh">{t(lang, 'langSwitcher.zh')}</a>
+</div>

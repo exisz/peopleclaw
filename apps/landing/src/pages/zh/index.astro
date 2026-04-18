@@ -1,7 +1,7 @@
 ---
-import '../styles/global.css';
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLang, t } from '../i18n/utils';
+import '../../styles/global.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLang, t } from '../../i18n/utils';
 const lang = getLang(Astro.url);
 const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
 const blogHref = lang === 'zh' ? '/zh/blog' : '/blog';

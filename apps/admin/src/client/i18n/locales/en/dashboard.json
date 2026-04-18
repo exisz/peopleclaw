@@ -1,0 +1,13 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Signed in · GET /api/me",
+  "loading": "Loading…",
+  "account": {
+    "title": "Account info",
+    "subtitle": "User record from Prisma + Turso",
+    "field": "Field",
+    "value": "Value",
+    "createdAt": "Created at",
+    "status": "Status"
+  }
+}

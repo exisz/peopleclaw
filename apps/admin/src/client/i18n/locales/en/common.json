@@ -1,0 +1,34 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "search": "Search",
+    "back": "Back",
+    "close": "Close",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "retry": "Retry"
+  },
+  "nav": {
+    "workflows": "Workflows",
+    "cases": "Cases",
+    "settings": "Settings",
+    "credits": "Credits",
+    "dashboard": "Dashboard"
+  },
+  "errors": {
+    "unknown": "Unknown error",
+    "network": "Network error",
+    "unauthorized": "Unauthorized",
+    "loadFailed": "Failed to load"
+  },
+  "loading": "Loading…",
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "chinese": "中文"
+  }
+}

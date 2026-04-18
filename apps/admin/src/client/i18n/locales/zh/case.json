@@ -1,0 +1,19 @@
+{
+  "title": "案例",
+  "status": {
+    "running": "进行中",
+    "waiting_human": "等待人工",
+    "done": "已完成",
+    "failed": "失败"
+  },
+  "actions": {
+    "approve": "通过",
+    "reject": "拒绝",
+    "complete": "完成"
+  },
+  "timeline": {
+    "started": "已开始",
+    "completed": "已完成",
+    "failed": "失败"
+  }
+}

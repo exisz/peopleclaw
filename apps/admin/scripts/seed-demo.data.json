@@ -2,10 +2,10 @@
   "workflows": [
     {
       "id": "ecommerce",
-      "name": "跨境电商选品上新",
+      "name": "Cross-border E-commerce Listing",
       "description": "Cross-border E-commerce Product Listing — from market research to store listing",
       "icon": "🛍️",
-      "category": "电商运营",
+      "category": "ecommerce",
       "steps": [
         {
           "id": "e0",
@@ -142,14 +142,26 @@
             "定价引擎"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Cross-border E-commerce Listing",
+        "zh": "跨境电商选品上新"
+      },
+      "category_i18n": {
+        "en": "ecommerce",
+        "zh": "电商运营"
+      },
+      "description_i18n": {
+        "en": "Cross-border E-commerce Product Listing — from market research to store listing",
+        "zh": "Cross-border E-commerce Product Listing — from market research to store listing"
+      }
     },
     {
       "id": "social-media",
-      "name": "社交媒体内容运营",
-      "description": "Social Media Content Operations — trend monitoring to performance review",
+      "name": "Social Media Content Operations",
+      "description": "Social media content production and distribution — from ideation to publishing",
       "icon": "📱",
-      "category": "营销推广",
+      "category": "marketing",
       "steps": [
         {
           "id": "s0",
@@ -281,14 +293,26 @@
           "description": "分析数据总结经验，优化下期计划",
           "estimatedTime": "1h"
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Social Media Content Operations",
+        "zh": "社交媒体内容运营"
+      },
+      "category_i18n": {
+        "en": "marketing",
+        "zh": "营销推广"
+      },
+      "description_i18n": {
+        "en": "Social media content production and distribution — from ideation to publishing",
+        "zh": "Social Media Content Operations — trend monitoring to performance review"
+      }
     },
     {
       "id": "rental",
-      "name": "房产租赁管理",
-      "description": "Property Rental Management — from listing to move-in inspection",
+      "name": "Property Rental Management",
+      "description": "End-to-end property rental management — from listing to handover",
       "icon": "🏠",
-      "category": "资产管理",
+      "category": "asset",
       "steps": [
         {
           "id": "r0",
@@ -381,14 +405,26 @@
           "description": "记录房屋现状，交接钥匙",
           "estimatedTime": "1h"
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Property Rental Management",
+        "zh": "房产租赁管理"
+      },
+      "category_i18n": {
+        "en": "asset",
+        "zh": "资产管理"
+      },
+      "description_i18n": {
+        "en": "End-to-end property rental management — from listing to handover",
+        "zh": "Property Rental Management — from listing to move-in inspection"
+      }
     },
     {
       "id": "quotation",
-      "name": "客户报价流程",
-      "description": "Client Quotation Process — requirements to contract signing",
+      "name": "Customer Quotation Flow",
+      "description": "Customer quotation and approval flow — from RFQ to signed quote",
       "icon": "📊",
-      "category": "销售管理",
+      "category": "sales",
       "steps": [
         {
           "id": "q0",
@@ -480,14 +516,26 @@
             "DocuSign"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Customer Quotation Flow",
+        "zh": "客户报价流程"
+      },
+      "category_i18n": {
+        "en": "sales",
+        "zh": "销售管理"
+      },
+      "description_i18n": {
+        "en": "Customer quotation and approval flow — from RFQ to signed quote",
+        "zh": "Client Quotation Process — requirements to contract signing"
+      }
     },
     {
       "id": "onboarding",
-      "name": "新员工入职",
-      "description": "Employee Onboarding — offer to 30-day review",
+      "name": "Employee Onboarding",
+      "description": "New-hire onboarding flow — paperwork, accounts, equipment, training",
       "icon": "👥",
-      "category": "人力资源",
+      "category": "hr",
       "steps": [
         {
           "id": "o0",
@@ -617,14 +665,26 @@
           "description": "入职30天后进行表现回顾和反馈",
           "estimatedTime": "1h"
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Employee Onboarding",
+        "zh": "新员工入职"
+      },
+      "category_i18n": {
+        "en": "hr",
+        "zh": "人力资源"
+      },
+      "description_i18n": {
+        "en": "New-hire onboarding flow — paperwork, accounts, equipment, training",
+        "zh": "Employee Onboarding — offer to 30-day review"
+      }
     },
     {
       "id": "it-support",
-      "name": "IT支持工单",
-      "description": "IT Support Ticket — creation to knowledge base update",
+      "name": "IT Support Ticket",
+      "description": "IT support ticket lifecycle — intake, triage, resolution",
       "icon": "🔧",
-      "category": "技术支持",
+      "category": "support",
       "steps": [
         {
           "id": "it0",
@@ -718,14 +778,26 @@
             "Confluence"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "IT Support Ticket",
+        "zh": "IT支持工单"
+      },
+      "category_i18n": {
+        "en": "support",
+        "zh": "技术支持"
+      },
+      "description_i18n": {
+        "en": "IT support ticket lifecycle — intake, triage, resolution",
+        "zh": "IT Support Ticket — creation to knowledge base update"
+      }
     },
     {
       "id": "inventory",
-      "name": "仓库进销存",
-      "description": "Inventory Management — demand forecasting to logistics tracking",
+      "name": "Warehouse Inventory",
+      "description": "Warehouse inventory in/out tracking — purchasing, receiving, dispatch",
       "icon": "📦",
-      "category": "供应链",
+      "category": "supply",
       "steps": [
         {
           "id": "inv0",
@@ -811,14 +883,26 @@
             "物流API"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Warehouse Inventory",
+        "zh": "仓库进销存"
+      },
+      "category_i18n": {
+        "en": "supply",
+        "zh": "供应链"
+      },
+      "description_i18n": {
+        "en": "Warehouse inventory in/out tracking — purchasing, receiving, dispatch",
+        "zh": "Inventory Management — demand forecasting to logistics tracking"
+      }
     },
     {
       "id": "design",
-      "name": "设计项目交付",
-      "description": "Design Project Delivery — brief to file archival",
+      "name": "Design Project Delivery",
+      "description": "Design project delivery — from brief to final assets",
       "icon": "🎨",
-      "category": "创意设计",
+      "category": "design",
       "steps": [
         {
           "id": "d0",
@@ -921,14 +1005,26 @@
             "Google Drive"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Design Project Delivery",
+        "zh": "设计项目交付"
+      },
+      "category_i18n": {
+        "en": "design",
+        "zh": "创意设计"
+      },
+      "description_i18n": {
+        "en": "Design project delivery — from brief to final assets",
+        "zh": "Design Project Delivery — brief to file archival"
+      }
     },
     {
       "id": "finance",
-      "name": "月度财务结算",
-      "description": "Monthly Financial Settlement — data aggregation to archival",
+      "name": "Monthly Financial Closing",
+      "description": "Monthly financial close — reconciliation, journals, reports",
       "icon": "💰",
-      "category": "财务管理",
+      "category": "finance",
       "steps": [
         {
           "id": "f0",
@@ -1012,14 +1108,26 @@
             "Google Drive"
           ]
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Monthly Financial Closing",
+        "zh": "月度财务结算"
+      },
+      "category_i18n": {
+        "en": "finance",
+        "zh": "财务管理"
+      },
+      "description_i18n": {
+        "en": "Monthly financial close — reconciliation, journals, reports",
+        "zh": "Monthly Financial Settlement — data aggregation to archival"
+      }
     },
     {
       "id": "launch",
-      "name": "产品发布",
-      "description": "Product Launch — checklist to post-mortem",
+      "name": "Product Launch",
+      "description": "Product launch flow — readiness, marketing, release",
       "icon": "🚀",
-      "category": "产品研发",
+      "category": "product",
       "steps": [
         {
           "id": "l0",
@@ -1161,7 +1269,19 @@
           "description": "团队复盘发布过程，总结经验",
           "estimatedTime": "2h"
         }
-      ]
+      ],
+      "name_i18n": {
+        "en": "Product Launch",
+        "zh": "产品发布"
+      },
+      "category_i18n": {
+        "en": "product",
+        "zh": "产品研发"
+      },
+      "description_i18n": {
+        "en": "Product launch flow — readiness, marketing, release",
+        "zh": "Product Launch — checklist to post-mortem"
+      }
     }
   ],
   "cases": [

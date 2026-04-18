@@ -1,0 +1,19 @@
+{
+  "title": "Cases",
+  "status": {
+    "running": "Running",
+    "waiting_human": "Waiting for human",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "actions": {
+    "approve": "Approve",
+    "reject": "Reject",
+    "complete": "Complete"
+  },
+  "timeline": {
+    "started": "Started",
+    "completed": "Completed",
+    "failed": "Failed"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "title": "管理后台",
+  "subtitle": "已登录 · GET /api/me",
+  "loading": "加载中…",
+  "account": {
+    "title": "账户信息",
+    "subtitle": "来自 Prisma + Turso 的用户记录",
+    "field": "字段",
+    "value": "值",
+    "createdAt": "创建时间",
+    "status": "状态"
+  }
+}

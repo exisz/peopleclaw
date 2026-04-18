@@ -1,15 +1,28 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Workflow } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { cn } from '../../lib/utils';
+import LEGACY_ZH_TO_KEY from '../../i18n/locales/zh/legacy-category-map.json';
 
-const categories = [
-  '电商运营', '营销推广', '资产管理', '销售管理', '人力资源',
-  '技术支持', '供应链', '创意设计', '财务管理', '产品研发',
-];
+// Stable category keys (English slugs). Mapped from DB `category` values
+// (which may be either English slug or legacy Chinese label) to a key for i18n.
+const CATEGORY_KEYS = [
+  'ecommerce', 'marketing', 'asset', 'sales', 'hr',
+  'support', 'supply', 'design', 'finance', 'product',
+] as const;
+
+// Legacy DB rows may carry Chinese category labels; lookup table lives
+// under i18n/locales/zh/legacy-category-map.json so this file stays ASCII-only.
+
+function categoryToKey(category: string | undefined | null): string {
+  if (!category) return 'product';
+  if ((CATEGORY_KEYS as readonly string[]).includes(category)) return category;
+  return (LEGACY_ZH_TO_KEY as Record<string, string>)[category] ?? category;
+}
 
 export default function Sidebar({
   workflows,
@@ -21,6 +34,7 @@ export default function Sidebar({
   onSelect: (w: Workflow) => void;
 }) {
   const [search, setSearch] = useState('');
+  const { t } = useTranslation('workflow');
 
   const filtered = search.trim()
     ? workflows.filter(
@@ -30,8 +44,12 @@ export default function Sidebar({
       )
     : workflows;
 
-  const grouped = categories
-    .map(cat => ({ category: cat, items: filtered.filter(w => w.category === cat) }))
+  const grouped = CATEGORY_KEYS
+    .map(key => ({
+      key,
+      label: t(`categories.${key}`),
+      items: filtered.filter(w => categoryToKey(w.category) === key),
+    }))
     .filter(g => g.items.length > 0);
 
   return (
@@ -55,7 +73,7 @@ export default function Sidebar({
       <div className="px-5 pt-4 pb-2">
         <Input
           type="text"
-          placeholder="Search workflows..."
+          placeholder={t('searchPlaceholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="h-9 text-xs"
@@ -67,12 +85,12 @@ export default function Sidebar({
       <ScrollArea className="flex-1 px-3">
         <nav className="py-2">
           {grouped.map((g, gi) => (
-            <div key={g.category} className="mb-3">
+            <div key={g.key} className="mb-3">
               <p
                 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 px-2"
-                data-testid={`sidebar-category-${g.category}`}
+                data-testid={`sidebar-category-${g.key}`}
               >
-                {g.category}
+                {g.label}
               </p>
               {g.items.map(w => (
                 <Button
@@ -102,7 +120,7 @@ export default function Sidebar({
       {/* Footer */}
       <div className="px-5 py-3 border-t border-border">
         <p className="text-[10px] font-mono text-muted-foreground text-center">
-          v0.2 · {workflows.length} workflows
+          {t('footerCount', { count: workflows.length })}
         </p>
       </div>
     </aside>

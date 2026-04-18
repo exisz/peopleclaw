@@ -1,0 +1,5 @@
+{
+  "title": "PeopleClaw",
+  "tagline": "Internal admin · Logto SSO + Express + Prisma + Turso",
+  "intro": "This page is the standalone admin deployment example (see {{path}}). UI uses shadcn/ui + Radix primitives, no DaisyUI."
+}

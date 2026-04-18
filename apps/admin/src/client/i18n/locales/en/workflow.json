@@ -1,0 +1,28 @@
+{
+  "title": "Workflows",
+  "searchPlaceholder": "Search workflows...",
+  "footerCount": "v0.2 · {{count}} workflows",
+  "categories": {
+    "ecommerce": "E-commerce Operations",
+    "marketing": "Marketing & Promotion",
+    "asset": "Asset Management",
+    "sales": "Sales Management",
+    "hr": "Human Resources",
+    "support": "Technical Support",
+    "supply": "Supply Chain",
+    "design": "Creative Design",
+    "finance": "Finance Management",
+    "product": "Product R&D"
+  },
+  "nodeTypes": {
+    "trigger": "Trigger",
+    "agent": "Agent",
+    "human": "Human",
+    "subflow": "Subflow"
+  },
+  "stepKinds": {
+    "auto": "Automatic",
+    "manual": "Manual",
+    "approval": "Approval"
+  }
+}
