@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import { checkEnv } from './lib/env-check.js';
 import { healthRouter } from './routes/health.js';
 import { meRouter } from './routes/me.js';
 import { casesRouter } from './routes/cases.js';
@@ -11,6 +12,8 @@ import { internalRouter } from './routes/internal.js';
 import { testRouter } from './routes/test.js';
 
 export function createApp(): Express {
+  // PLANET-912 item 8: validate env at startup (warn, don't crash)
+  checkEnv();
   const app = express();
 
   // Stripe webhook needs raw body — mount BEFORE express.json

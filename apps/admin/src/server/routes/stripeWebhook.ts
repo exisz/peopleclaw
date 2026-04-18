@@ -20,10 +20,16 @@ stripeWebhookRouter.post(
       const stripe = new Stripe(stripeKey);
       if (secret && sig) {
         event = stripe.webhooks.constructEvent(req.body as Buffer, sig, secret);
-      } else {
-        // Dev fallback: accept event without verification (logged warning)
-        console.warn('[stripe-webhook] STRIPE_WEBHOOK_SECRET missing — accepting event without verification');
+      } else if (process.env.NODE_ENV !== 'production') {
+        // Dev fallback: accept event without verification (logged warning).
+        // PLANET-912: Production is REQUIRED to have STRIPE_WEBHOOK_SECRET set; never skip verify in prod.
+        console.warn('[stripe-webhook] STRIPE_WEBHOOK_SECRET missing — accepting event without verification (dev only)');
         event = JSON.parse((req.body as Buffer).toString('utf8')) as Stripe.Event;
+      } else {
+        // Production hard refusal — never silently accept unsigned webhooks.
+        console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET missing in production — refusing event');
+        res.status(503).json({ error: 'Stripe webhook secret not configured' });
+        return;
       }
     } catch (e) {
       res.status(400).json({ error: 'Invalid signature: ' + (e instanceof Error ? e.message : String(e)) });
