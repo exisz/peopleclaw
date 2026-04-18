@@ -47,14 +47,14 @@ async function tableExists(name) {
 }
 
 async function columnExists(table, col) {
-  const r = await client.execute(`PRAGMA table_info(${table})`);
+  const r = await client.execute(`PRAGMA table_info("${table}")`);
   return r.rows.some((row) => row.name === col);
 }
 
 async function ensureColumn(table, col, def) {
   if (!(await columnExists(table, col))) {
     console.log(`+ ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
-    await client.execute(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+    await client.execute(`ALTER TABLE "${table}" ADD COLUMN ${col} ${def}`);
   } else {
     console.log(`= column ${table}.${col} exists`);
   }
@@ -140,6 +140,14 @@ async function main() {
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES User(id)
   )`);
+
+  // 7. Subflow execution columns on Case (PLANET-941 P3.15a)
+  // A child case (spawned by a subflow step in a parent case) carries parentCaseId/parentStepId.
+  // Completion of a child case advances the parent step. Status 'waiting_subflow' is added on the parent.
+  await ensureColumn('Case', 'parentCaseId', 'TEXT');
+  await ensureColumn('Case', 'parentStepId', 'TEXT');
+  // Index for child lookup when a child case completes
+  await exec(`CREATE INDEX IF NOT EXISTS Case_parentCaseId_idx ON "Case"(parentCaseId)`);
 
   // Verify
   const tables = await client.execute(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`);
