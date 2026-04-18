@@ -9,6 +9,12 @@ export interface WorkflowStep {
   estimatedTime?: string;
   tools?: string[];
   subflow?: Workflow;
+  // Editor extensions (P3.12)
+  position?: { x: number; y: number };
+  iconName?: string;
+  templateId?: string;
+  fromTemplate?: boolean;
+  disabled?: boolean;
 }
 
 export interface Workflow {

@@ -263,8 +263,19 @@ function StepLibraryItem({
     <Button
       variant="ghost"
       size="sm"
-      className="w-full justify-start gap-2 h-auto py-2 px-3 text-xs font-normal"
+      className="w-full justify-start gap-2 h-auto py-2 px-3 text-xs font-normal cursor-grab active:cursor-grabbing"
       onClick={() => onAdd?.(template)}
+      draggable
+      onDragStart={(e) => {
+        const payload = JSON.stringify({
+          type: 'peopleclaw.step-template',
+          templateId: template.id,
+          template,
+        });
+        e.dataTransfer.setData('application/json', payload);
+        e.dataTransfer.setData('text/plain', template.id);
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
       data-testid={`step-library-item-${template.id}`}
     >
       <Icon className="h-4 w-4 shrink-0" />

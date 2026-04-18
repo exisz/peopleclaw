@@ -1,30 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { Workflow, Case, WorkflowStep } from '../types';
+import type { Workflow, WorkflowStep } from '../types';
 import Sidebar, { type StepTemplate } from '../components/workflow/Sidebar';
-import TopBar from '../components/workflow/TopBar';
-import WorkflowView from '../components/workflow/WorkflowView';
-import CasesView from '../components/workflow/CasesView';
+import WorkflowEditor from '../components/workflow/WorkflowEditor';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
 import { Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '../lib/api';
 
-// Server returns:
-//   { id, name, category, definition: { description, icon, steps, nodes, edges } }
-// Hydrate that into the rich UI `Workflow` shape the rest of the app uses.
 interface ServerWorkflow {
   id: string;
   name: string;
@@ -33,93 +26,55 @@ interface ServerWorkflow {
     description?: string;
     icon?: string;
     steps?: WorkflowStep[];
-    nodes?: unknown[];
+    nodes?: Array<{ id: string; position?: { x: number; y: number } }>;
     edges?: unknown[];
   } | null;
 }
 
 function hydrate(w: ServerWorkflow): Workflow {
   const def = w.definition ?? {};
+  // Restore positions: lookup nodes[].position by id and merge into steps[]
+  const posMap = new Map<string, { x: number; y: number }>();
+  for (const n of def.nodes ?? []) {
+    if (n?.id && n.position) posMap.set(n.id, n.position);
+  }
+  const steps = (def.steps ?? []).map((s) => ({
+    ...s,
+    // Prefer step-embedded position (newer), fall back to nodes[] mapping
+    position: s.position ?? posMap.get(s.id),
+  }));
   return {
     id: w.id,
     name: w.name,
     category: w.category ?? '',
     description: def.description ?? '',
     icon: def.icon ?? '📋',
-    steps: def.steps ?? [],
-  };
-}
-
-function dehydrate(w: Workflow): ServerWorkflow['definition'] {
-  return {
-    description: w.description,
-    icon: w.icon,
-    steps: w.steps,
-    nodes: [],
-    edges: [],
-  };
-}
-
-interface ServerCase {
-  id: string;
-  workflowId: string;
-  title: string;
-  status: string;
-  currentStepId: string | null;
-  payload: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Map server case → legacy UI `Case` (used by CasesView)
-function hydrateCase(c: ServerCase): Case {
-  let payload: Record<string, unknown> = {};
-  try { payload = JSON.parse(c.payload || '{}'); } catch { /* ignore */ }
-  const stepStatuses = (payload.stepStatuses as Case['stepStatuses']) ?? {};
-  const notes = (payload.notes as Case['notes']) ?? undefined;
-  const startedAt = (payload.startedAt as string) ?? c.createdAt;
-  const uiStatus: Case['status'] =
-    c.status === 'done' ? 'completed' :
-    c.status === 'waiting_human' ? 'paused' :
-    'active';
-  return {
-    id: c.id,
-    workflowId: c.workflowId,
-    name: c.title,
-    status: uiStatus,
-    currentStepId: c.currentStepId ?? '',
-    startedAt,
-    stepStatuses,
-    notes,
+    steps,
   };
 }
 
 export default function Workflows() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id?: string }>();
+  const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
 
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [cases, setCases] = useState<Case[]>([]);
+  const [templates, setTemplates] = useState<StepTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
-  const [activeTab, setActiveTab] = useState<'workflow' | 'cases'>('workflow');
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState('');
 
-  // Initial load
   const reload = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [wfData, caseData] = await Promise.all([
+      const [wfData, tplData] = await Promise.all([
         apiClient.get<{ workflows: ServerWorkflow[] }>('/api/workflows'),
-        apiClient.get<{ cases: ServerCase[] }>('/api/cases').catch(() => ({ cases: [] })),
+        apiClient.get<{ templates: StepTemplate[] }>('/api/step-templates').catch(() => ({ templates: [] })),
       ]);
-      const hydrated = wfData.workflows.map(hydrate);
-      setWorkflows(hydrated);
-      setCases(caseData.cases.map(hydrateCase));
+      setWorkflows(wfData.workflows.map(hydrate));
+      setTemplates(tplData.templates);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setLoadError(msg);
@@ -131,7 +86,7 @@ export default function Workflows() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  // Sync URL → selection when workflows arrive or :id changes
+  // Sync URL → selection
   useEffect(() => {
     if (workflows.length === 0) {
       setSelectedWorkflow(null);
@@ -141,123 +96,123 @@ export default function Workflows() {
     const next = target ?? workflows[0];
     if (!selectedWorkflow || selectedWorkflow.id !== next.id) {
       setSelectedWorkflow(next);
-      setSelectedCase(null);
-      setActiveTab('workflow');
     }
   }, [id, workflows, selectedWorkflow]);
+
+  // After commits, refetch full workflow occasionally? Editor handles its own state — no reload needed.
 
   const handleSelect = useCallback(
     (w: Workflow) => {
       setSelectedWorkflow(w);
-      setSelectedCase(null);
-      setActiveTab('workflow');
       navigate(`/workflows/${w.id}`);
     },
     [navigate],
   );
 
-  const handleWorkflowUpdate = useCallback(
-    async (updated: Workflow) => {
-      setWorkflows((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
-      setSelectedWorkflow(updated);
-      try {
-        await apiClient.put(`/api/workflows/${updated.id}`, {
-          name: updated.name,
-          category: updated.category,
-          definition: dehydrate(updated),
-        });
-        toast.success('Workflow saved');
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to save workflow', { description: msg });
-        // Reload to roll back optimistic state
-        reload();
-      }
-    },
-    [reload],
-  );
-
+  // Adding step from sidebar click (non-drag fallback)
   const handleAddStepFromTemplate = useCallback(
     (template: StepTemplate) => {
+      // The new editor is the source of truth; this adds via API with a centered position.
       if (!selectedWorkflow) return;
-      const stepId = `s_${(typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID().replace(/-/g, '')
-        : Math.random().toString(36).slice(2)
-      ).slice(0, 6)}`;
+      const stepId = `s_${Math.random().toString(36).slice(2, 8)}`;
       const labelEn = template.label?.en ?? template.id;
-      // Map StepTemplate.kind → UI WorkflowStep.type used by the static UI list.
       const uiType: WorkflowStep['type'] =
-        template.kind === 'human' ? 'human' :
-        template.kind === 'subflow' ? 'subflow' : 'agent';
+        template.kind === 'human' ? 'human' : template.kind === 'subflow' ? 'subflow' : 'agent';
       const newStep: WorkflowStep = {
         id: stepId,
         name: labelEn,
         type: uiType,
         assignee: template.handler,
         description: template.description?.en ?? '',
-        // Carry handler/config in tools so it round-trips through the existing
-        // WorkflowStep shape until the schema gains a first-class `handler` field.
         tools: [`handler:${template.handler}`],
+        position: { x: 0, y: (selectedWorkflow.steps.length) * 160 },
+        iconName: template.icon,
+        templateId: template.id,
+        fromTemplate: true,
       };
-      const updated: Workflow = {
-        ...selectedWorkflow,
-        steps: [...selectedWorkflow.steps, newStep],
-      };
-      void handleWorkflowUpdate(updated);
+      const updated: Workflow = { ...selectedWorkflow, steps: [...selectedWorkflow.steps, newStep] };
+      setSelectedWorkflow(updated);
+      setWorkflows((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
+      // Persist
+      apiClient
+        .put(`/api/workflows/${updated.id}`, {
+          name: updated.name,
+          category: updated.category,
+          definition: {
+            description: updated.description,
+            icon: updated.icon,
+            steps: updated.steps,
+            nodes: updated.steps.map((s) => ({ id: s.id, position: s.position ?? { x: 0, y: 0 } })),
+            edges: [],
+          },
+        })
+        .catch((e) => toast.error('Save failed', { description: e instanceof Error ? e.message : String(e) }));
       toast.success(`Added: ${labelEn}`);
     },
-    [selectedWorkflow, handleWorkflowUpdate],
+    [selectedWorkflow],
   );
 
   const handleCreate = useCallback(async () => {
-    const name = window.prompt('New workflow name?');
-    if (!name) return;
+    if (!newName.trim()) return;
     try {
       const { workflow } = await apiClient.post<{ workflow: ServerWorkflow }>(
         '/api/workflows',
         {
-          name,
-          category: 'General',
+          name: newName.trim(),
+          category: 'product',
           definition: { description: '', icon: '📋', steps: [], nodes: [], edges: [] },
         },
       );
       const hydrated = hydrate(workflow);
       setWorkflows((prev) => [hydrated, ...prev]);
+      setCreateOpen(false);
+      setNewName('');
       navigate(`/workflows/${hydrated.id}`);
       toast.success('Workflow created');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('Failed to create workflow', { description: msg });
     }
-  }, [navigate]);
+  }, [newName, navigate]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedWorkflow) return;
-    setDeleting(true);
-    try {
-      await apiClient.delete(`/api/workflows/${selectedWorkflow.id}`);
-      const remaining = workflows.filter((w) => w.id !== selectedWorkflow.id);
-      setWorkflows(remaining);
-      setConfirmDeleteOpen(false);
-      toast.success('Workflow deleted');
-      if (remaining.length > 0) {
-        navigate(`/workflows/${remaining[0].id}`);
-      } else {
-        navigate('/workflows');
+    const target = selectedWorkflow;
+    // Optimistic + toast undo (5s)
+    const prev = workflows;
+    const remaining = workflows.filter((w) => w.id !== target.id);
+    setWorkflows(remaining);
+    if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
+    else navigate('/workflows');
+
+    let undone = false;
+    toast(`Deleted "${target.name}"`, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          undone = true;
+          setWorkflows(prev);
+          navigate(`/workflows/${target.id}`);
+        },
+      },
+      duration: 5000,
+    });
+    setTimeout(async () => {
+      if (undone) return;
+      try {
+        await apiClient.delete(`/api/workflows/${target.id}`);
+      } catch (e) {
+        toast.error('Delete failed; restoring', { description: e instanceof Error ? e.message : String(e) });
+        setWorkflows(prev);
+        navigate(`/workflows/${target.id}`);
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error('Failed to delete workflow', { description: msg });
-    } finally {
-      setDeleting(false);
-    }
+    }, 5100);
   }, [selectedWorkflow, workflows, navigate]);
 
-  // ---- States ----
   if (loading) {
     return (
       <div className="flex h-screen overflow-hidden bg-background text-foreground">
-        <aside className="w-64 border-r p-4 space-y-3">
+        <aside className="w-72 border-r p-4 space-y-3">
           <Skeleton className="h-9 w-full" />
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full" />
@@ -296,16 +251,21 @@ export default function Workflows() {
             <CardDescription>Create your first workflow to get started.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleCreate}>
+            <Button onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" /> Create workflow
             </Button>
           </CardContent>
         </Card>
+        <CreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          name={newName}
+          onName={setNewName}
+          onSubmit={handleCreate}
+        />
       </div>
     );
   }
-
-  const workflowCases = cases.filter((c) => c.workflowId === selectedWorkflow.id);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -316,72 +276,73 @@ export default function Workflows() {
         onAddStepTemplate={handleAddStepFromTemplate}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar
-          workflow={selectedWorkflow}
-          caseCount={workflowCases.length}
-          activeTab={activeTab}
-          onTabChange={(t) => {
-            setActiveTab(t);
-            if (t === 'workflow') setSelectedCase(null);
-          }}
-        />
         <div className="flex items-center gap-2 px-4 py-2 border-b">
-          <Button size="sm" variant="outline" onClick={handleCreate}>
+          <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
           <Button
             size="sm"
             variant="ghost"
             className="text-destructive hover:text-destructive"
-            onClick={() => setConfirmDeleteOpen(true)}
+            onClick={handleDelete}
           >
             <Trash2 className="h-4 w-4 mr-1" /> Delete
           </Button>
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
-          {activeTab === 'workflow' ? (
-            <WorkflowView
-              workflow={selectedWorkflow}
-              selectedCase={selectedCase}
-              onWorkflowUpdate={handleWorkflowUpdate}
-            />
-          ) : (
-            <CasesView
-              cases={workflowCases}
-              workflow={selectedWorkflow}
-              selectedCase={selectedCase}
-              onSelectCase={(c) => {
-                setSelectedCase(c);
-                setActiveTab('workflow');
-              }}
-            />
-          )}
+          <WorkflowEditor
+            key={selectedWorkflow.id}
+            workflow={selectedWorkflow}
+            selectedCaseId={caseId ?? null}
+            templates={templates}
+          />
         </main>
       </div>
 
-      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete workflow?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete &ldquo;{selectedWorkflow.name}&rdquo;. The server will
-              refuse the delete if any cases still reference it.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDelete();
-              }}
-              disabled={deleting}
-            >
-              {deleting ? 'Deleting…' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        name={newName}
+        onName={setNewName}
+        onSubmit={handleCreate}
+      />
     </div>
+  );
+}
+
+function CreateDialog({
+  open,
+  onOpenChange,
+  name,
+  onName,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  name: string;
+  onName: (s: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>New workflow</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Input
+            placeholder="Workflow name"
+            value={name}
+            onChange={(e) => onName(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={onSubmit} disabled={!name.trim()}>Create</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

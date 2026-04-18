@@ -1,5 +1,8 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Check, X as XIcon, Loader2, Hand, Circle, Ban } from 'lucide-react';
 import type { WorkflowStep } from '../../../types';
 import { cn } from '../../../lib/utils';
 
@@ -16,69 +19,71 @@ const typeConfig: Record<
   notification: { badge: '🔔', label: 'Notify',    ring: 'ring-yellow-400/40',  tint: 'bg-yellow-400/5',  accent: 'from-yellow-400' },
 };
 
-const statusBg: Record<string, string> = {
-  done: 'bg-emerald-500',
-  'in-progress': 'bg-amber-500',
-  blocked: 'bg-red-500',
-  pending: 'bg-muted-foreground/40',
-};
-
-const statusIcons: Record<string, string> = {
-  done: '✓',
-  'in-progress': '●',
-  blocked: '✕',
-  pending: '○',
+// Per-status visual mapping (case execution states)
+// pending | running | done | failed | waiting_human
+const statusBorderClass: Record<string, string> = {
+  pending: 'border-muted-foreground/30',
+  running: 'border-blue-500 animate-pulse',
+  done: 'border-emerald-500',
+  failed: 'border-red-500',
+  waiting_human: 'border-amber-500',
+  // legacy synonyms
+  'in-progress': 'border-blue-500 animate-pulse',
+  blocked: 'border-red-500',
 };
 
 export type StepNodeData = {
   step: WorkflowStep;
+  iconName?: string; // lucide-react name from template
   status?: string;
-  isExpanded?: boolean;
-  onToggleSubflow?: () => void;
-  onSelect?: () => void;
-  onDelete?: () => void;
+  errorMessage?: string;
+  disabled?: boolean;
   selected?: boolean;
   stepIndex?: number;
   totalSteps?: number;
+  onErrorClick?: (msg: string) => void;
 };
 
-function StepNode({ data }: NodeProps) {
+function StepNode({ data, selected }: NodeProps) {
   const {
     step,
+    iconName,
     status,
-    isExpanded,
-    onToggleSubflow,
-    onSelect,
-    onDelete,
-    selected,
+    errorMessage,
+    disabled,
     stepIndex,
     totalSteps,
+    onErrorClick,
   } = data as unknown as StepNodeData;
   const cfg = typeConfig[step.type] || typeConfig.human;
-  const isInProgress = status === 'in-progress';
+
+  // Resolve icon: template iconName > type-based fallback
+  const Icon: LucideIcon | null = iconName
+    ? ((LucideIcons as unknown as Record<string, LucideIcon>)[iconName] ?? null)
+    : null;
+
+  const statusBorder = status ? statusBorderClass[status] : null;
 
   return (
     <div
       data-testid={`step-node-${step.id}`}
+      data-status={status ?? ''}
+      data-disabled={disabled ? 'true' : 'false'}
       className={cn(
-        'relative w-[220px] min-h-[120px] rounded-xl border bg-card text-card-foreground p-3 shadow-md transition-all cursor-pointer overflow-hidden',
+        'relative w-[220px] min-h-[110px] rounded-xl border-2 bg-card text-card-foreground p-3 shadow-md transition-all overflow-hidden',
         cfg.tint,
-        selected ? `ring-2 ${cfg.ring} shadow-xl` : 'border-border hover:border-foreground/20',
-        isInProgress && 'animate-pulse',
+        statusBorder ?? 'border-border',
+        selected && `ring-2 ${cfg.ring} shadow-xl scale-[1.02]`,
+        disabled && 'opacity-50',
       )}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (step.type === 'subflow' && e.detail === 2) {
-          onToggleSubflow?.();
-        } else {
-          onSelect?.();
-        }
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDelete?.();
-      }}
+      style={
+        disabled
+          ? {
+              backgroundImage:
+                'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(127,127,127,0.10) 6px, rgba(127,127,127,0.10) 12px)',
+            }
+          : undefined
+      }
     >
       <Handle
         type="target"
@@ -91,47 +96,63 @@ function StepNode({ data }: NodeProps) {
         className="!w-2 !h-2 !bg-border !border-card"
       />
 
-      {/* Top accent line */}
       <div className={cn('absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r to-transparent', cfg.accent)} />
 
-      {/* Status indicator */}
+      {/* Status badge (top-right) */}
       {status && (
-        <div
+        <button
+          type="button"
           data-testid={`step-status-${step.id}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (status === 'failed' && errorMessage) onErrorClick?.(errorMessage);
+          }}
           className={cn(
-            'absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold',
-            statusBg[status],
+            'absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-white',
+            status === 'done' && 'bg-emerald-500',
+            status === 'running' && 'bg-blue-500',
+            (status === 'failed' || status === 'blocked') && 'bg-red-500 cursor-pointer',
+            status === 'waiting_human' && 'bg-amber-500',
+            status === 'pending' && 'bg-muted-foreground/40',
+            status === 'in-progress' && 'bg-blue-500',
           )}
         >
-          {statusIcons[status]}
-        </div>
+          {status === 'done' && <Check className="w-3 h-3" />}
+          {status === 'running' && <Loader2 className="w-3 h-3 animate-spin" />}
+          {(status === 'failed' || status === 'blocked') && <XIcon className="w-3 h-3" />}
+          {status === 'waiting_human' && <Hand className="w-3 h-3" />}
+          {status === 'pending' && <Circle className="w-3 h-3" />}
+          {status === 'in-progress' && <Loader2 className="w-3 h-3 animate-spin" />}
+        </button>
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-1.5 pt-1">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground border-l-2 border-current pl-1.5">
-          {cfg.badge} {cfg.label}
+        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground border-l-2 border-current pl-1.5 flex items-center gap-1">
+          {Icon ? <Icon className="h-3 w-3" /> : <span>{cfg.badge}</span>}
+          {cfg.label}
         </span>
-        <div className="flex items-center gap-1.5 text-[9px] font-mono text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[9px] font-mono text-muted-foreground pr-6">
+          {disabled && <Ban className="h-3 w-3" />}
           {stepIndex !== undefined && totalSteps !== undefined && (
             <span>
               {stepIndex + 1}/{totalSteps}
             </span>
           )}
-          {step.estimatedTime && <span>⏱ {step.estimatedTime}</span>}
         </div>
       </div>
 
-      <h3 className="text-sm font-semibold leading-snug mb-1">{step.name}</h3>
+      <h3 className="text-sm font-semibold leading-snug mb-1 pr-6">{step.name}</h3>
 
-      <p className="text-xs text-muted-foreground flex items-center gap-1">
-        <span className="text-[10px]">→</span>
-        {step.assignee}
-      </p>
+      {step.assignee && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+          <span className="text-[10px]">→</span>
+          <span className="truncate">{step.assignee}</span>
+        </p>
+      )}
 
       {step.tools && step.tools.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {step.tools.slice(0, 3).map(t => (
+          {step.tools.slice(0, 3).map((t) => (
             <span
               key={t}
               className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-border bg-background/60"
@@ -145,20 +166,6 @@ function StepNode({ data }: NodeProps) {
             </span>
           )}
         </div>
-      )}
-
-      {step.type === 'subflow' && (
-        <button
-          type="button"
-          data-testid={`step-action-toggle-${step.id}`}
-          className="mt-2 w-full text-[10px] font-mono text-muted-foreground hover:text-foreground py-1 border border-dashed border-border rounded transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSubflow?.();
-          }}
-        >
-          {isExpanded ? '▼ collapse' : '▶ expand'} · {step.subflow?.steps.length} steps
-        </button>
       )}
     </div>
   );

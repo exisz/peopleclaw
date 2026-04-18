@@ -254,22 +254,31 @@ function CasesList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="cases-table">
         {loading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
         {!loading && cases.map((c) => (
-          <Link key={c.id} to={`/cases/${c.id}`} data-testid={`case-row-${c.id}`}>
-            <Card className="h-full transition-all hover:shadow-md hover:border-primary/40">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base leading-snug">{c.title}</CardTitle>
-                  <Badge variant={STATUS_COLORS[c.status] ?? 'default'}>{c.status}</Badge>
-                </div>
-                <CardDescription className="text-xs">{c.workflowId}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="font-mono text-[10px] text-muted-foreground">
-                  Updated {new Date(c.updatedAt).toLocaleString()}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+          <div key={c.id} className="relative">
+            <Link to={`/cases/${c.id}`} data-testid={`case-row-${c.id}`}>
+              <Card className="h-full transition-all hover:shadow-md hover:border-primary/40">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base leading-snug">{c.title}</CardTitle>
+                    <Badge variant={STATUS_COLORS[c.status] ?? 'default'}>{c.status}</Badge>
+                  </div>
+                  <CardDescription className="text-xs">{c.workflowId}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Updated {new Date(c.updatedAt).toLocaleString()}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link
+              to={`/workflows/${c.workflowId}/cases/${c.id}`}
+              className="absolute bottom-2 right-3 text-[10px] font-mono text-primary hover:underline"
+              data-testid={`case-view-in-workflow-${c.id}`}
+            >
+              View in workflow →
+            </Link>
+          </div>
         ))}
         {!loading && cases.length === 0 && !err && (
           <Card className="col-span-full">

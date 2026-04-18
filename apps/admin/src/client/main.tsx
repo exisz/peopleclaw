@@ -27,6 +27,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workflows" element={<Workflows />} />
         <Route path="/workflows/:id" element={<Workflows />} />
+        <Route path="/workflows/:id/cases/:caseId" element={<Workflows />} />
         <Route path="/workflows/:id/run" element={<RunWorkflow />} />
         <Route path="/cases" element={<Cases />} />
         <Route path="/cases/:id" element={<Cases />} />
