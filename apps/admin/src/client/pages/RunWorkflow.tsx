@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { apiJSON, apiFetch } from '../lib/api';
+import { Skeleton } from '../components/ui/skeleton';
+import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 
 interface WorkflowDef {
@@ -26,35 +28,44 @@ export default function RunWorkflow() {
 
   useEffect(() => {
     if (!id) return;
-    apiJSON<{ workflow: WorkflowDef }>(`/api/workflows/${id}`)
+    apiClient
+      .get<{ workflow: WorkflowDef }>(`/api/workflows/${id}`)
       .then((d) => setWf(d.workflow))
-      .catch((e) => setErr(String(e)));
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErr(msg);
+        toast.error('Failed to load workflow', { description: msg });
+      });
   }, [id]);
 
   if (err) return <div className="p-10">Error: {err}</div>;
-  if (!wf) return <div className="p-10">Loading…</div>;
+  if (!wf) {
+    return (
+      <div className="min-h-screen p-6 md:p-10 max-w-2xl mx-auto space-y-4">
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const firstNode = wf.definition.nodes[0];
   const fields = (firstNode?.config?.fields as string[]) || ['title', 'features', 'vendor'];
 
   async function submit() {
     setBusy(true);
+    setErr(null);
     try {
-      const res = await apiFetch('/api/cases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workflowId: id,
-          title: title || `${wf.name} run`,
-          payload: fieldVals,
-        }),
+      const { case: c } = await apiClient.post<{ case: { id: string } }>('/api/cases', {
+        workflowId: id,
+        title: title || `${wf!.name} run`,
+        payload: fieldVals,
       });
-      if (!res.ok) {
-        setErr(`HTTP ${res.status}: ${await res.text()}`);
-        return;
-      }
-      const { case: c } = await res.json();
+      toast.success('Case started');
       navigate(`/cases/${c.id}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg);
+      toast.error('Failed to start case', { description: msg });
     } finally {
       setBusy(false);
     }

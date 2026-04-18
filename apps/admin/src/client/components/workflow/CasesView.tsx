@@ -1,4 +1,4 @@
-import type { Case, Workflow } from '../../data/types';
+import type { Case, Workflow } from '../../types';
 import { Badge } from '../ui/badge';
 import { cn } from '../../lib/utils';
 

@@ -54,6 +54,43 @@ workflowsRouter.post('/workflows', requireAuth, requireTenant, async (req, res) 
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });
 
+workflowsRouter.put('/workflows/:id', requireAuth, requireTenant, async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const { name, category, definition } = req.body ?? {};
+  if (!name || !definition) { res.status(400).json({ error: 'name and definition required' }); return; }
+  const prisma = getPrisma();
+  const existing = await prisma.workflow.findUnique({ where: { id: req.params.id } });
+  if (!existing) { res.status(404).json({ error: 'not found' }); return; }
+  if (existing.tenantId && existing.tenantId !== r.tenant.id) {
+    res.status(403).json({ error: 'workflow belongs to another tenant' });
+    return;
+  }
+  const w = await prisma.workflow.update({
+    where: { id: req.params.id },
+    data: { name, category, definition: JSON.stringify(definition), tenantId: existing.tenantId ?? r.tenant.id },
+  });
+  res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
+});
+
+workflowsRouter.delete('/workflows/:id', requireAuth, requireTenant, async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const existing = await prisma.workflow.findUnique({ where: { id: req.params.id } });
+  if (!existing) { res.status(404).json({ error: 'not found' }); return; }
+  if (existing.tenantId && existing.tenantId !== r.tenant.id) {
+    res.status(403).json({ error: 'workflow belongs to another tenant' });
+    return;
+  }
+  // Refuse delete if any case still references this workflow (cascade-safe v1)
+  const refCount = await prisma.case.count({ where: { workflowId: req.params.id } });
+  if (refCount > 0) {
+    res.status(409).json({ error: `cannot delete: ${refCount} case(s) reference this workflow` });
+    return;
+  }
+  await prisma.workflow.delete({ where: { id: req.params.id } });
+  res.json({ ok: true });
+});
+
 function safeParse(s: string): unknown {
   try { return JSON.parse(s); } catch { return { nodes: [], edges: [] }; }
 }

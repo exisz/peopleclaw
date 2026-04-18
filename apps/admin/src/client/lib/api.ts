@@ -29,3 +29,25 @@ export async function apiJSON<T>(path: string, init: RequestInit = {}): Promise<
   }
   return res.json() as Promise<T>;
 }
+
+/**
+ * Convenience wrapper around `apiJSON` with verb helpers.
+ * Always sends JSON content-type and credentials.
+ */
+export const apiClient = {
+  get: <T>(path: string) => apiJSON<T>(path),
+  post: <T>(path: string, body?: unknown) =>
+    apiJSON<T>(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+  put: <T>(path: string, body?: unknown) =>
+    apiJSON<T>(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+  delete: <T>(path: string) =>
+    apiJSON<T>(path, { method: 'DELETE' }),
+};

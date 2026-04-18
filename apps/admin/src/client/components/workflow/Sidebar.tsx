@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Workflow } from '../../data/types';
+import type { Workflow } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';

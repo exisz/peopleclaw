@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { WorkflowStep, StepType } from '../../../data/types';
+import type { WorkflowStep, StepType } from '../../../types';
 import {
   Dialog,
   DialogContent,

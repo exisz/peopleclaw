@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import { ThemeProvider } from './components/theme-provider';
+import { Toaster } from './components/ui/sonner';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/credits/success" element={<CreditsSuccess />} />
         <Route path="/settings" element={<Settings />} />
         </Routes>
+      <Toaster richColors closeButton position="top-right" />
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>,

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import type { WorkflowStep } from '../../../data/types';
+import type { WorkflowStep } from '../../../types';
 import { cn } from '../../../lib/utils';
 
 const typeConfig: Record<

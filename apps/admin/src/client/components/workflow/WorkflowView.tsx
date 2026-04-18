@@ -12,7 +12,7 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { Workflow, WorkflowStep, Case } from '../../data/types';
+import type { Workflow, WorkflowStep, Case } from '../../types';
 import StepNode, { type StepNodeData } from './nodes/StepNode';
 import SubflowGroupNode from './nodes/SubflowGroupNode';
 import DetailPanel from './panels/DetailPanel';

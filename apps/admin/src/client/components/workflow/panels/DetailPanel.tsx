@@ -1,4 +1,4 @@
-import type { WorkflowStep } from '../../../data/types';
+import type { WorkflowStep } from '../../../types';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';

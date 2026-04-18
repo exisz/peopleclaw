@@ -1,4 +1,4 @@
-import type { Workflow } from '../../data/types';
+import type { Workflow } from '../../types';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 

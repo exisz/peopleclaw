@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
+import { Skeleton } from '../components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
-import { apiJSON, apiFetch } from '../lib/api';
+import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 
 interface CaseStep {
@@ -49,10 +51,12 @@ function CaseDetail({ id }: { id: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await apiJSON<{ case: CaseRow }>(`/api/cases/${id}`);
+      const d = await apiClient.get<{ case: CaseRow }>(`/api/cases/${id}`);
       setC(d.case);
     } catch (e) {
-      setErr(String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg);
+      toast.error('Failed to load case', { description: msg });
     }
   }, [id]);
 
@@ -68,7 +72,15 @@ function CaseDetail({ id }: { id: string }) {
   }, [c, load]);
 
   if (err) return <div className="p-10">Error: {err}</div>;
-  if (!c) return <div className="p-10">Loading…</div>;
+  if (!c) {
+    return (
+      <div className="min-h-screen p-6 md:p-10 max-w-4xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const waitingStep = c.steps?.find((s) => s.status === 'waiting_human');
 
@@ -76,18 +88,17 @@ function CaseDetail({ id }: { id: string }) {
     if (!waitingStep) return;
     setSubmitting(true);
     try {
-      const res = await apiFetch(`/api/cases/${id}/advance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stepId: waitingStep.stepId,
-          output: { comment, approved: action === 'approve' },
-          action,
-        }),
+      await apiClient.post(`/api/cases/${id}/advance`, {
+        stepId: waitingStep.stepId,
+        output: { comment, approved: action === 'approve' },
+        action,
       });
-      if (!res.ok) alert('Advance failed: ' + (await res.text()));
       setComment('');
       await load();
+      toast.success(action === 'approve' ? 'Step approved' : 'Step rejected');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error('Failed to advance case', { description: msg });
     } finally {
       setSubmitting(false);
     }
@@ -194,12 +205,25 @@ function CasesList() {
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('all');
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
     const url = filter === 'all' ? '/api/cases' : `/api/cases?status=${filter}`;
-    apiJSON<{ cases: CaseRow[] }>(url)
-      .then((d) => setCases(d.cases))
-      .catch((e) => setErr(String(e)));
+    apiClient
+      .get<{ cases: CaseRow[] }>(url)
+      .then((d) => { if (!cancelled) setCases(d.cases); })
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (!cancelled) {
+          setErr(msg);
+          toast.error('Failed to load cases', { description: msg });
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [filter]);
 
   return (
@@ -228,7 +252,8 @@ function CasesList() {
       {err && <p className="text-red-600 text-sm">{err}</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="cases-table">
-        {cases.map((c) => (
+        {loading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+        {!loading && cases.map((c) => (
           <Link key={c.id} to={`/cases/${c.id}`} data-testid={`case-row-${c.id}`}>
             <Card className="h-full transition-all hover:shadow-md hover:border-primary/40">
               <CardHeader>
@@ -246,7 +271,16 @@ function CasesList() {
             </Card>
           </Link>
         ))}
-        {cases.length === 0 && <p className="text-sm text-muted-foreground">No cases match this filter.</p>}
+        {!loading && cases.length === 0 && !err && (
+          <Card className="col-span-full">
+            <CardHeader>
+              <CardTitle>No cases yet</CardTitle>
+              <CardDescription>
+                Start a workflow run from the Workflows page to create your first case.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
       </div>
     </div>
   );
