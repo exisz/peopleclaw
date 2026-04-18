@@ -34,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/credits" element={<Credits />} />
         <Route path="/credits/success" element={<CreditsSuccess />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/settings/:tab" element={<Settings />} />
         </Routes>
       <Toaster richColors closeButton position="top-right" />
       </BrowserRouter>

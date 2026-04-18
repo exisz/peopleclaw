@@ -31,7 +31,7 @@ export function LanguageToggle() {
         <Button
           variant="outline"
           size="icon"
-          data-testid="language-toggle"
+          data-testid="lang-switcher"
           aria-label="Toggle language"
         >
           <Globe className="h-4 w-4" />

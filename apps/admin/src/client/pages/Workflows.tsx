@@ -6,6 +6,7 @@ import Sidebar, { type StepTemplate } from '../components/workflow/Sidebar';
 import WorkflowEditor from '../components/workflow/WorkflowEditor';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/ui/button';
+import { LanguageToggle } from '../components/language-toggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
   Dialog,
@@ -295,6 +296,9 @@ export default function Workflows() {
           >
             <Trash2 className="h-4 w-4 mr-1" /> Delete
           </Button>
+          <div className="ml-auto">
+            <LanguageToggle />
+          </div>
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
           <WorkflowEditor

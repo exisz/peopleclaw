@@ -9,6 +9,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
+import { LanguageToggle } from '../components/language-toggle';
 
 interface CaseStep {
   id: string;
@@ -233,7 +234,10 @@ function CasesList() {
           <h1 className="text-2xl font-semibold tracking-tight">Cases</h1>
           <p className="text-sm text-muted-foreground mt-1">{cases.length} cases</p>
         </div>
-        <CreditsBadge />
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <CreditsBadge />
+        </div>
       </header>
 
       <div className="flex gap-2 flex-wrap">

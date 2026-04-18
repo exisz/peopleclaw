@@ -363,7 +363,11 @@ function EditorInner({
     deleteStepsWithUndo(selectedIds);
   });
   useHotkeys('mod+0', (e) => { e.preventDefault(); rf.fitView({ padding: 0.2 }); });
-  useHotkeys('shift+slash', () => setHelpOpen(true)); // ? key
+  // PLANET-928: register both 'shift+slash' (US layout where ? = shift+/) and the
+  // direct '?' character with useKey=true so layouts that map ? to a different
+  // physical key (e.g. AZERTY) still trigger the help overlay.
+  useHotkeys('shift+slash', () => setHelpOpen(true), { enableOnFormTags: false });
+  useHotkeys('?', () => setHelpOpen(true), { useKey: true, enableOnFormTags: false });
 
   // Save flush on unmount
   useEffect(() => () => { flush(); }, [flush]);
