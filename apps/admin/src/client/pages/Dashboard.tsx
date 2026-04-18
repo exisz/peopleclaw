@@ -14,6 +14,9 @@ import {
 } from '../components/ui/table';
 import { logtoClient, postSignOutRedirectUri } from '../lib/logto';
 import { apiJSON } from '../lib/api';
+import { ThemeToggle } from '../components/theme-toggle';
+// TODO: extract shared layout/header (P3.8 may add tenant switcher) — for now ThemeToggle
+// only lives on Dashboard. Mirror to Workflows/Cases/Credits/RunWorkflow once layout exists.
 
 type MeResponse = {
   user: {
@@ -61,6 +64,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button asChild variant="outline" size="sm">
               <Link to="/workflows" data-testid="nav-workflows">
                 <Workflow className="h-4 w-4" /> Workflows

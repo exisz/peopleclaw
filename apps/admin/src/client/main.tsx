@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
+import { ThemeProvider } from './components/theme-provider';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
@@ -14,7 +15,8 @@ import RunWorkflow from './pages/RunWorkflow';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signin" element={<SignIn />} />
@@ -27,7 +29,8 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/cases/:id" element={<Cases />} />
         <Route path="/credits" element={<Credits />} />
         <Route path="/credits/success" element={<CreditsSuccess />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   </StrictMode>,
 );
