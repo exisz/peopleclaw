@@ -276,7 +276,8 @@ function StepLibraryItem({
         e.dataTransfer.setData('text/plain', template.id);
         e.dataTransfer.effectAllowed = 'copy';
       }}
-      data-testid={`step-library-item-${template.id}`}
+      data-testid={`step-template-${template.id}`}
+      data-step-template={template.id}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="truncate flex-1 text-left">{label || template.id}</span>

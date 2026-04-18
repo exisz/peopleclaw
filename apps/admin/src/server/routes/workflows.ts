@@ -42,14 +42,26 @@ workflowsRouter.post('/workflows', requireAuth, requireTenant, async (req, res) 
   const prisma = getPrisma();
   const slug = (id || slugify(name)) as string;
   const existing = await prisma.workflow.findUnique({ where: { id: slug } });
-  if (existing && existing.tenantId && existing.tenantId !== r.tenant.id) {
-    res.status(403).json({ error: 'workflow id belongs to another tenant' });
+  if (existing) {
+    if (existing.tenantId && existing.tenantId !== r.tenant.id) {
+      res.status(403).json({
+        error: 'workflow id belongs to another tenant',
+        code: 'WORKFLOW_SLUG_TAKEN_OTHER_TENANT',
+      });
+      return;
+    }
+    // PLANET-930: Same-tenant slug collision → explicit conflict (no silent overwrite).
+    // Frontend should show inline error and let user pick a different name.
+    res.status(409).json({
+      error: `A workflow named "${existing.name}" already exists. Try a different name.`,
+      code: 'WORKFLOW_SLUG_CONFLICT',
+      conflictingSlug: slug,
+      conflictingName: existing.name,
+    });
     return;
   }
-  const w = await prisma.workflow.upsert({
-    where: { id: slug },
-    create: { id: slug, tenantId: r.tenant.id, name, category, definition: JSON.stringify(definition) },
-    update: { name, category, definition: JSON.stringify(definition), tenantId: existing?.tenantId ?? r.tenant.id },
+  const w = await prisma.workflow.create({
+    data: { id: slug, tenantId: r.tenant.id, name, category, definition: JSON.stringify(definition) },
   });
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });

@@ -21,11 +21,29 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return fetch(path, { ...init, headers });
 }
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  data?: Record<string, unknown>;
+  constructor(status: number, message: string, data?: Record<string, unknown>) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+    if (data && typeof data.code === 'string') this.code = data.code;
+  }
+}
+
 export async function apiJSON<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, init);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`API ${res.status}: ${text}`);
+    let parsed: Record<string, unknown> | undefined;
+    try { parsed = JSON.parse(text) as Record<string, unknown>; } catch { /* not JSON */ }
+    const message =
+      (parsed && typeof parsed.error === 'string' && parsed.error) ||
+      `API ${res.status}: ${text}`;
+    throw new ApiError(res.status, message, parsed);
   }
   return res.json() as Promise<T>;
 }

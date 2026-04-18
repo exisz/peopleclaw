@@ -16,7 +16,7 @@ import {
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Plus, Trash2 } from 'lucide-react';
-import { apiClient } from '../lib/api';
+import { apiClient, ApiError } from '../lib/api';
 
 interface ServerWorkflow {
   id: string;
@@ -170,6 +170,13 @@ export default function Workflows() {
       navigate(`/workflows/${hydrated.id}`);
       toast.success('Workflow created');
     } catch (e) {
+      // PLANET-930: Show explicit error on slug collision; keep modal open so user can retry.
+      if (e instanceof ApiError && (e.code === 'WORKFLOW_SLUG_CONFLICT' || e.status === 409)) {
+        toast.error('A workflow with this name already exists. Try a different name.', {
+          description: e.message,
+        });
+        return; // modal stays open, name preserved
+      }
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('Failed to create workflow', { description: msg });
     }
