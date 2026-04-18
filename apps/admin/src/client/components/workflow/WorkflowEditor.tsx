@@ -14,7 +14,7 @@ import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-import { Check, Loader2, CircleDot, HelpCircle } from 'lucide-react';
+import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDebouncedSave, useUndoStack, loadLayout, saveLayout } from './editorHooks';
 import type { StepTemplate } from './Sidebar';
@@ -327,21 +327,35 @@ function EditorInner({
   // ---- Hotkeys ----
   useHotkeys('mod+s', (e) => { e.preventDefault(); flush(); toast.success('Saved'); }, { enableOnFormTags: true });
   useHotkeys('mod+d', (e) => { e.preventDefault(); if (selectedIds.length) duplicateSteps(selectedIds); }, { enableOnFormTags: false });
-  useHotkeys('mod+z', (e) => {
-    e.preventDefault();
+  // Undo / Redo as named handlers (reused by hotkeys + footer buttons)
+  const handleUndo = useCallback(() => {
     const prev = undo.undo();
     if (prev) {
       setSteps(prev);
       schedule({ ...workflow, steps: prev });
+    } else if (undo.sizes().past === 0) {
+      // PLANET-932 Bug 10: subtle feedback for empty undo stack
+      toast.message('Nothing to undo', { duration: 1500 });
     }
-  });
-  useHotkeys('mod+shift+z', (e) => {
-    e.preventDefault();
+  }, [undo, schedule, workflow]);
+
+  const handleRedo = useCallback(() => {
     const nxt = undo.redo();
     if (nxt) {
       setSteps(nxt);
       schedule({ ...workflow, steps: nxt });
+    } else if (undo.sizes().future === 0) {
+      toast.message('Nothing to redo', { duration: 1500 });
     }
+  }, [undo, schedule, workflow]);
+
+  useHotkeys('mod+z', (e) => {
+    e.preventDefault();
+    handleUndo();
+  });
+  useHotkeys('mod+shift+z', (e) => {
+    e.preventDefault();
+    handleRedo();
   });
   useHotkeys('delete,backspace', (e) => {
     if (selectedIds.length === 0) return;
@@ -411,6 +425,31 @@ function EditorInner({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* PLANET-932 Bug 10: visible undo/redo buttons */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={handleUndo}
+            disabled={undo.sizes().past === 0}
+            data-testid="undo-button"
+            title={`Undo (⌘Z) — ${undo.sizes().past} available`}
+            aria-label="Undo"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={handleRedo}
+            disabled={undo.sizes().future === 0}
+            data-testid="redo-button"
+            title={`Redo (⌘⇧Z) — ${undo.sizes().future} available`}
+            aria-label="Redo"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <SaveIndicator state={saveState} />
           <Button
             size="icon"

@@ -7,6 +7,14 @@ export default function SignIn() {
   const { t } = useTranslation('auth');
 
   useEffect(() => {
+    // PLANET-934: avoid /signin polluting history. Replace current history entry
+    // with '/' before Logto redirects, so browser-back returns to landing
+    // (not the Logto sign-in page).
+    try {
+      window.history.replaceState(null, '', '/');
+    } catch {
+      // ignore
+    }
     logtoClient.signIn(redirectUri).catch(console.error);
   }, []);
 

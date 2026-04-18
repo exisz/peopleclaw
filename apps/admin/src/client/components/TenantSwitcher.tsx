@@ -78,11 +78,12 @@ export default function TenantSwitcher() {
             key={t.slug}
             onClick={() => pick(t.slug)}
             data-testid={`tenant-option-${t.slug}`}
+            className="py-2"
           >
-            <div className="flex-1">
-              <div className="font-medium">{t.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {t.plan} · {t.credits} credits · {t.role}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm leading-tight truncate">{t.name}</div>
+              <div className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                <span className="capitalize">{t.plan}</span> · {t.credits} credits · {t.role}
               </div>
             </div>
             {t.slug === current && <Check className="h-4 w-4" />}

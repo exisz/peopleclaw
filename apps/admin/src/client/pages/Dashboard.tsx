@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings } from 'lucide-react';
+import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -13,11 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { logtoClient, postSignOutRedirectUri } from '../lib/logto';
+import { logtoClient } from '../lib/logto';
 import { apiJSON } from '../lib/api';
 import { ThemeToggle } from '../components/theme-toggle';
 import { LanguageToggle } from '../components/language-toggle';
 import TenantSwitcher from '../components/TenantSwitcher';
+import UserMenu from '../components/UserMenu';
 
 type MeResponse = {
   user: {
@@ -86,14 +87,7 @@ export default function Dashboard() {
                 <Settings className="h-4 w-4" /> {t('common:nav.settings')}
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => logtoClient.signOut(postSignOutRedirectUri)}
-            >
-              <LogOut className="h-4 w-4" />
-              {t('auth:signOut')}
-            </Button>
+            <UserMenu />
           </div>
         </header>
 

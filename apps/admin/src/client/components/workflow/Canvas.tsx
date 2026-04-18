@@ -275,25 +275,25 @@ export default function Canvas({
             onSelect={() => rightClickedRef.current && onContextAction('edit', rightClickedRef.current)}
             data-testid="context-menu-edit"
           >
-            Edit <ContextMenuShortcut>↵</ContextMenuShortcut>
+            <span>Edit</span> <ContextMenuShortcut>↵</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuItem
             onSelect={() => rightClickedRef.current && onContextAction('duplicate', rightClickedRef.current)}
             data-testid="context-menu-duplicate"
           >
-            Duplicate <ContextMenuShortcut>⌘D</ContextMenuShortcut>
+            <span>Duplicate</span> <ContextMenuShortcut>⌘D</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuItem
             onSelect={() => rightClickedRef.current && onContextAction('copy', rightClickedRef.current)}
             data-testid="context-menu-copy"
           >
-            Copy <ContextMenuShortcut>⌘C</ContextMenuShortcut>
+            <span>Copy</span> <ContextMenuShortcut>⌘C</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuItem
             onSelect={() => rightClickedRef.current && onContextAction('paste', rightClickedRef.current)}
             data-testid="context-menu-paste"
           >
-            Paste <ContextMenuShortcut>⌘V</ContextMenuShortcut>
+            <span>Paste</span> <ContextMenuShortcut>⌘V</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
@@ -314,7 +314,7 @@ export default function Canvas({
             data-testid="context-menu-delete"
             className="text-destructive focus:text-destructive"
           >
-            Delete <ContextMenuShortcut>⌫</ContextMenuShortcut>
+            <span>Delete</span> <ContextMenuShortcut>⌫</ContextMenuShortcut>
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

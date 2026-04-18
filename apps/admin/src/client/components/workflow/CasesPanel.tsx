@@ -133,7 +133,7 @@ export default function CasesPanel({
             data-testid="cases-new-submit"
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
-            {t('cases.new', { defaultValue: 'New' })}
+            {t('cases.new', { defaultValue: 'New case' })}
           </Button>
         </div>
         <div className="flex flex-wrap gap-1">
