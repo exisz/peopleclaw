@@ -55,3 +55,41 @@ Outputs SPA to `dist/` and Express server to `api-dist/`.
 ```
 pnpm --filter @peopleclaw/admin dev
 ```
+
+## E2E Seed (PLANET-925 P3.16)
+
+```
+pnpm --filter @peopleclaw/admin seed:e2e
+```
+
+Idempotent. Ensures a canonical acceptance state:
+
+- Logto user `demo_acceptance_test` (password `DemoAccept2026!`) via Management M2M
+  (set `LOGTO_M2M_APP_ID` + `LOGTO_M2M_APP_SECRET`; falls back to placeholder
+  logtoId if M2M creds aren't present so DB seeding still works)
+- Tenant slug `acceptance` with the demo user as `owner`
+- Workflows `shopify-auto-smoketest` (3 nodes) and `shopify-product-listing-demo` (5 nodes)
+- 12 step templates (delegates to `seed-step-templates.mjs`)
+- Shopify Connection (copies `client_id`/`client_secret` from default tenant if present)
+
+### Sudo login (test-only)
+
+When `E2E_TEST_TOKEN` is set, the server mounts `POST /api/test/sudo-login`:
+
+```bash
+curl -X POST $BASE/api/test/sudo-login \
+  -H "Authorization: Bearer $E2E_TEST_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"userId": 42, "tenantSlug": "acceptance"}'
+# → { userId, tenantId, tenantSlug, sudoToken, usage }
+```
+
+Subsequent requests bypass Logto by sending:
+
+```
+Authorization: Sudo <E2E_TEST_TOKEN>
+X-Sudo-User-Id: <userId>
+```
+
+In production `E2E_TEST_TOKEN` MUST be unset; the route then 404s and the
+sudo branch in `requireAuth` is inert.

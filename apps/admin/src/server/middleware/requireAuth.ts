@@ -10,11 +10,46 @@ export interface AuthedRequest extends Request {
 }
 
 /**
+ * E2E sudo bypass (PLANET-925 P3.16).
+ *
+ * When `E2E_TEST_TOKEN` env is set, requests carrying:
+ *   `Authorization: Sudo <E2E_TEST_TOKEN>`
+ *   `X-Sudo-User-Id: <numeric User.id>`
+ * skip Logto verification and load `req.user` directly from DB.
+ *
+ * If the env var is unset OR the token doesn't match, the header is ignored
+ * and normal Bearer verification runs. The endpoint that mints sudo sessions
+ * (`POST /api/test/sudo-login`) is also gated by the same env var.
+ */
+async function trySudo(req: Request): Promise<User | null> {
+  const sudoEnv = process.env.E2E_TEST_TOKEN;
+  if (!sudoEnv) return null;
+  const auth = req.header('authorization') || '';
+  if (!auth.toLowerCase().startsWith('sudo ')) return null;
+  const token = auth.slice(5).trim();
+  if (token !== sudoEnv) return null;
+  const userIdRaw = req.header('x-sudo-user-id');
+  if (!userIdRaw) return null;
+  const userId = Number(userIdRaw);
+  if (!Number.isFinite(userId)) return null;
+  const prisma = getPrisma();
+  const u = await prisma.user.findUnique({ where: { id: userId } });
+  return u;
+}
+
+/**
  * Verifies Bearer token and attaches `req.user` (creating the User row if missing).
  * Responds 401 on failure.
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const sudoUser = await trySudo(req);
+    if (sudoUser) {
+      (req as AuthedRequest).user = sudoUser;
+      (req as AuthedRequest).claims = { sub: sudoUser.logtoId } as VerifiedClaims;
+      next();
+      return;
+    }
     const claims = await verifyBearer(req.header('authorization'));
     const prisma = getPrisma();
     const email = typeof claims.email === 'string' ? claims.email : null;

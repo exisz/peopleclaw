@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "node scripts/seed-demo.mjs"
+    "db:seed": "node scripts/seed-demo.mjs",
+    "seed:e2e": "node scripts/seed-e2e.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
