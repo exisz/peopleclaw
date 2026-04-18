@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { verifyBearer, type VerifiedClaims } from './auth.js';
 import { getPrisma } from '../lib/prisma.js';
 import type { User } from '../generated/prisma/index.js';
+import { suggestSlug, uniqueSlug } from './tenant.js';
 
 export interface AuthedRequest extends Request {
   user: User;
@@ -17,11 +18,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const claims = await verifyBearer(req.header('authorization'));
     const prisma = getPrisma();
     const email = typeof claims.email === 'string' ? claims.email : null;
+    const wasNew = !(await prisma.user.findUnique({ where: { logtoId: claims.sub } }));
     const user = await prisma.user.upsert({
       where: { logtoId: claims.sub },
       create: { logtoId: claims.sub, email, visits: 1 },
       update: { email: email ?? undefined },
     });
+    if (wasNew) {
+      // Auto-provision a personal tenant for this brand-new user
+      const slug = await uniqueSlug(prisma, suggestSlug(email, user.id));
+      const t = await prisma.tenant.create({
+        data: { name: email ? `${email}'s Workspace` : `Workspace ${user.id}`, slug },
+      });
+      await prisma.tenantUser.create({ data: { tenantId: t.id, userId: user.id, role: 'owner' } });
+    }
     (req as AuthedRequest).user = user;
     (req as AuthedRequest).claims = claims;
     next();

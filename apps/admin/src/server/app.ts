@@ -5,6 +5,7 @@ import { casesRouter } from './routes/cases.js';
 import { workflowsRouter } from './routes/workflows.js';
 import { creditsRouter } from './routes/credits.js';
 import { stripeWebhookRouter } from './routes/stripeWebhook.js';
+import { tenantsRouter } from './routes/tenants.js';
 
 export function createApp(): Express {
   const app = express();
@@ -17,6 +18,7 @@ export function createApp(): Express {
   app.use('/api', meRouter);
   app.use('/api', workflowsRouter);
   app.use('/api', creditsRouter);
+  app.use('/api', tenantsRouter);
   app.use('/api', casesRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });

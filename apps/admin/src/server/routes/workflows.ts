@@ -1,11 +1,25 @@
 import { Router } from 'express';
 import { getPrisma } from '../lib/prisma.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 
 export const workflowsRouter = Router();
 
-workflowsRouter.get('/workflows', async (_req, res) => {
+// Public list — for browsing; future: filter by tenant.
+// We allow listing (a) seeded global workflows (tenantId NULL) + (b) workflows of resolved tenant if authed.
+workflowsRouter.get('/workflows', async (req, res) => {
   const prisma = getPrisma();
-  const list = await prisma.workflow.findMany({ orderBy: { createdAt: 'desc' } });
+  // Try to resolve tenant softly (no error if missing)
+  let tenantId: string | null = null;
+  const slug = req.header('x-tenant-slug');
+  if (slug) {
+    const t = await prisma.tenant.findUnique({ where: { slug } });
+    tenantId = t?.id ?? null;
+  }
+  const where = tenantId
+    ? { OR: [{ tenantId: null }, { tenantId }] }
+    : { tenantId: null };
+  const list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
   res.json({
     workflows: list.map((w) => ({
       ...w,
@@ -21,15 +35,21 @@ workflowsRouter.get('/workflows/:id', async (req, res) => {
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });
 
-workflowsRouter.post('/workflows', async (req, res) => {
+workflowsRouter.post('/workflows', requireAuth, requireTenant, async (req, res) => {
+  const r = req as unknown as TenantedRequest;
   const { id, name, category, definition } = req.body ?? {};
   if (!name || !definition) { res.status(400).json({ error: 'name and definition required' }); return; }
   const prisma = getPrisma();
   const slug = (id || slugify(name)) as string;
+  const existing = await prisma.workflow.findUnique({ where: { id: slug } });
+  if (existing && existing.tenantId && existing.tenantId !== r.tenant.id) {
+    res.status(403).json({ error: 'workflow id belongs to another tenant' });
+    return;
+  }
   const w = await prisma.workflow.upsert({
     where: { id: slug },
-    create: { id: slug, name, category, definition: JSON.stringify(definition) },
-    update: { name, category, definition: JSON.stringify(definition) },
+    create: { id: slug, tenantId: r.tenant.id, name, category, definition: JSON.stringify(definition) },
+    update: { name, category, definition: JSON.stringify(definition), tenantId: existing?.tenantId ?? r.tenant.id },
   });
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });

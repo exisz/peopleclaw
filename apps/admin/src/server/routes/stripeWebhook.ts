@@ -32,12 +32,37 @@ stripeWebhookRouter.post(
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
+      const tenantId = session.metadata?.tenantId;
       const userIdStr = session.metadata?.userId;
       const packId = session.metadata?.packId;
       const credits = parseInt(session.metadata?.credits || '0', 10);
       const userId = userIdStr ? parseInt(userIdStr, 10) : NaN;
 
-      if (Number.isFinite(userId) && credits > 0) {
+      if (tenantId && credits > 0) {
+        const prisma = getPrisma();
+        await prisma.$transaction(async (tx) => {
+          await tx.tenant.update({
+            where: { id: tenantId },
+            data: {
+              credits: { increment: credits },
+              stripeCustomerId: typeof session.customer === 'string' ? session.customer : undefined,
+            },
+          });
+          await tx.usageLog.create({
+            data: {
+              tenantId,
+              userId: Number.isFinite(userId) ? userId : 0,
+              action: 'purchase',
+              creditsAdded: credits,
+              packId,
+              amountPaid: session.amount_total ?? null,
+              metadata: JSON.stringify({ stripeSessionId: session.id }),
+            },
+          });
+        });
+        console.log(`[stripe-webhook] +${credits} credits → tenantId=${tenantId} pack=${packId}`);
+      } else if (Number.isFinite(userId) && credits > 0) {
+        // Legacy fallback (pre-multitenant sessions)
         const prisma = getPrisma();
         await prisma.$transaction(async (tx) => {
           await tx.user.update({
@@ -54,11 +79,11 @@ stripeWebhookRouter.post(
               creditsAdded: credits,
               packId,
               amountPaid: session.amount_total ?? null,
-              metadata: JSON.stringify({ stripeSessionId: session.id }),
+              metadata: JSON.stringify({ stripeSessionId: session.id, legacy: true }),
             },
           });
         });
-        console.log(`[stripe-webhook] +${credits} credits → userId=${userId} pack=${packId}`);
+        console.log(`[stripe-webhook] (legacy) +${credits} credits → userId=${userId} pack=${packId}`);
       }
     }
 

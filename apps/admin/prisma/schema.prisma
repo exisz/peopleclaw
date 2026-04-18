@@ -13,26 +13,69 @@ model User {
   logtoId          String   @unique
   email            String?
   visits           Int      @default(0)
-  credits          Int      @default(10)
+  credits          Int      @default(10) // legacy (per-user); tenant credits supersede
   stripeCustomerId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   cases            Case[]
   usageLogs        UsageLog[]
+  tenants          TenantUser[]
+}
+
+model Tenant {
+  id               String       @id @default(cuid())
+  name             String
+  slug             String       @unique
+  plan             String       @default("free") // free|starter|pro|business
+  credits          Int          @default(20)
+  stripeCustomerId String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  members          TenantUser[]
+  workflows        Workflow[]
+  cases            Case[]
+  connections      Connection[]
+  usageLogs        UsageLog[]
+}
+
+model TenantUser {
+  id        Int      @id @default(autoincrement())
+  tenantId  String
+  userId    Int
+  role      String   @default("member") // owner|admin|member
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  @@unique([tenantId, userId])
+}
+
+model Connection {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String // "shopify" | "notion" | "stripe" | etc
+  config    String   @default("{}") // JSON string (sqlite has no native Json)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, type])
 }
 
 model Workflow {
   id         String   @id
+  tenantId   String?
   name       String
   category   String?
-  definition String   // JSON serialized {nodes, edges}
+  definition String // JSON serialized {nodes, edges}
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   cases      Case[]
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
 }
 
 model Case {
   id            String     @id @default(cuid())
+  tenantId      String?
   workflowId    String
   workflow      Workflow   @relation(fields: [workflowId], references: [id])
   ownerId       Int
@@ -44,6 +87,7 @@ model Case {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   steps         CaseStep[]
+  tenant        Tenant?    @relation(fields: [tenantId], references: [id])
 }
 
 model CaseStep {
@@ -52,7 +96,7 @@ model CaseStep {
   case        Case      @relation(fields: [caseId], references: [id])
   stepId      String
   stepType    String
-  kind        String    // auto|human
+  kind        String // auto|human
   status      String    @default("pending")
   input       String    @default("{}") // JSON
   output      String    @default("{}") // JSON
@@ -64,8 +108,10 @@ model CaseStep {
 
 model UsageLog {
   id           Int      @id @default(autoincrement())
+  tenantId     String?
   userId       Int
   user         User     @relation(fields: [userId], references: [id])
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id])
   action       String
   creditsUsed  Int      @default(0)
   creditsAdded Int      @default(0)

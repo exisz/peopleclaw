@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks } from 'lucide-react';
+import { LogOut, User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -15,6 +15,7 @@ import {
 import { logtoClient, postSignOutRedirectUri } from '../lib/logto';
 import { apiJSON } from '../lib/api';
 import { ThemeToggle } from '../components/theme-toggle';
+import TenantSwitcher from '../components/TenantSwitcher';
 // TODO: extract shared layout/header (P3.8 may add tenant switcher) — for now ThemeToggle
 // only lives on Dashboard. Mirror to Workflows/Cases/Credits/RunWorkflow once layout exists.
 
@@ -64,6 +65,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <TenantSwitcher />
             <ThemeToggle />
             <Button asChild variant="outline" size="sm">
               <Link to="/workflows" data-testid="nav-workflows">
@@ -73,6 +75,11 @@ export default function Dashboard() {
             <Button asChild variant="outline" size="sm">
               <Link to="/cases" data-testid="nav-cases">
                 <ListChecks className="h-4 w-4" /> Cases
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/settings" data-testid="nav-settings">
+                <Settings className="h-4 w-4" /> Settings
               </Link>
             </Button>
             <Button

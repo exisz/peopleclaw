@@ -10,6 +10,7 @@ export interface WorkflowDefinition {
 
 export interface HandlerContext {
   userId: number;
+  tenantId: string;
   caseId: string;
   workflowId: string;
   stepConfig: Record<string, unknown>;
@@ -80,6 +81,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
 
     const ctx: HandlerContext = {
       userId: c.ownerId,
+      tenantId: c.tenantId ?? '',
       caseId: c.id,
       workflowId: c.workflowId,
       stepConfig: node.config ?? {},

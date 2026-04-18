@@ -12,6 +12,7 @@ import Cases from './pages/Cases';
 import Credits from './pages/Credits';
 import CreditsSuccess from './pages/CreditsSuccess';
 import RunWorkflow from './pages/RunWorkflow';
+import Settings from './pages/Settings';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/cases/:id" element={<Cases />} />
         <Route path="/credits" element={<Credits />} />
         <Route path="/credits/success" element={<CreditsSuccess />} />
+        <Route path="/settings" element={<Settings />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

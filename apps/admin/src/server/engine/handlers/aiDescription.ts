@@ -5,6 +5,7 @@ import { checkAndDeductCredit } from '../../lib/credit-check.js';
 export const aiDescriptionHandler: Handler = async (input, ctx) => {
   // Deduct credit first (throws InsufficientCreditsError → caught by executor)
   const remaining = await checkAndDeductCredit(
+    ctx.tenantId,
     ctx.userId,
     CREDIT_COSTS.AI_DESCRIPTION,
     'ai_description',
