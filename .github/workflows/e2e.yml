@@ -1,0 +1,41 @@
+name: E2E (Playwright)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'https://admin.peopleclaw.rollersoft.com.au' }}
+      E2E_USERNAME: ${{ secrets.E2E_USERNAME || 'demo_acceptance_test' }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm --filter @peopleclaw/admin exec playwright install --with-deps chromium
+      - name: Run e2e tests
+        if: ${{ env.E2E_PASSWORD != '' }}
+        run: pnpm --filter @peopleclaw/admin exec playwright test
+      - name: Skip note (no E2E_PASSWORD secret)
+        if: ${{ env.E2E_PASSWORD == '' }}
+        run: echo "::warning ::E2E_PASSWORD secret not set — skipping playwright run."
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/admin/playwright-report/
+          retention-days: 14
