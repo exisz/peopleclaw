@@ -3,6 +3,7 @@ import { getPrisma } from '../lib/prisma.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest, suggestSlug, uniqueSlug } from '../middleware/tenant.js';
 import { exchangeShopifyClientCredentials } from '../lib/shopifyAuth.js';
+import { provisionStarterWorkflow } from '../lib/starterWorkflow.js';
 
 export const tenantsRouter = Router();
 
@@ -17,6 +18,13 @@ tenantsRouter.post('/tenants', requireAuth, async (req, res) => {
     data: { name, slug: finalSlug },
   });
   await prisma.tenantUser.create({ data: { tenantId: t.id, userId: r.user.id, role: 'owner' } });
+  // PLANET-922 P3.14: provision the single starter workflow (replaces 10 facade seed workflows).
+  // Failures here must not block tenant creation — log and continue so the user lands on an empty workspace.
+  try {
+    await provisionStarterWorkflow(prisma, t.id);
+  } catch (err) {
+    console.error('[tenants] starter workflow provisioning failed for', t.id, err);
+  }
   res.json({ tenant: { id: t.id, name: t.name, slug: t.slug, plan: t.plan, credits: t.credits, role: 'owner' } });
 });
 
