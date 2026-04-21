@@ -68,4 +68,11 @@ export const apiClient = {
     }),
   delete: <T>(path: string) =>
     apiJSON<T>(path, { method: 'DELETE' }),
+  /** Returns raw Response for streaming (SSE). Does NOT throw on non-2xx — caller handles. */
+  postRaw: (path: string, body?: unknown) =>
+    apiFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
 };

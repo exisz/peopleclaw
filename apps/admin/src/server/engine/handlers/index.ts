@@ -2,6 +2,7 @@ import type { HandlerContext, HandlerResult } from '../executor.js';
 import { createCaseHandler } from './createCase.js';
 import { aiDescriptionHandler } from './aiDescription.js';
 import { shopifyUploadHandler } from './shopifyUpload.js';
+import { shopifyCreateProductHandler } from './shopifyCreateProduct.js';
 import {
   shopifyUpdateInventoryHandler,
   shopifyFetchOrdersHandler,
@@ -34,6 +35,7 @@ export type Handler = (
  */
 export const handlers: Record<string, Handler> = {
   // Canonical (PLANET-917) — Shopify
+  'shopify.create_product': shopifyCreateProductHandler,
   'shopify.list_product': shopifyUploadHandler,
   'shopify.update_inventory': shopifyUpdateInventoryHandler,
   'shopify.fetch_orders': shopifyFetchOrdersHandler,

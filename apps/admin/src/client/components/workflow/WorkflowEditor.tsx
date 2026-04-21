@@ -14,7 +14,7 @@ import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2 } from 'lucide-react';
+import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, PlayCircle, ExternalLink } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDebouncedSave, useUndoStack, loadLayout, saveLayout } from './editorHooks';
 import type { StepTemplate } from './Sidebar';
@@ -68,6 +68,25 @@ interface CaseDetail {
   steps?: Array<{ id: string; stepId: string; status: string; error: string | null }>;
 }
 
+// PLANET-1069: workflow run state
+type RunStatus = 'idle' | 'running' | 'done' | 'error';
+interface StepRunResult {
+  stepId: string;
+  stepType: string;
+  status: 'success' | 'error';
+  output: Record<string, unknown>;
+  error?: string;
+  durationMs: number;
+}
+interface RunState {
+  status: RunStatus;
+  runId: string | null;
+  stepStatuses: Record<string, string>; // stepId → 'pending'|'running'|'done'|'failed'
+  stepResults: StepRunResult[];
+  shopifyProductUrl: string | null;
+  error: string | null;
+}
+
 function EditorInner({
   workflow,
   selectedCaseId,
@@ -89,9 +108,110 @@ function EditorInner({
   const [activeTab, setActiveTab] = useState<'properties' | 'cases' | 'runs'>('properties');
   const [caseDetail, setCaseDetail] = useState<CaseDetail | null>(null);
 
+  // PLANET-1069: run state
+  const [runState, setRunState] = useState<RunState>({
+    status: 'idle',
+    runId: null,
+    stepStatuses: {},
+    stepResults: [],
+    shopifyProductUrl: null,
+    error: null,
+  });
+  const sseRef = useRef<EventSource | null>(null);
+
+  // Cleanup SSE on unmount
+  useEffect(() => () => { sseRef.current?.close(); }, []);
+
   // Undo stack on steps[]
   const undo = useUndoStack<WorkflowStep[]>(steps, 50);
   const { state: saveState, schedule, flush } = useDebouncedSave(workflow, 800, onSaved);
+
+  // PLANET-1069: run handlers (after flush is declared)
+  const handleSseEvent = useCallback((event: string, data: Record<string, unknown>) => {
+    switch (event) {
+      case 'step:start':
+        setRunState(prev => ({
+          ...prev,
+          stepStatuses: { ...prev.stepStatuses, [data.stepId as string]: 'running' },
+        }));
+        break;
+      case 'step:done': {
+        const stepId = data.stepId as string;
+        const success = data.status === 'success';
+        setRunState(prev => ({
+          ...prev,
+          stepStatuses: { ...prev.stepStatuses, [stepId]: success ? 'done' : 'failed' },
+          stepResults: [...prev.stepResults, data as unknown as StepRunResult],
+        }));
+        break;
+      }
+      case 'run:complete':
+        setRunState(prev => ({
+          ...prev,
+          status: 'done',
+          shopifyProductUrl: (data.shopifyProductUrl as string) ?? null,
+          stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
+        }));
+        toast.success('工作流执行完成 🎉');
+        break;
+      case 'run:error':
+        setRunState(prev => ({
+          ...prev,
+          status: 'error',
+          error: data.error as string,
+          stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
+          stepStatuses: { ...prev.stepStatuses, [data.failedStep as string]: 'failed' },
+        }));
+        toast.error('节点执行失败', { description: data.error as string });
+        break;
+    }
+  }, []);
+
+  const handleRun = useCallback(async () => {
+    if (runState.status === 'running') return;
+    // Flush unsaved changes first
+    flush();
+    // Reset run state
+    setRunState({ status: 'running', runId: null, stepStatuses: {}, stepResults: [], shopifyProductUrl: null, error: null });
+    setActiveTab('runs');
+
+    // Close any existing SSE
+    if (sseRef.current) { sseRef.current.close(); sseRef.current = null; }
+
+    // SSE via fetch (to include auth headers)
+    try {
+      const response = await apiClient.postRaw(`/api/workflows/${workflow.id}/run`, { payload: {} });
+      if (!response.body) throw new Error('No response body');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processStream = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+          let currentEvent = '';
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              const eventData = JSON.parse(line.slice(6)) as Record<string, unknown>;
+              handleSseEvent(currentEvent, eventData);
+              currentEvent = '';
+            }
+          }
+        }
+      };
+      await processStream();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setRunState(prev => ({ ...prev, status: 'error', error: msg }));
+      toast.error('运行失败', { description: msg });
+    }
+  }, [runState.status, workflow.id, flush, handleSseEvent]);
 
   // When workflow id changes, reset
   useEffect(() => {
@@ -397,12 +517,18 @@ function EditorInner({
     : undefined;
 
   // Case statuses → keyed by stepId (workflow step id)
+  // PLANET-1069: merge run statuses (run takes priority over case)
   const caseStatuses: Record<string, string> = useMemo(() => {
-    if (!caseDetail?.steps) return {};
     const out: Record<string, string> = {};
-    for (const s of caseDetail.steps) out[s.stepId] = s.status;
+    if (caseDetail?.steps) {
+      for (const s of caseDetail.steps) out[s.stepId] = s.status;
+    }
+    // Overlay live run statuses
+    for (const [k, v] of Object.entries(runState.stepStatuses)) {
+      out[k] = v === 'done' ? 'done' : v === 'failed' ? 'failed' : 'running';
+    }
     return out;
-  }, [caseDetail]);
+  }, [caseDetail, runState.stepStatuses]);
 
   const caseErrors: Record<string, string> = useMemo(() => {
     if (!caseDetail?.steps) return {};
@@ -458,6 +584,20 @@ function EditorInner({
           </Button>
           <SaveIndicator state={saveState} />
           <Button
+            size="sm"
+            variant="default"
+            className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+            onClick={() => void handleRun()}
+            disabled={runState.status === 'running' || steps.length === 0}
+            data-testid="run-workflow-button"
+            title="运行工作流"
+          >
+            {runState.status === 'running'
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <PlayCircle className="h-3.5 w-3.5" />}
+            <span>{runState.status === 'running' ? '运行中…' : '▶ 运行'}</span>
+          </Button>
+          <Button
             size="icon"
             variant="ghost"
             className="h-7 w-7"
@@ -510,7 +650,7 @@ function EditorInner({
               <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
             </TabsContent>
             <TabsContent value="runs" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <RunsPanel workflowId={workflow.id} />
+              <RunsPanel workflowId={workflow.id} liveRun={runState} />
             </TabsContent>
           </Tabs>
         </Panel>

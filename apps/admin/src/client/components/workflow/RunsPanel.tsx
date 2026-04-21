@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { ExternalLink } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 
 interface ServerCaseStep {
@@ -36,7 +38,23 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   waiting_human: 'secondary',
 };
 
-export default function RunsPanel({ workflowId }: { workflowId: string }) {
+interface LiveStepResult {
+  stepId: string;
+  stepType: string;
+  status: 'success' | 'error';
+  output: Record<string, unknown>;
+  error?: string;
+  durationMs: number;
+}
+
+interface LiveRunState {
+  status: 'idle' | 'running' | 'done' | 'error';
+  stepResults: LiveStepResult[];
+  shopifyProductUrl: string | null;
+  error: string | null;
+}
+
+export default function RunsPanel({ workflowId, liveRun }: { workflowId: string; liveRun?: LiveRunState }) {
   const { t } = useTranslation('workflow');
   const [rows, setRows] = useState<{ caseTitle: string; step: ServerCaseStep }[] | null>(null);
 
@@ -81,7 +99,61 @@ export default function RunsPanel({ workflowId }: { workflowId: string }) {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-3">
+      <div className="p-3 space-y-3">
+        {/* PLANET-1069: live run results */}
+        {liveRun && liveRun.status !== 'idle' && (
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wider">
+                {liveRun.status === 'running' ? '⏳ 执行中...' : liveRun.status === 'done' ? '✅ 执行完成' : '❌ 执行失败'}
+              </h4>
+              {liveRun.shopifyProductUrl && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-[10px] gap-1"
+                  onClick={() => window.open(liveRun.shopifyProductUrl!, '_blank')}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  在 Shopify 查看
+                </Button>
+              )}
+            </div>
+            {liveRun.error && (
+              <p className="text-xs text-red-500">{liveRun.error}</p>
+            )}
+            <table className="w-full text-[10px] font-mono">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b">
+                  <th className="py-1 pr-2">节点</th>
+                  <th className="py-1 pr-2">状态</th>
+                  <th className="py-1 pr-2">耗时</th>
+                  <th className="py-1 pr-2">输出摘要</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveRun.stepResults.map((r) => (
+                  <tr key={r.stepId} className="border-b border-border/40">
+                    <td className="py-1 pr-2 truncate max-w-[70px]" title={r.stepId}>{r.stepId}</td>
+                    <td className="py-1 pr-2">
+                      <Badge variant={r.status === 'success' ? 'outline' : 'destructive'} className="text-[9px]">
+                        {r.status === 'success' ? '✅' : '❌'}
+                      </Badge>
+                    </td>
+                    <td className="py-1 pr-2">{r.durationMs}ms</td>
+                    <td className="py-1 pr-2 truncate max-w-[80px]" title={JSON.stringify(r.output)}>
+                      {Object.entries(r.output)
+                        .filter(([k]) => !['mock','model','creditsRemaining'].includes(k))
+                        .slice(0, 2)
+                        .map(([k, v]) => `${k}:${typeof v === 'string' ? v.slice(0, 20) : String(v).slice(0, 12)}`)
+                        .join(' ')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">
           {t('runs.title', { defaultValue: 'Step Runs (audit log)' })}
         </h4>

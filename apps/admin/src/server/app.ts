@@ -4,6 +4,7 @@ import { healthRouter } from './routes/health.js';
 import { meRouter } from './routes/me.js';
 import { casesRouter } from './routes/cases.js';
 import { workflowsRouter } from './routes/workflows.js';
+import { workflowRunRouter } from './routes/workflowRun.js';
 import { creditsRouter } from './routes/credits.js';
 import { stripeWebhookRouter } from './routes/stripeWebhook.js';
 import { tenantsRouter } from './routes/tenants.js';
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use('/api', healthRouter);
   app.use('/api', meRouter);
   app.use('/api', workflowsRouter);
+  app.use('/api', workflowRunRouter);
   app.use('/api', creditsRouter);
   app.use('/api', tenantsRouter);
   app.use('/api', stepTemplatesRouter);
