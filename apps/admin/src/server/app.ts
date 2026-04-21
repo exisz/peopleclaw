@@ -1,4 +1,4 @@
-import express, { type Express } from 'express';
+import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import { checkEnv } from './lib/env-check.js';
 import { healthRouter } from './routes/health.js';
 import { meRouter } from './routes/me.js';
@@ -34,5 +34,16 @@ export function createApp(): Express {
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
+
+  // 5xx error handler — attach X-Build-SHA and return JSON
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev-local';
+    res.setHeader('X-Build-SHA', sha);
+    const status = (err as { status?: number; statusCode?: number })?.status ?? 500;
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(status >= 400 ? status : 500).json({ error: message });
+  });
+
   return app;
 }

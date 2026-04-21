@@ -1,11 +1,28 @@
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import { getPrisma } from '../lib/prisma.js';
 
 export const healthRouter = Router();
 
+// Build info from Vercel env (injected at build/runtime).
+const buildInfo = {
+  sha: process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev-local',
+  shortSha:
+    process.env.VERCEL_GIT_COMMIT_SHORT_SHA ??
+    (process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'dev-local'),
+  branch: process.env.VERCEL_GIT_COMMIT_REF ?? 'dev-local',
+  message: process.env.VERCEL_GIT_COMMIT_MESSAGE ?? '',
+  builtAt: process.env.VERCEL_GIT_COMMIT_CREATED ?? new Date().toISOString(),
+};
+
+// Middleware: attach X-Build-SHA to all /api responses.
+healthRouter.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Build-SHA', buildInfo.sha);
+  next();
+});
+
 // Lightweight liveness — fast, no external calls.
 healthRouter.get('/health', (_req, res) => {
-  res.json({ ok: true, ts: Date.now(), service: 'peopleclaw-admin' });
+  res.json({ ok: true, ts: Date.now(), service: 'peopleclaw-admin', build: buildInfo });
 });
 
 // Deep readiness — pings DB + Logto, reports config presence (PLANET-912 item 7).
@@ -52,6 +69,7 @@ healthRouter.get('/health/ready', async (_req, res) => {
     ok: dbOk,
     ts: Date.now(),
     service: 'peopleclaw-admin',
+    build: buildInfo,
     checks,
   });
 });

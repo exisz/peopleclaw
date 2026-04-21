@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
+import { BuildBadge } from '../BuildBadge';
 import { useI18nField } from '../../i18n/useI18nField';
 import { apiClient } from '../../lib/api';
 import LEGACY_ZH_TO_KEY from '../../i18n/locales/zh/legacy-category-map.json';
@@ -164,10 +165,11 @@ export default function Sidebar({
           </ScrollArea>
 
           {/* Footer */}
-          <div className="px-5 py-3 border-t border-border">
+          <div className="px-5 py-3 border-t border-border flex flex-col items-center gap-1">
             <p className="text-[10px] font-mono text-muted-foreground text-center">
               {t('footerCount', { count: workflows.length })}
             </p>
+            <BuildBadge />
           </div>
         </>
       ) : (
