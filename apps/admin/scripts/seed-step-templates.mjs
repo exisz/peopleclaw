@@ -296,7 +296,7 @@ const TEMPLATES = [
     id: 'ai.generate_title',
     category: 'ai',
     domain: 'generic',
-    labelI18n: { en: 'AI Generate Title', zh: 'AI 生成标题' },
+    labelI18n: { en: 'AI Generate Title', zh: 'AI 标题生成' },
     descriptionI18n: {
       en: 'Automatically generate a product title. (Coming soon)',
       zh: '自动生成商品标题。（功能开发中）',
@@ -316,7 +316,7 @@ const TEMPLATES = [
     id: 'ai.switch_image',
     category: 'ai',
     domain: 'generic',
-    labelI18n: { en: 'AI Switch Image', zh: 'AI 切换图片' },
+    labelI18n: { en: 'AI Switch Image', zh: 'AI 图片切换' },
     descriptionI18n: {
       en: 'Intelligently switch or select product images. (Coming soon)',
       zh: '智能切换/选择商品图片。（功能开发中）',
@@ -336,7 +336,7 @@ const TEMPLATES = [
     id: 'ai.generate_skus',
     category: 'ai',
     domain: 'generic',
-    labelI18n: { en: 'AI Generate SKUs & Pricing', zh: 'AI 生成 SKU 及价格' },
+    labelI18n: { en: 'AI Generate SKUs & Pricing', zh: 'AI SKU 及价格生成' },
     descriptionI18n: {
       en: 'Automatically generate SKU variants and pricing. (Coming soon)',
       zh: '自动生成商品 SKU 及价格。（功能开发中）',
