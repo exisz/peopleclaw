@@ -42,7 +42,7 @@ function parseDef(s: string): WfDef {
         } else {
           // Merge handler/assignee from steps into nodes
           v.nodes = v.nodes.map((n: WfNode) => {
-            const step = stepMap.get(n.id);
+            const step = stepMap.get(n.id) as WfNode | undefined;
             if (step && !n.handler && !n.assignee) {
               return { ...n, handler: step.assignee ?? step.handler, assignee: step.assignee ?? step.handler, name: step.name };
             }
