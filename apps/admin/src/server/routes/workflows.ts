@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
+import { seedDefaultWorkflow } from '../lib/starterWorkflow.js';
 
 export const workflowsRouter = Router();
 
@@ -20,7 +21,16 @@ workflowsRouter.get('/workflows', async (req, res) => {
   const where = tenantId
     ? { OR: [{ tenantId: null }, { tenantId }] }
     : { tenantId: null };
-  const list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
+  let list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
+  // PLANET-1065: Auto-seed default workflow for brand-new tenants (empty list).
+  if (list.length === 0 && tenantId) {
+    try {
+      await seedDefaultWorkflow(prisma, tenantId);
+      list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
+    } catch {
+      // Seed failure is non-fatal (e.g. concurrent request already seeded)
+    }
+  }
   res.json({
     workflows: list.map((w) => ({
       ...w,

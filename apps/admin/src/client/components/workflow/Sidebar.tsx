@@ -33,20 +33,8 @@ import { cn } from '../../lib/utils';
 import { BuildBadge } from '../BuildBadge';
 import { useI18nField } from '../../i18n/useI18nField';
 import { apiClient } from '../../lib/api';
-import LEGACY_ZH_TO_KEY from '../../i18n/locales/zh/legacy-category-map.json';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const CATEGORY_KEYS = [
-  'ecommerce', 'marketing', 'asset', 'sales', 'hr',
-  'support', 'supply', 'design', 'finance', 'product',
-] as const;
-
-function categoryToKey(category: string | undefined | null): string {
-  if (!category) return 'product';
-  if ((CATEGORY_KEYS as readonly string[]).includes(category)) return category;
-  return (LEGACY_ZH_TO_KEY as Record<string, string>)[category] ?? category;
-}
 
 export interface StepTemplate {
   id: string;
@@ -96,21 +84,32 @@ export default function Sidebar({
     }
   }
 
-  const filtered = search.trim()
-    ? workflows.filter(
-        w =>
-          w.name.toLowerCase().includes(search.toLowerCase()) ||
-          w.description.toLowerCase().includes(search.toLowerCase()),
-      )
-    : workflows;
+  const MY_WORKFLOWS_LABEL = '我的工作流';
 
-  const grouped = CATEGORY_KEYS
-    .map(key => ({
-      key,
-      label: t(`categories.${key}`),
-      items: filtered.filter(w => categoryToKey(w.category) === key),
-    }))
-    .filter(g => g.items.length > 0);
+  // PLANET-1065: Group by raw category string; uncategorized → "我的工作流".
+  const grouped = useMemo(() => {
+    const source = search.trim()
+      ? workflows.filter(
+          w =>
+            w.name.toLowerCase().includes(search.toLowerCase()) ||
+            w.description.toLowerCase().includes(search.toLowerCase()),
+        )
+      : workflows;
+
+    const buckets = new Map<string, Workflow[]>();
+    for (const w of source) {
+      const key = w.category?.trim() || MY_WORKFLOWS_LABEL;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key)!.push(w);
+    }
+    // Categorised groups first (alphabetical), then "我的工作流" last.
+    const result: { key: string; label: string; items: Workflow[] }[] = [];
+    const categorised = [...buckets.entries()].filter(([k]) => k !== MY_WORKFLOWS_LABEL);
+    categorised.sort(([a], [b]) => a.localeCompare(b));
+    for (const [k, items] of categorised) result.push({ key: k, label: k, items });
+    if (buckets.has(MY_WORKFLOWS_LABEL)) result.push({ key: MY_WORKFLOWS_LABEL, label: MY_WORKFLOWS_LABEL, items: buckets.get(MY_WORKFLOWS_LABEL)! });
+    return result;
+  }, [workflows, search]);
 
   return (
     <aside className="w-72 flex-shrink-0 flex flex-col overflow-hidden border-r border-border bg-card">
@@ -170,8 +169,9 @@ export default function Sidebar({
             <nav className="py-2">
               {grouped.map((g, gi) => (
                 <div key={g.key} className="mb-3">
+                  {gi > 0 && <Separator className="mb-2" />}
                   <p
-                    className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 px-2"
+                    className="text-[10px] text-muted-foreground mb-1.5 px-2"
                     data-testid={`sidebar-category-${g.key}`}
                   >
                     {g.label}
@@ -219,7 +219,6 @@ export default function Sidebar({
                       </DropdownMenu>
                     </div>
                   ))}
-                  {gi < grouped.length - 1 && <Separator className="my-2" />}
                 </div>
               ))}
             </nav>
