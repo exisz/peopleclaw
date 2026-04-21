@@ -18,17 +18,28 @@ interface WfNode {
   type: string;
   kind?: string;
   handler?: string;
+  assignee?: string;
+  name?: string;
+  description?: string;
+  position?: { x: number; y: number };
   config?: Record<string, unknown>;
 }
 interface WfDef {
   nodes: WfNode[];
+  steps?: WfNode[];
   edges: Array<{ source: string; target: string }>;
 }
 
 function parseDef(s: string): WfDef {
   try {
     const v = JSON.parse(s);
-    if (v?.nodes) return v as WfDef;
+    if (v?.nodes || v?.steps) {
+      // Normalise: merge steps into nodes if nodes is missing/empty
+      if ((!v.nodes || v.nodes.length === 0) && v.steps?.length) {
+        v.nodes = v.steps;
+      }
+      return v as WfDef;
+    }
   } catch { /* */ }
   return { nodes: [], edges: [] };
 }
@@ -36,12 +47,14 @@ function parseDef(s: string): WfDef {
 function resolveHandlerKey(node: WfNode): string {
   const cfgHandler =
     node.config && typeof node.config.handler === 'string' ? node.config.handler : undefined;
-  return node.handler ?? cfgHandler ?? node.type;
+  return node.handler ?? node.assignee ?? cfgHandler ?? node.type;
 }
 
 /** Ordered list of nodes from first to last via edges (linear chain assumed). */
 function orderedNodes(def: WfDef): WfNode[] {
   if (!def.nodes.length) return [];
+  // If no edges defined, return nodes in array order (steps-style definition)
+  if (!def.edges || def.edges.length === 0) return def.nodes;
   const targetSet = new Set(def.edges.map((e) => e.target));
   const rootNode = def.nodes.find((n) => !targetSet.has(n.id)) ?? def.nodes[0];
   const edgeMap = new Map(def.edges.map((e) => [e.source, e.target]));
