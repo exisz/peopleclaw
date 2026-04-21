@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -25,6 +25,7 @@ export default function RunWorkflow() {
   const [fieldVals, setFieldVals] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -91,8 +92,55 @@ export default function RunWorkflow() {
           </div>
           {fields.map((f) => (
             <div key={f} className="space-y-1">
-              <Label>{f}</Label>
-              {f === 'features' || f === 'description' ? (
+              <Label className="capitalize">{f === 'image' ? '🖼️ Product Image (URL or upload)' : f === 'price' ? '💰 Price' : f}</Label>
+              {f === 'image' ? (
+                <div className="space-y-2">
+                  <Input
+                    placeholder="https://... or paste image URL"
+                    value={fieldVals[f] ?? ''}
+                    onChange={(e) => setFieldVals({ ...fieldVals, [f]: e.target.value })}
+                    data-testid="entry-image-url"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => imageInputRef.current?.click()}>
+                      Upload file
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {fieldVals[f] ? '✓ image set' : 'no image'}
+                    </span>
+                  </div>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const dataUrl = ev.target?.result as string;
+                        setFieldVals((prev) => ({ ...prev, [f]: dataUrl }));
+                        toast.success(`Image loaded: ${file.name}`);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {fieldVals[f]?.startsWith('data:image') && (
+                    <img src={fieldVals[f]} alt="preview" className="h-24 w-auto rounded border object-cover" />
+                  )}
+                </div>
+              ) : f === 'price' ? (
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 29.99"
+                  value={fieldVals[f] ?? ''}
+                  onChange={(e) => setFieldVals({ ...fieldVals, [f]: e.target.value })}
+                  data-testid="entry-price"
+                />
+              ) : f === 'features' || f === 'description' ? (
                 <Textarea
                   value={fieldVals[f] ?? ''}
                   onChange={(e) => setFieldVals({ ...fieldVals, [f]: e.target.value })}

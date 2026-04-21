@@ -37,6 +37,37 @@ if (!url) {
 const db = createClient({ url, authToken });
 
 const TEMPLATES = [
+  // PLANET-1043 — Ecommerce Entry (image + price only)
+  {
+    id: 'ecommerce.entry',
+    category: 'entry',
+    domain: 'ecommerce',
+    labelI18n: { en: 'Ecommerce Entry (Image + Price)', zh: '电商入口（图片 + 金额）' },
+    descriptionI18n: {
+      en: 'Minimal ecommerce entry node. Accept a product image and price to start a workflow — no name or description required.',
+      zh: '最简电商入口节点。只需一张图片和金额即可启动工作流，无需名称或描述。',
+    },
+    icon: 'ImagePlus',
+    kind: 'auto',
+    handler: 'ecommerce.entry',
+    defaultConfig: { fields: ['image', 'price'] },
+    inputSchema: {
+      type: 'object',
+      required: ['image', 'price'],
+      properties: {
+        image: { type: 'string', description: 'Product image URL or base64 data URI' },
+        price: { type: 'number', description: 'Selling price' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string' },
+        price: { type: 'number' },
+        _entry: { type: 'boolean' },
+      },
+    },
+  },
   // Shopify (5)
   {
     id: 'shopify.list_product',

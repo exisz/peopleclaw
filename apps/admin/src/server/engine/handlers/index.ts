@@ -15,6 +15,7 @@ import {
   genericConditionHandler,
   genericDelayHandler,
 } from './generic.js';
+import { ecommerceEntryHandler } from './ecommerceEntry.js';
 
 export type Handler = (
   input: { payload: Record<string, unknown> },
@@ -43,6 +44,9 @@ export const handlers: Record<string, Handler> = {
   'generic.transform_json': genericTransformJsonHandler,
   'generic.condition': genericConditionHandler,
   'generic.delay': genericDelayHandler,
+
+  // Canonical — Ecommerce entry (PLANET-1043)
+  'ecommerce.entry': ecommerceEntryHandler,
 
   // Legacy aliases (pre-PLANET-917) — keep the existing demo workflows green.
   create_case: createCaseHandler,

@@ -50,6 +50,29 @@ const demoDef = {
 };
 
 const workflows = [
+  // PLANET-1043 — Ecommerce entry workflow (image + price only entry node)
+  {
+    id: 'ecommerce-image-price-entry-demo',
+    name: 'Ecommerce Quick List (Image + Price)',
+    category: 'E-commerce',
+    description: 'Start with just a product image and price — no name or description needed. AI generates copy then lists to Shopify.',
+    icon: '🖴',
+    definition: JSON.stringify({
+      description: 'Start with just a product image and price — no name or description needed.',
+      icon: '🖴',
+      nodes: [
+        { id: 's1', type: 'ecommerce.entry', kind: 'auto', handler: 'ecommerce.entry', config: { fields: ['image', 'price'] } },
+        { id: 's2', type: 'ai_description', kind: 'auto', handler: 'ai.product_description', config: {} },
+        { id: 's3', type: 'human:approve_copy', kind: 'human', config: { prompt: 'Review AI-generated copy before listing' } },
+        { id: 's4', type: 'shopify_upload', kind: 'auto', handler: 'shopify.list_product', config: {} },
+      ],
+      edges: [
+        { source: 's1', target: 's2' },
+        { source: 's2', target: 's3' },
+        { source: 's3', target: 's4' },
+      ],
+    }),
+  },
   {
     id: 'shopify-product-listing-demo',
     name: 'Shopify Product Listing (PeopleClaw Demo)',
