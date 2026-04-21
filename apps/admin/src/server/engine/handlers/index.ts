@@ -9,6 +9,7 @@ import {
   shopifyGetProductHandler,
 } from './shopifyExtra.js';
 import { aiProductImageCaptionHandler, aiProductTranslateHandler } from './aiExtra.js';
+import { aiImageGenerateHandler } from './aiImageGenerate.js';
 import {
   genericHttpRequestHandler,
   genericTransformJsonHandler,
@@ -39,6 +40,7 @@ export const handlers: Record<string, Handler> = {
   'ai.product_description': aiDescriptionHandler,
   'ai.product_image_caption': aiProductImageCaptionHandler,
   'ai.product_translate': aiProductTranslateHandler,
+  'ai.image_generate': aiImageGenerateHandler,
   // Canonical — Generic
   'generic.http_request': genericHttpRequestHandler,
   'generic.transform_json': genericTransformJsonHandler,

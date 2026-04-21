@@ -15,5 +15,6 @@ export const CREDIT_PACKS: CreditPack[] = [
 export const CREDIT_COSTS = {
   AI_DESCRIPTION: 1,
   AI_OTHER: 1,
+  AI_IMAGE: 3,
   SHOPIFY_UPLOAD: 0,
 } as const;

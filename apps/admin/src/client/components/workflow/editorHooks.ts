@@ -18,11 +18,17 @@ function dehydrate(w: Workflow): Record<string, unknown> {
   };
 }
 
-export function useDebouncedSave(workflow: Workflow | null, intervalMs = 800) {
+export function useDebouncedSave(
+  workflow: Workflow | null,
+  intervalMs = 800,
+  onSaved?: () => void,
+) {
   const [state, setState] = useState<SaveState>('saved');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<Workflow | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
+  const onSavedRef = useRef(onSaved);
+  useEffect(() => { onSavedRef.current = onSaved; });
 
   const doSave = useCallback(async (wf: Workflow) => {
     setState('saving');
@@ -32,7 +38,11 @@ export function useDebouncedSave(workflow: Workflow | null, intervalMs = 800) {
         category: wf.category,
         definition: dehydrate(wf),
       });
-      if (!timer.current && !pending.current) setState('saved');
+      if (!timer.current && !pending.current) {
+        setState('saved');
+        toast.success('工作流已保存', { description: wf.name, duration: 2000 });
+        onSavedRef.current?.();
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('Save failed', { description: msg });

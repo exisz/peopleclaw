@@ -72,10 +72,12 @@ function EditorInner({
   workflow,
   selectedCaseId,
   templates,
+  onSaved,
 }: {
   workflow: Workflow;
   selectedCaseId: string | null;
   templates: StepTemplate[];
+  onSaved?: () => void;
 }) {
   const { t } = useTranslation('workflow');
   const navigate = useNavigate();
@@ -89,7 +91,7 @@ function EditorInner({
 
   // Undo stack on steps[]
   const undo = useUndoStack<WorkflowStep[]>(steps, 50);
-  const { state: saveState, schedule, flush } = useDebouncedSave(workflow);
+  const { state: saveState, schedule, flush } = useDebouncedSave(workflow, 800, onSaved);
 
   // When workflow id changes, reset
   useEffect(() => {
@@ -523,6 +525,7 @@ export default function WorkflowEditor(props: {
   workflow: Workflow;
   selectedCaseId?: string | null;
   templates: StepTemplate[];
+  onSaved?: () => void;
 }) {
   return (
     <ReactFlowProvider>
@@ -530,6 +533,7 @@ export default function WorkflowEditor(props: {
         workflow={props.workflow}
         selectedCaseId={props.selectedCaseId ?? null}
         templates={props.templates}
+        onSaved={props.onSaved}
       />
     </ReactFlowProvider>
   );

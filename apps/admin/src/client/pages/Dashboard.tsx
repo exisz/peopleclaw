@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings } from 'lucide-react';
+import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings, Plus, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { logtoClient } from '../lib/logto';
-import { apiJSON } from '../lib/api';
+import { apiJSON, apiClient } from '../lib/api';
 import { ThemeToggle } from '../components/theme-toggle';
 import { LanguageToggle } from '../components/language-toggle';
 import TenantSwitcher from '../components/TenantSwitcher';
@@ -31,10 +31,18 @@ type MeResponse = {
   claims: Record<string, unknown>;
 };
 
+interface WorkflowSummary {
+  id: string;
+  name: string;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 export default function Dashboard() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [workflows, setWorkflows] = useState<WorkflowSummary[]>([]);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation(['dashboard', 'common', 'auth', 'nav']);
 
@@ -48,6 +56,9 @@ export default function Dashboard() {
       try {
         const data = await apiJSON<MeResponse>('/api/me');
         setMe(data);
+        // Load workflows list
+        const wfData = await apiClient.get<{ workflows: WorkflowSummary[] }>('/api/workflows').catch(() => ({ workflows: [] }));
+        setWorkflows(wfData.workflows);
       } catch (e) {
         setErr(e instanceof Error ? e.message : String(e));
       } finally {
@@ -173,6 +184,73 @@ export default function Dashboard() {
                     </TableRow>
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+
+            {/* My Workflows — PLANET-1050 */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Workflow className="h-4 w-4" /> My Workflows
+                    </CardTitle>
+                    <CardDescription>Recent workflows for this workspace</CardDescription>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/workflows"><Plus className="h-4 w-4 mr-1" /> New</Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {workflows.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 text-center">
+                    No workflows yet.{' '}
+                    <Link to="/workflows" className="underline text-primary">Create your first</Link>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Updated</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {workflows.slice(0, 10).map((wf) => (
+                        <TableRow key={wf.id} data-testid={`dashboard-wf-${wf.id}`}>
+                          <TableCell className="font-medium">
+                            <Link to={`/workflows/${wf.id}`} className="hover:underline text-primary">
+                              {wf.name || <span className="text-muted-foreground italic">Unnamed</span>}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px]">{wf.category || 'general'}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(wf.updatedAt).toLocaleString(dateLocale)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button asChild size="sm" variant="ghost" className="h-7 text-xs gap-1">
+                              <Link to={`/workflows/${wf.id}`} data-testid={`open-wf-${wf.id}`}>
+                                Edit <ChevronRight className="h-3 w-3" />
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                {workflows.length > 10 && (
+                  <div className="pt-2 text-right">
+                    <Button asChild size="sm" variant="link">
+                      <Link to="/workflows">View all {workflows.length} workflows</Link>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

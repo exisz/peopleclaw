@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Workflow, WorkflowStep } from '../types';
 import Sidebar, { type StepTemplate } from '../components/workflow/Sidebar';
@@ -16,8 +16,11 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon } from 'lucide-react';
 import { apiClient, ApiError } from '../lib/api';
+import UserMenu from '../components/UserMenu';
+import { ThemeToggle } from '../components/theme-toggle';
+import TenantSwitcher from '../components/TenantSwitcher';
 
 interface ServerWorkflow {
   id: string;
@@ -284,8 +287,30 @@ export default function Workflows() {
         onAddStepTemplate={handleAddStepFromTemplate}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-2 border-b">
-          <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)}>
+        {/* Top navigation bar */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b bg-background" data-testid="app-topbar">
+          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
+            <Link to="/dashboard" data-testid="nav-dashboard">
+              <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="secondary" className="text-xs gap-1.5">
+            <Link to="/workflows" data-testid="nav-workflows">
+              <WorkflowIcon className="h-4 w-4" /> Workflows
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
+            <Link to="/cases" data-testid="nav-cases">
+              <ListChecks className="h-4 w-4" /> Cases
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
+            <Link to="/settings" data-testid="nav-settings">
+              <Settings className="h-4 w-4" /> Settings
+            </Link>
+          </Button>
+          <div className="mx-2 h-4 border-l border-border" />
+          <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)} data-testid="create-workflow-btn">
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
           <Button
@@ -296,8 +321,16 @@ export default function Workflows() {
           >
             <Trash2 className="h-4 w-4 mr-1" /> Delete
           </Button>
-          <div className="ml-auto">
+          {/* Workflow name breadcrumb */}
+          <div className="mx-2 h-4 border-l border-border" />
+          <span className="text-sm font-medium truncate max-w-[240px]" data-testid="workflow-breadcrumb-name">
+            {selectedWorkflow.name}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <TenantSwitcher />
             <LanguageToggle />
+            <ThemeToggle />
+            <UserMenu />
           </div>
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
@@ -306,6 +339,7 @@ export default function Workflows() {
             workflow={selectedWorkflow}
             selectedCaseId={caseId ?? null}
             templates={templates}
+            onSaved={() => toast.success('工作流已保存', { description: selectedWorkflow.name })}
           />
         </main>
       </div>

@@ -250,6 +250,47 @@ const TEMPLATES = [
       properties: { translated: { type: 'string' } },
     },
   },
+  // AI image generation — PLANET-1048
+  {
+    id: 'ai.image_generate',
+    category: 'ai',
+    domain: 'generic',
+    labelI18n: { en: 'AI Image Generation', zh: 'AI \u56fe\u7247\u751f\u6210' },
+    descriptionI18n: {
+      en: 'Generate an image from a text prompt using OpenAI gpt-image-1. Returns a permanent image URL.',
+      zh: '\u4f7f\u7528 OpenAI gpt-image-1 \u6839\u636e\u6587\u5b57 prompt \u751f\u6210\u56fe\u7247\uff0c\u8fd4\u56de\u6c38\u4e45 URL\u3002',
+    },
+    icon: 'Wand2',
+    kind: 'auto',
+    handler: 'ai.image_generate',
+    defaultConfig: { aspectRatio: '1:1' },
+    inputSchema: {
+      type: 'object',
+      required: ['prompt'],
+      properties: {
+        prompt: { type: 'string', description: 'Image generation prompt' },
+        aspectRatio: {
+          type: 'string',
+          enum: ['1:1', '4:3', '3:4', '16:9', '9:16'],
+          default: '1:1',
+          description: 'Output aspect ratio',
+        },
+        referenceImage: {
+          type: 'string',
+          description: 'Optional reference image URL for style/composition guidance',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        imageUrl: { type: 'string', description: 'Permanent URL of the generated image' },
+        prompt: { type: 'string' },
+        aspectRatio: { type: 'string' },
+        model: { type: 'string' },
+      },
+    },
+  },
   // Generic (4)
   {
     id: 'generic.http_request',
