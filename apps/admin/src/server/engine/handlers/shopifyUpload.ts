@@ -78,3 +78,4 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     },
   };
 };
+// shopify mock enabled
