@@ -233,6 +233,14 @@ export default function PropertiesPanel({
           </div>
         )}
 
+        {/* PLANET-1048: dedicated AI image generation fields */}
+        {step.templateId === 'ai.image_generate' && (
+          <AiImageFields
+            tools={step.tools ?? []}
+            onChange={(tools) => update({ tools })}
+          />
+        )}
+
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="prop-config">{t('properties.config', { defaultValue: 'Config (JSON)' })}</Label>
@@ -317,6 +325,72 @@ export default function PropertiesPanel({
             {t('properties.save', { defaultValue: 'Save' })}
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PLANET-1048: Dedicated fields panel for the ai.image_generate node.
+ * Reads/writes the `config:<json>` tool entry.
+ */
+function AiImageFields({
+  tools,
+  onChange,
+}: {
+  tools: string[];
+  onChange: (tools: string[]) => void;
+}) {
+  const cfgTool = tools.find((x) => x.startsWith('config:'));
+  let config: Record<string, string> = {};
+  if (cfgTool) {
+    try { config = JSON.parse(cfgTool.slice('config:'.length)); } catch { /* */ }
+  }
+
+  const setField = (key: string, value: string) => {
+    const updated = { ...config, [key]: value };
+    const others = tools.filter((x) => !x.startsWith('config:'));
+    onChange([...others, `config:${JSON.stringify(updated)}`]);
+  };
+
+  return (
+    <div className="space-y-3 rounded border p-3 bg-muted/30" data-testid="ai-image-fields">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        AI Image Generation
+      </p>
+      <div className="space-y-1.5">
+        <Label htmlFor="ai-img-prompt">Prompt <span className="text-destructive">*</span></Label>
+        <Textarea
+          id="ai-img-prompt"
+          data-testid="ai-image-prompt"
+          rows={4}
+          placeholder="Describe the image to generate…"
+          value={config.prompt ?? ''}
+          onChange={(e) => setField('prompt', e.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Aspect Ratio</Label>
+        <Select value={config.aspectRatio ?? '1:1'} onValueChange={(v) => setField('aspectRatio', v)}>
+          <SelectTrigger data-testid="ai-image-aspect-ratio">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {['1:1', '4:3', '3:4', '16:9', '9:16'].map((r) => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ai-img-ref">Reference Image URL (optional)</Label>
+        <Input
+          id="ai-img-ref"
+          data-testid="ai-image-reference"
+          placeholder="https://…"
+          value={config.referenceImage ?? ''}
+          onChange={(e) => setField('referenceImage', e.target.value)}
+        />
       </div>
     </div>
   );
