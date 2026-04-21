@@ -195,3 +195,4 @@ logtoEmailWebhookRouter.post('/webhooks/logto-email', async (req: Request, res: 
   console.log(`[logto-email-bridge] sent ${type} email to ${to} — id=${data.id}`);
   res.json({ ok: true, id: data.id });
 });
+// redeploy trigger to pick up new envs (PLANET-1045)
