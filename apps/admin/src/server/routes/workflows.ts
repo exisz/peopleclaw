@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { nanoid } from 'nanoid';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
@@ -40,8 +41,11 @@ workflowsRouter.post('/workflows', requireAuth, requireTenant, async (req, res) 
   const { id, name, category, definition } = req.body ?? {};
   if (!name || !definition) { res.status(400).json({ error: 'name and definition required' }); return; }
   const prisma = getPrisma();
-  const slug = (id || slugify(name)) as string;
-  const existing = await prisma.workflow.findUnique({ where: { id: slug } });
+  // PLANET-1042: slugify may produce an empty string for non-ASCII names (e.g. Chinese).
+  // Fall back to a nanoid-based slug so the id is always a non-empty valid string.
+  const rawSlug = (id || slugify(name)) as string;
+  const slug = rawSlug || `wf-${nanoid(8)}`;
+  const existing = slug ? await prisma.workflow.findUnique({ where: { id: slug } }) : null;
   if (existing) {
     if (existing.tenantId && existing.tenantId !== r.tenant.id) {
       res.status(403).json({
@@ -107,5 +111,14 @@ function safeParse(s: string): unknown {
   try { return JSON.parse(s); } catch { return { nodes: [], edges: [] }; }
 }
 function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+  // PLANET-1042: transliterate common CJK/non-ASCII via latin approximation,
+  // then keep only url-safe chars. May still return '' for fully non-ASCII input —
+  // callers must handle empty string (fall back to nanoid).
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '') // strip combining diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
 }
