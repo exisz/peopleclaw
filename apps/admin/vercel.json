@@ -1,5 +1,6 @@
 {
   "framework": null,
+  "ignoreCommand": "! git diff HEAD~1 --name-only | grep -q '^apps/admin/'",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile=false",
