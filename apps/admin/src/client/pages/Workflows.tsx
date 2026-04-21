@@ -98,15 +98,20 @@ export default function Workflows() {
   useEffect(() => { reload(); }, [reload]);
 
   // Sync URL → selection
+  // PLANET-1098: No auto-select on initial load — only select when an :id is present in the URL.
   useEffect(() => {
     if (workflows.length === 0) {
       setSelectedWorkflow(null);
       return;
     }
-    const target = id ? workflows.find((w) => w.id === id) : workflows[0];
-    const next = target ?? workflows[0];
-    if (!selectedWorkflow || selectedWorkflow.id !== next.id) {
-      setSelectedWorkflow(next);
+    if (!id) {
+      // No workflow ID in URL → show empty state; don't auto-select the first workflow.
+      setSelectedWorkflow(null);
+      return;
+    }
+    const target = workflows.find((w) => w.id === id);
+    if (target && (!selectedWorkflow || selectedWorkflow.id !== target.id)) {
+      setSelectedWorkflow(target);
     }
   }, [id, workflows, selectedWorkflow]);
 
@@ -355,12 +360,24 @@ export default function Workflows() {
             <div className="flex h-full flex-col items-center justify-center gap-4 text-center p-6">
               <GitBranch className="h-12 w-12 text-muted-foreground/40" />
               <div className="space-y-1">
-                <p className="text-lg font-medium">还没有工作流</p>
-                <p className="text-sm text-muted-foreground">创建第一个工作流，开始自动化您的业务流程。</p>
+                {workflows.length > 0 ? (
+                  // PLANET-1098: Workflows exist but none selected — guide user to click one.
+                  <>
+                    <p className="text-lg font-medium">选择一个工作流开始</p>
+                    <p className="text-sm text-muted-foreground">点击左侧工作流列表中的任意工作流以查看或编辑。</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium">还没有工作流</p>
+                    <p className="text-sm text-muted-foreground">创建第一个工作流，开始自动化您的业务流程。</p>
+                  </>
+                )}
               </div>
-              <Button onClick={() => setCreateOpen(true)} data-testid="create-first-workflow-btn">
-                <Plus className="h-4 w-4 mr-2" /> 创建第一个工作流
-              </Button>
+              {workflows.length === 0 && (
+                <Button onClick={() => setCreateOpen(true)} data-testid="create-first-workflow-btn">
+                  <Plus className="h-4 w-4 mr-2" /> 创建第一个工作流
+                </Button>
+              )}
             </div>
           ) : (
             <ErrorBoundary>
