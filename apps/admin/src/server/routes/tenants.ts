@@ -234,7 +234,7 @@ function safeJSON(s: string): Record<string, unknown> {
 }
 function maskConfig(type: string, cfg: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...cfg };
-  for (const k of ['admin_token', 'access_token', 'api_key', 'secret', 'password']) {
+  for (const k of ['admin_token', 'access_token', 'api_key', 'secret', 'password', 'client_secret']) {
     if (typeof out[k] === 'string' && (out[k] as string).length > 0) {
       const v = out[k] as string;
       out[k] = v.length > 8 ? v.slice(0, 4) + '…' + v.slice(-4) : '••••';

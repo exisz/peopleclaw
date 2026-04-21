@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
 import SettingsConnections from './SettingsConnections';
 import SettingsTeam from './SettingsTeam';
 import SettingsBilling from './SettingsBilling';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ThemeToggle } from '../components/theme-toggle';
 import TenantSwitcher from '../components/TenantSwitcher';
 import { LanguageToggle } from '../components/language-toggle';
@@ -71,13 +72,19 @@ export default function Settings() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="connections" className="mt-4">
-                <SettingsConnections />
+                <ErrorBoundary>
+                  <SettingsConnections />
+                </ErrorBoundary>
               </TabsContent>
               <TabsContent value="team" className="mt-4">
-                <SettingsTeam />
+                <ErrorBoundary>
+                  <SettingsTeam />
+                </ErrorBoundary>
               </TabsContent>
               <TabsContent value="billing" className="mt-4">
-                <SettingsBilling />
+                <ErrorBoundary>
+                  <SettingsBilling />
+                </ErrorBoundary>
               </TabsContent>
             </Tabs>
           </CardContent>

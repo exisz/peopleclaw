@@ -38,7 +38,9 @@ export default function SettingsConnections() {
   const [list, setList] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'token' | 'oauth'>('token');
   const [shop, setShop] = useState('');
+  const [adminToken, setAdminToken] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,16 +65,16 @@ export default function SettingsConnections() {
     if (!slug) return;
     setBusy(true); setErr(null);
     try {
+      const config = mode === 'token'
+        ? { shop_domain: shop, admin_token: adminToken }
+        : { shop_domain: shop, client_id: clientId, client_secret: clientSecret };
       await apiJSON(`/api/tenants/${slug}/connections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'shopify',
-          config: { shop_domain: shop, client_id: clientId, client_secret: clientSecret },
-        }),
+        body: JSON.stringify({ type: 'shopify', config }),
       });
       setOpen(false);
-      setShop(''); setClientId(''); setClientSecret('');
+      setShop(''); setAdminToken(''); setClientId(''); setClientSecret('');
       reload();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -112,7 +114,7 @@ export default function SettingsConnections() {
           <h2 className="text-lg font-medium">{t('connections.heading')}</h2>
           <p className="text-sm text-muted-foreground">{t('connections.subheading')}</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setMode('token'); setShop(''); setAdminToken(''); setClientId(''); setClientSecret(''); setErr(null); } }}>
           <DialogTrigger asChild>
             <Button data-testid="connection-add-shopify">
               <Plus className="h-4 w-4" /> {t('connections.addShopify')}
@@ -124,6 +126,31 @@ export default function SettingsConnections() {
               <DialogDescription>{t('connections.shopifyDialog.description')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              {/* Mode toggle */}
+              <div className="flex gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMode('token')}
+                  className={`px-3 py-1 rounded-md border transition-colors ${
+                    mode === 'token'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  Admin API Token
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('oauth')}
+                  className={`px-3 py-1 rounded-md border transition-colors ${
+                    mode === 'oauth'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  OAuth (client_credentials)
+                </button>
+              </div>
               <div>
                 <Label>{t('connections.shopifyDialog.shopDomain')}</Label>
                 <Input
@@ -133,25 +160,43 @@ export default function SettingsConnections() {
                   onChange={(e) => setShop(e.target.value)}
                 />
               </div>
-              <div>
-                <Label>{t('connections.shopifyDialog.clientId')}</Label>
-                <Input
-                  data-testid="shopify-client-id-input"
-                  placeholder={t('connections.shopifyDialog.clientIdPlaceholder')}
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>{t('connections.shopifyDialog.clientSecret')}</Label>
-                <Input
-                  data-testid="shopify-client-secret-input"
-                  type="password"
-                  placeholder={t('connections.shopifyDialog.clientSecretPlaceholder')}
-                  value={clientSecret}
-                  onChange={(e) => setClientSecret(e.target.value)}
-                />
-              </div>
+              {mode === 'token' ? (
+                <div>
+                  <Label>Admin API Token</Label>
+                  <Input
+                    data-testid="shopify-admin-token-input"
+                    type="password"
+                    placeholder="shpat_…"
+                    value={adminToken}
+                    onChange={(e) => setAdminToken(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    从 Shopify Admin → Apps → Develop apps → API credentials 获取。
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>{t('connections.shopifyDialog.clientId')}</Label>
+                    <Input
+                      data-testid="shopify-client-id-input"
+                      placeholder={t('connections.shopifyDialog.clientIdPlaceholder')}
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t('connections.shopifyDialog.clientSecret')}</Label>
+                    <Input
+                      data-testid="shopify-client-secret-input"
+                      type="password"
+                      placeholder={t('connections.shopifyDialog.clientSecretPlaceholder')}
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
               {err && <p className="text-sm text-destructive break-all">{err}</p>}
             </div>
             <DialogFooter>
@@ -160,7 +205,7 @@ export default function SettingsConnections() {
               </Button>
               <Button
                 onClick={saveShopify}
-                disabled={busy || !shop || !clientId || !clientSecret}
+                disabled={busy || !shop || (mode === 'token' ? !adminToken : (!clientId || !clientSecret))}
                 data-testid="shopify-save"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t('connections.shopifyDialog.save')}
@@ -200,15 +245,19 @@ export default function SettingsConnections() {
                         {shopDomain && (
                           <Badge variant="outline" className="font-mono">{shopDomain}</Badge>
                         )}
-                        <div className="text-muted-foreground">{formatRelative(expiresAt, t)}</div>
+                        {expiresAt ? (
+                          <div className="text-muted-foreground">{formatRelative(expiresAt, t)}</div>
+                        ) : (
+                          <div className="text-muted-foreground text-xs">Admin API Token (静态)</div>
+                        )}
                       </div>
                     ) : (
                       <span className="font-mono">{JSON.stringify(cfg)}</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={c.enabled ? 'secondary' : 'outline'}>
-                      {c.enabled ? t('connections.enabled') : t('connections.disabled')}
+                    <Badge variant={c.enabled ? 'default' : 'outline'} className={c.enabled ? 'bg-green-600 text-white hover:bg-green-700' : ''}>
+                      {c.enabled ? '✓ ' + t('connections.enabled') : t('connections.disabled')}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
