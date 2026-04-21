@@ -20,7 +20,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon, BookOpen } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
 import UserMenu from '../components/UserMenu';
@@ -279,33 +279,6 @@ export default function Workflows() {
     );
   }
 
-  if (workflows.length === 0 || !selectedWorkflow) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground p-6">
-        <Card className="max-w-md text-center">
-          <CardHeader>
-            <CardTitle>No workflows yet</CardTitle>
-            <CardDescription>Create your first workflow to get started.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Create workflow
-            </Button>
-          </CardContent>
-        </Card>
-        <CreateDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          name={newName}
-          onName={setNewName}
-          desc={newDesc}
-          onDesc={setNewDesc}
-          onSubmit={handleCreate}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <Sidebar
@@ -318,7 +291,7 @@ export default function Workflows() {
           if (!target) return;
           const remaining = workflows.filter((w) => w.id !== id);
           setWorkflows(remaining);
-          if (selectedWorkflow.id === id) {
+          if (selectedWorkflow?.id === id) {
             if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
             else navigate('/workflows');
           }
@@ -361,13 +334,14 @@ export default function Workflows() {
             variant="ghost"
             className="text-destructive hover:text-destructive"
             onClick={handleDelete}
+            disabled={!selectedWorkflow}
           >
             <Trash2 className="h-4 w-4 mr-1" /> Delete
           </Button>
           {/* Workflow name breadcrumb */}
           <div className="mx-2 h-4 border-l border-border" />
           <span className="text-sm font-medium truncate max-w-[240px]" data-testid="workflow-breadcrumb-name">
-            {selectedWorkflow.name}
+            {selectedWorkflow?.name ?? ''}
           </span>
           <div className="ml-auto flex items-center gap-2">
             <TenantSwitcher />
@@ -377,15 +351,28 @@ export default function Workflows() {
           </div>
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
-          <ErrorBoundary>
-            <WorkflowEditor
-              key={selectedWorkflow.id}
-              workflow={selectedWorkflow}
-              selectedCaseId={caseId ?? null}
-              templates={templates}
-              onSaved={() => toast.success('工作流已保存', { description: selectedWorkflow.name })}
-            />
-          </ErrorBoundary>
+          {!selectedWorkflow ? (
+            <div className="flex h-full flex-col items-center justify-center gap-4 text-center p-6">
+              <GitBranch className="h-12 w-12 text-muted-foreground/40" />
+              <div className="space-y-1">
+                <p className="text-lg font-medium">还没有工作流</p>
+                <p className="text-sm text-muted-foreground">创建第一个工作流，开始自动化您的业务流程。</p>
+              </div>
+              <Button onClick={() => setCreateOpen(true)} data-testid="create-first-workflow-btn">
+                <Plus className="h-4 w-4 mr-2" /> 创建第一个工作流
+              </Button>
+            </div>
+          ) : (
+            <ErrorBoundary>
+              <WorkflowEditor
+                key={selectedWorkflow.id}
+                workflow={selectedWorkflow}
+                selectedCaseId={caseId ?? null}
+                templates={templates}
+                onSaved={() => toast.success('工作流已保存', { description: selectedWorkflow.name })}
+              />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
 

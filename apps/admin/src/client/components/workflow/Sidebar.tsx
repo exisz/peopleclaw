@@ -70,7 +70,7 @@ export default function Sidebar({
   onDeleteWorkflow,
 }: {
   workflows: Workflow[];
-  selected: Workflow;
+  selected: Workflow | null;
   onSelect: (w: Workflow) => void;
   onAddStepTemplate?: (template: StepTemplate) => void;
   onDeleteWorkflow?: (id: string) => void;
@@ -179,11 +179,11 @@ export default function Sidebar({
                   {g.items.map(w => (
                     <div key={w.id} className="flex items-center group">
                       <Button
-                        variant={selected.id === w.id ? 'secondary' : 'ghost'}
+                        variant={selected?.id === w.id ? 'secondary' : 'ghost'}
                         size="sm"
                         className={cn(
                           'flex-1 justify-start gap-3 h-auto py-2 px-3 text-sm font-normal',
-                          selected.id === w.id && 'font-medium',
+                          selected?.id === w.id && 'font-medium',
                         )}
                         onClick={() => onSelect(w)}
                         data-testid={`sidebar-workflow-${w.id}`}
