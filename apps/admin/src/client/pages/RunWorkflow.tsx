@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
+import { ThemeToggle } from '../components/theme-toggle';
 
 interface WorkflowDef {
   id: string;
@@ -78,7 +79,10 @@ export default function RunWorkflow() {
         <Link to="/workflows" className="text-sm underline">
           ← Workflows
         </Link>
-        <CreditsBadge />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <CreditsBadge />
+        </div>
       </header>
       <Card>
         <CardHeader>

@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { apiJSON, apiFetch } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
+import { ThemeToggle } from '../components/theme-toggle';
 
 interface Pack {
   id: string;
@@ -65,7 +66,10 @@ export default function Credits() {
             </Link>
           </p>
         </div>
-        <CreditsBadge />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <CreditsBadge />
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

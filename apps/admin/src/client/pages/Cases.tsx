@@ -10,6 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
+import { ThemeToggle } from '../components/theme-toggle';
 
 interface CaseStep {
   id: string;
@@ -235,6 +236,7 @@ function CasesList() {
           <p className="text-sm text-muted-foreground mt-1">{cases.length} cases</p>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LanguageToggle />
           <CreditsBadge />
         </div>
