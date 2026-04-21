@@ -9,6 +9,7 @@ import { stripeWebhookRouter } from './routes/stripeWebhook.js';
 import { tenantsRouter } from './routes/tenants.js';
 import { stepTemplatesRouter } from './routes/step-templates.js';
 import { internalRouter } from './routes/internal.js';
+import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
 
 export function createApp(): Express {
@@ -18,6 +19,9 @@ export function createApp(): Express {
 
   // Stripe webhook needs raw body — mount BEFORE express.json
   app.use('/api', stripeWebhookRouter);
+
+  // PLANET-1045: Logto → Resend email bridge (no auth middleware, uses own secret check)
+  app.use('/api', logtoEmailWebhookRouter);
 
   app.use(express.json({ limit: '1mb' }));
   app.use('/api', healthRouter);
