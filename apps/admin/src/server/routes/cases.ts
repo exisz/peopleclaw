@@ -72,6 +72,18 @@ casesRouter.get('/cases/:id', async (req, res) => {
   res.json({ case: c });
 });
 
+// DELETE /api/cases/:id (tenant-scoped)
+casesRouter.delete('/cases/:id', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  // Delete steps first, then the case
+  await prisma.caseStep.deleteMany({ where: { caseId: c.id } });
+  await prisma.case.delete({ where: { id: c.id } });
+  res.json({ ok: true });
+});
+
 // POST /api/cases/:id/advance
 casesRouter.post('/cases/:id/advance', async (req, res) => {
   const r = req as unknown as TenantedRequest;

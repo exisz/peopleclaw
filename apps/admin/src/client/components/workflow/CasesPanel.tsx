@@ -7,9 +7,19 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { apiClient } from '../../lib/api';
 import { cn } from '../../lib/utils';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
 
 interface ServerCase {
   id: string;
@@ -65,6 +75,9 @@ export default function CasesPanel({
   const [filter, setFilter] = useState<FilterKey>('all');
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<ServerCase | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [completing, setCompleting] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +105,50 @@ export default function CasesPanel({
     return cases.filter((c) => c.status === filter);
   }, [cases, filter]);
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await apiClient.delete(`/api/cases/${target.id}`);
+      setCases((prev) => prev ? prev.filter((c) => c.id !== target.id) : prev);
+      toast.success(t('cases.deleted', { defaultValue: 'Case deleted' }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(t('cases.deleteFailed', { defaultValue: 'Delete failed' }), { description: msg });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleComplete = async (c: ServerCase) => {
+    setCompleting(c.id);
+    try {
+      // Fetch detail to get the waiting step id
+      const { case: detail } = await apiClient.get<{ case: ServerCase & { steps?: Array<{ id: string; stepId: string; status: string }> } }>(`/api/cases/${c.id}`);
+      const waitingStep = detail.steps?.find((s) => s.status === 'waiting_human');
+      if (!waitingStep) {
+        toast.error(t('cases.noWaitingStep', { defaultValue: 'No waiting step found' }));
+        return;
+      }
+      await apiClient.post(`/api/cases/${c.id}/advance`, {
+        stepId: waitingStep.stepId,
+        output: { approved: true },
+        action: 'approve',
+      });
+      toast.success(t('cases.completed', { defaultValue: 'Case advanced' }));
+      // Refresh list
+      const d = await apiClient.get<{ cases: ServerCase[] }>('/api/cases');
+      setCases(d.cases.filter((x) => x.workflowId === workflow.id));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(t('cases.completeFailed', { defaultValue: 'Complete failed' }), { description: msg });
+    } finally {
+      setCompleting(null);
+    }
+  };
+
   const createCase = async () => {
     if (!newTitle.trim()) return;
     setCreating(true);
@@ -113,7 +170,8 @@ export default function CasesPanel({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <>
+      <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b space-y-2">
         <div className="flex gap-2">
           <Input
@@ -174,32 +232,83 @@ export default function CasesPanel({
                 /* */
               }
               return (
-                <button
-                  key={c.id}
-                  type="button"
-                  data-testid={`case-card-${c.id}`}
-                  onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
-                  className={cn(
-                    'w-full text-left p-3 rounded-lg border transition-all hover:shadow-md hover:border-primary/40',
-                    selectedCaseId === c.id ? 'border-primary ring-2 ring-primary/30' : 'border-border bg-card',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h4 className="text-xs font-semibold truncate">{c.title}</h4>
-                    <Badge variant={STATUS_VARIANT[c.status] ?? 'default'} className="text-[9px] uppercase">
-                      {c.status}
-                    </Badge>
+                <div key={c.id} className={cn(
+                  'rounded-lg border transition-all',
+                  selectedCaseId === c.id ? 'border-primary ring-2 ring-primary/30' : 'border-border bg-card',
+                )}>
+                  <button
+                    type="button"
+                    data-testid={`case-card-${c.id}`}
+                    onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
+                    className="w-full text-left p-3 hover:bg-accent/30 rounded-t-lg transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className="text-xs font-semibold truncate">{c.title}</h4>
+                      <Badge variant={STATUS_VARIANT[c.status] ?? 'default'} className="text-[9px] uppercase">
+                        {c.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+                      <span>{relTime(c.updatedAt)}</span>
+                      <span>{stepCount} steps</span>
+                    </div>
+                  </button>
+                  <div className="flex items-center justify-end gap-1 px-2 py-1 border-t border-border/40">
+                    {c.status === 'waiting_human' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-[10px] text-green-600 hover:text-green-700 px-2"
+                        disabled={completing === c.id}
+                        onClick={(e) => { e.stopPropagation(); void handleComplete(c); }}
+                        data-testid={`case-complete-${c.id}`}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        {t('case:actions.complete', { defaultValue: '完成' })}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] text-destructive hover:text-destructive px-2"
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(c); }}
+                      data-testid={`case-delete-${c.id}`}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      {t('common:buttons.delete', { defaultValue: 'Delete' })}
+                    </Button>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                    <span>{relTime(c.updatedAt)}</span>
-                    <span>{stepCount} steps</span>
-                  </div>
-                </button>
+                </div>
               );
             })
           )}
         </div>
       </ScrollArea>
-    </div>
+      </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('cases.deleteConfirmTitle', { defaultValue: 'Delete case?' })}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('cases.deleteConfirmDesc', {
+              defaultValue: 'This will permanently delete "{{title}}" and all its steps.',
+              title: deleteTarget?.title ?? '',
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>{t('common:buttons.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {t('common:buttons.delete', { defaultValue: 'Delete' })}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

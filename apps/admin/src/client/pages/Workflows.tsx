@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Workflow, WorkflowStep } from '../types';
@@ -11,11 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon, BookOpen } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
@@ -60,6 +64,7 @@ function hydrate(w: ServerWorkflow): Workflow {
 
 export default function Workflows() {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
 
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -69,6 +74,7 @@ export default function Workflows() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newDesc, setNewDesc] = useState('');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -165,13 +171,14 @@ export default function Workflows() {
         {
           name: newName.trim(),
           category: 'product',
-          definition: { description: '', icon: '📋', steps: [], nodes: [], edges: [] },
+          definition: { description: newDesc.trim(), icon: '📋', steps: [], nodes: [], edges: [] },
         },
       );
       const hydrated = hydrate(workflow);
       setWorkflows((prev) => [hydrated, ...prev]);
       setCreateOpen(false);
       setNewName('');
+      setNewDesc('');
       navigate(`/workflows/${hydrated.id}`);
       toast.success('Workflow created');
     } catch (e) {
@@ -291,6 +298,8 @@ export default function Workflows() {
           onOpenChange={setCreateOpen}
           name={newName}
           onName={setNewName}
+          desc={newDesc}
+          onDesc={setNewDesc}
           onSubmit={handleCreate}
         />
       </div>
@@ -335,7 +344,7 @@ export default function Workflows() {
           </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
             <Link to="/settings" data-testid="nav-settings">
-              <Settings className="h-4 w-4" /> Settings
+              <Settings className="h-4 w-4" /> {t('common:nav.settings', { defaultValue: 'Settings' })}
             </Link>
           </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
@@ -385,6 +394,8 @@ export default function Workflows() {
         onOpenChange={setCreateOpen}
         name={newName}
         onName={setNewName}
+        desc={newDesc}
+        onDesc={setNewDesc}
         onSubmit={handleCreate}
       />
     </div>
@@ -396,32 +407,58 @@ function CreateDialog({
   onOpenChange,
   name,
   onName,
+  desc,
+  onDesc,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   name: string;
   onName: (s: string) => void;
+  desc: string;
+  onDesc: (s: string) => void;
   onSubmit: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>New workflow</DialogTitle>
+          <DialogTitle>New Workflow</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Give your workflow a name to get started. You can add steps after creating it.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <Input
-            placeholder="Workflow name"
-            value={name}
-            onChange={(e) => onName(e.target.value)}
-            autoFocus
-            onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
-          />
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="create-wf-name">
+              Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="create-wf-name"
+              placeholder="e.g. Product Review Workflow"
+              value={name}
+              onChange={(e) => onName(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onSubmit(); }}
+              data-testid="create-workflow-name"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="create-wf-desc">Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Textarea
+              id="create-wf-desc"
+              placeholder="What does this workflow do?"
+              value={desc}
+              onChange={(e) => onDesc(e.target.value)}
+              rows={3}
+              className="resize-none text-sm"
+              data-testid="create-workflow-desc"
+            />
+          </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSubmit} disabled={!name.trim()}>Create</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="create-workflow-cancel">Cancel</Button>
+          <Button onClick={onSubmit} disabled={!name.trim()} data-testid="create-workflow-submit">Create</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
