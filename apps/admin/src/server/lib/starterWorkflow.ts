@@ -51,7 +51,6 @@ export const DEFAULT_WORKFLOW = {
     // steps[] is what the canvas hydrate() reads — must be populated.
     // nodes[] is retained for position-restore compatibility.
     steps: [
-      { id: 'd1', name: 'AI SKU及价格生成',    type: 'agent', assignee: 'ai.generate_skus',        description: '', position: { x: 0,    y: 0 } },
       { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 200,  y: 0 } },
       { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 400,  y: 0 } },
       { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 600,  y: 0 } },
@@ -59,7 +58,6 @@ export const DEFAULT_WORKFLOW = {
       { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 1000, y: 0 } },
     ],
     nodes: [
-      { id: 'd1', position: { x: 0,    y: 0 } },
       { id: 'd2', position: { x: 200,  y: 0 } },
       { id: 'd3', position: { x: 400,  y: 0 } },
       { id: 'd4', position: { x: 600,  y: 0 } },
