@@ -214,9 +214,27 @@ export default function Workflows() {
       try {
         await apiClient.delete(`/api/workflows/${target.id}`);
       } catch (e) {
-        toast.error('Delete failed; restoring', { description: e instanceof Error ? e.message : String(e) });
         setWorkflows(prev);
         navigate(`/workflows/${target.id}`);
+        if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
+          const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
+          if (cases.length === 1) {
+            toast.error(`无法删除：以下案例正在使用此工作流`, {
+              description: cases[0].name,
+              action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
+              duration: 8000,
+            });
+          } else {
+            // Multiple cases — show a list in description
+            const desc = cases.map((c) => `• ${c.name}`).join('\n');
+            toast.error('以下案例正在使用此工作流，请先移除引用再删除：', {
+              description: desc,
+              duration: 10000,
+            });
+          }
+        } else {
+          toast.error('Delete failed; restoring', { description: e instanceof Error ? e.message : String(e) });
+        }
       }
     }, 5100);
   }, [selectedWorkflow, workflows, navigate]);

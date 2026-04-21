@@ -98,9 +98,17 @@ workflowsRouter.delete('/workflows/:id', requireAuth, requireTenant, async (req,
     return;
   }
   // Refuse delete if any case still references this workflow (cascade-safe v1)
-  const refCount = await prisma.case.count({ where: { workflowId: req.params.id } });
-  if (refCount > 0) {
-    res.status(409).json({ error: `cannot delete: ${refCount} case(s) reference this workflow` });
+  const refCases = await prisma.case.findMany({
+    where: { workflowId: req.params.id },
+    select: { id: true, title: true },
+  });
+  if (refCases.length > 0) {
+    const cases = refCases.map((c) => ({
+      id: c.id,
+      name: c.title,
+      url: `/cases/${c.id}`,
+    }));
+    res.status(409).json({ error: 'workflow_in_use', cases });
     return;
   }
   await prisma.workflow.delete({ where: { id: req.params.id } });
