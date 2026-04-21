@@ -302,17 +302,17 @@ export default function Workflows() {
         <div className="flex items-center gap-1 px-4 py-2 border-b bg-background" data-testid="app-topbar">
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
             <Link to="/dashboard" data-testid="nav-dashboard">
-              <LayoutDashboard className="h-4 w-4" /> Dashboard
+              <LayoutDashboard className="h-4 w-4" /> 我的
             </Link>
           </Button>
           <Button asChild size="sm" variant="secondary" className="text-xs gap-1.5">
             <Link to="/workflows" data-testid="nav-workflows">
-              <WorkflowIcon className="h-4 w-4" /> Workflows
+              <WorkflowIcon className="h-4 w-4" /> 工作流
             </Link>
           </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
             <Link to="/cases" data-testid="nav-cases">
-              <ListChecks className="h-4 w-4" /> Cases
+              <ListChecks className="h-4 w-4" /> 案例
             </Link>
           </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
