@@ -136,3 +136,4 @@ export const shopifyGetProductHandler: Handler = async (input, ctx) => {
   return { output: { product: data.product, source: creds.source } };
 };
 // switch to real shopify
+// re-enable mock
