@@ -103,11 +103,13 @@ export default function Sidebar({
       buckets.get(key)!.push(w);
     }
     // Categorised groups first (alphabetical), then "我的工作流" last.
+    // PLANET-1098: Sort items within each group by name so e.g. "默认工作流1" appears before "默认工作流2".
+    const sortItems = (items: Workflow[]) => [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
     const result: { key: string; label: string; items: Workflow[] }[] = [];
     const categorised = [...buckets.entries()].filter(([k]) => k !== MY_WORKFLOWS_LABEL);
     categorised.sort(([a], [b]) => a.localeCompare(b));
-    for (const [k, items] of categorised) result.push({ key: k, label: k, items });
-    if (buckets.has(MY_WORKFLOWS_LABEL)) result.push({ key: MY_WORKFLOWS_LABEL, label: MY_WORKFLOWS_LABEL, items: buckets.get(MY_WORKFLOWS_LABEL)! });
+    for (const [k, items] of categorised) result.push({ key: k, label: k, items: sortItems(items) });
+    if (buckets.has(MY_WORKFLOWS_LABEL)) result.push({ key: MY_WORKFLOWS_LABEL, label: MY_WORKFLOWS_LABEL, items: sortItems(buckets.get(MY_WORKFLOWS_LABEL)!) });
     return result;
   }, [workflows, search]);
 
