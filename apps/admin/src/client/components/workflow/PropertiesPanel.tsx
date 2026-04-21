@@ -241,6 +241,13 @@ export default function PropertiesPanel({
           />
         )}
 
+        {/* PLANET-1059/1060/1061: placeholder AI nodes */}
+        {['ai.generate_title', 'ai.switch_image', 'ai.generate_skus'].includes(step.templateId ?? '') && (
+          <div className="rounded-md border border-dashed border-muted-foreground/40 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            此功能开发中，敬请期待
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="prop-config">{t('properties.config', { defaultValue: 'Config (JSON)' })}</Label>

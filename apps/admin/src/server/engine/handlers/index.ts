@@ -10,6 +10,9 @@ import {
 } from './shopifyExtra.js';
 import { aiProductImageCaptionHandler, aiProductTranslateHandler } from './aiExtra.js';
 import { aiImageGenerateHandler } from './aiImageGenerate.js';
+import { aiGenerateTitleHandler } from './aiGenerateTitle.js';
+import { aiSwitchImageHandler } from './aiSwitchImage.js';
+import { aiGenerateSkusHandler } from './aiGenerateSkus.js';
 import {
   genericHttpRequestHandler,
   genericTransformJsonHandler,
@@ -41,6 +44,9 @@ export const handlers: Record<string, Handler> = {
   'ai.product_image_caption': aiProductImageCaptionHandler,
   'ai.product_translate': aiProductTranslateHandler,
   'ai.image_generate': aiImageGenerateHandler,
+  'ai.generate_title': aiGenerateTitleHandler,   // PLANET-1059 placeholder
+  'ai.switch_image': aiSwitchImageHandler,         // PLANET-1060 placeholder
+  'ai.generate_skus': aiGenerateSkusHandler,       // PLANET-1061 placeholder
   // Canonical — Generic
   'generic.http_request': genericHttpRequestHandler,
   'generic.transform_json': genericTransformJsonHandler,

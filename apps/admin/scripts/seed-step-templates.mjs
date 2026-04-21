@@ -291,6 +291,66 @@ const TEMPLATES = [
       },
     },
   },
+  // AI generate title — PLANET-1059 (placeholder)
+  {
+    id: 'ai.generate_title',
+    category: 'ai',
+    domain: 'generic',
+    labelI18n: { en: 'AI Generate Title', zh: 'AI 生成标题' },
+    descriptionI18n: {
+      en: 'Automatically generate a product title. (Coming soon)',
+      zh: '自动生成商品标题。（功能开发中）',
+    },
+    icon: 'Type',
+    kind: 'auto',
+    handler: 'ai.generate_title',
+    defaultConfig: {},
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: {
+      type: 'object',
+      properties: { title: { type: 'string' } },
+    },
+  },
+  // AI switch image — PLANET-1060 (placeholder)
+  {
+    id: 'ai.switch_image',
+    category: 'ai',
+    domain: 'generic',
+    labelI18n: { en: 'AI Switch Image', zh: 'AI 切换图片' },
+    descriptionI18n: {
+      en: 'Intelligently switch or select product images. (Coming soon)',
+      zh: '智能切换/选择商品图片。（功能开发中）',
+    },
+    icon: 'Images',
+    kind: 'auto',
+    handler: 'ai.switch_image',
+    defaultConfig: {},
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: {
+      type: 'object',
+      properties: { imageUrl: { type: 'string' } },
+    },
+  },
+  // AI generate SKUs & pricing — PLANET-1061 (placeholder)
+  {
+    id: 'ai.generate_skus',
+    category: 'ai',
+    domain: 'generic',
+    labelI18n: { en: 'AI Generate SKUs & Pricing', zh: 'AI 生成 SKU 及价格' },
+    descriptionI18n: {
+      en: 'Automatically generate SKU variants and pricing. (Coming soon)',
+      zh: '自动生成商品 SKU 及价格。（功能开发中）',
+    },
+    icon: 'Tags',
+    kind: 'auto',
+    handler: 'ai.generate_skus',
+    defaultConfig: {},
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: {
+      type: 'object',
+      properties: { skus: { type: 'array', items: { type: 'object' } } },
+    },
+  },
   // Generic (4)
   {
     id: 'generic.http_request',
