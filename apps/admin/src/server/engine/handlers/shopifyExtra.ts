@@ -1,6 +1,10 @@
 import type { Handler } from './index.js';
 import { resolveShopifyCreds, shopifyFetch } from './shopifyClient.js';
 
+function isMock() {
+  return process.env.SHOPIFY_MOCK === 'true';
+}
+
 function failNotConfigured() {
   return {
     status: 'failed' as const,
@@ -13,6 +17,7 @@ function failNotConfigured() {
 export const shopifyUpdateInventoryHandler: Handler = async (input, ctx) => {
   const { payload } = input;
   const cfg = ctx.stepConfig ?? {};
+  if (isMock()) return { output: { available: 99, mock: true } };
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) return failNotConfigured();
 
@@ -47,6 +52,7 @@ export const shopifyUpdateInventoryHandler: Handler = async (input, ctx) => {
 /** shopify.fetch_orders — list recent orders. */
 export const shopifyFetchOrdersHandler: Handler = async (_input, ctx) => {
   const cfg = ctx.stepConfig ?? {};
+  if (isMock()) return { output: { orders: [{ id: 'mock_order_1', name: '#1001' }], count: 1, mock: true } };
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) return failNotConfigured();
   const status = (cfg.status as string) || 'any';
@@ -69,6 +75,7 @@ export const shopifyFetchOrdersHandler: Handler = async (_input, ctx) => {
 export const shopifyUpdateOrderStatusHandler: Handler = async (input, ctx) => {
   const { payload } = input;
   const cfg = ctx.stepConfig ?? {};
+  if (isMock()) return { output: { fulfillmentId: 'mock_fulfill_1', status: 'success', mock: true } };
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) return failNotConfigured();
 
