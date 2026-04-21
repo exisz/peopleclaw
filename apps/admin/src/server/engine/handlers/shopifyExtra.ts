@@ -138,3 +138,4 @@ export const shopifyGetProductHandler: Handler = async (input, ctx) => {
   const data = (await res.json()) as { product?: unknown };
   return { output: { product: data.product, source: creds.source } };
 };
+// switch to real shopify
