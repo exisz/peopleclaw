@@ -494,9 +494,9 @@ function EditorInner({
             className="flex flex-col h-full"
           >
             <TabsList className="grid grid-cols-3 mx-2 mt-2">
-              <TabsTrigger value="properties" data-testid="tab-properties">{t('tabs.properties', { defaultValue: 'Properties' })}</TabsTrigger>
-              <TabsTrigger value="cases" data-testid="tab-cases">{t('tabs.cases', { defaultValue: 'Cases' })}</TabsTrigger>
-              <TabsTrigger value="runs" data-testid="tab-runs">{t('tabs.runs', { defaultValue: 'Runs' })}</TabsTrigger>
+              <TabsTrigger value="properties" data-testid="tab-properties">{t('tabs.properties', { defaultValue: '属性' })}</TabsTrigger>
+              <TabsTrigger value="cases" data-testid="tab-cases">{t('tabs.cases', { defaultValue: '案例' })}</TabsTrigger>
+              <TabsTrigger value="runs" data-testid="tab-runs">{t('tabs.runs', { defaultValue: '运行记录' })}</TabsTrigger>
             </TabsList>
             <TabsContent value="properties" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
               <PropertiesPanel

@@ -146,7 +146,7 @@ export default function Sidebar({
           onClick={() => setTab('library')}
           data-testid="sidebar-tab-library"
         >
-          {t('tabs.library', { defaultValue: 'Step Library' })}
+          {t('tabs.library', { defaultValue: 'STEP操作流程' })}
         </Button>
       </div>
 
