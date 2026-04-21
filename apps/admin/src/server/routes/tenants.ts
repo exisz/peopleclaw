@@ -3,6 +3,7 @@ import { getPrisma } from '../lib/prisma.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest, suggestSlug, uniqueSlug } from '../middleware/tenant.js';
 import { exchangeShopifyClientCredentials } from '../lib/shopifyAuth.js';
+import { shopifyFetch } from '../engine/handlers/shopifyClient.js';
 import { provisionStarterWorkflow } from '../lib/starterWorkflow.js';
 
 export const tenantsRouter = Router();
@@ -163,6 +164,34 @@ tenantsRouter.post('/tenants/:slug/connections/:id/refresh', async (req, res) =>
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e);
     res.status(400).json({ error: err });
+  }
+});
+
+/**
+ * Test a Shopify connection WITHOUT saving it.
+ * Body: { shop_domain: string, admin_token: string }
+ * Returns: { ok: true, shop: { name, domain } } or 400 with { error }
+ */
+tenantsRouter.post('/tenants/:slug/connections/shopify/test', async (req, res) => {
+  const { shop_domain, admin_token } = (req.body ?? {}) as Record<string, string>;
+  if (!shop_domain || !admin_token) {
+    res.status(400).json({ error: 'shop_domain and admin_token required' }); return;
+  }
+  let shop = shop_domain.trim();
+  if (!shop.includes('.')) shop = `${shop}.myshopify.com`;
+  try {
+    const r = await shopifyFetch(
+      { shop, token: admin_token, source: 'test' },
+      'shop.json',
+    );
+    if (!r.ok) {
+      const txt = await r.text();
+      res.status(400).json({ error: `Shopify returned ${r.status}: ${txt.slice(0, 200)}` }); return;
+    }
+    const data = (await r.json()) as { shop?: { name?: string; domain?: string } };
+    res.json({ ok: true, shop: { name: data.shop?.name ?? shop, domain: data.shop?.domain ?? shop } });
+  } catch (e) {
+    res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 

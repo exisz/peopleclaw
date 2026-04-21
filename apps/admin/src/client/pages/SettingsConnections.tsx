@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
+import { Trash2, Loader2, RefreshCw, CheckCircle2, XCircle, Plug } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription,
-} from '../components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { apiJSON, getCurrentTenantSlug } from '../lib/api';
 
 interface Connection {
@@ -19,66 +15,87 @@ interface Connection {
   createdAt: string;
 }
 
-function formatRelative(iso: string | undefined, t: (k: string, o?: Record<string, unknown>) => string): string {
-  if (!iso) return t('connections.tokenExpiresUnknown');
-  const target = new Date(iso).getTime();
-  if (Number.isNaN(target)) return t('connections.tokenExpiresUnknown');
-  const diffMs = target - Date.now();
-  if (diffMs <= 0) return t('connections.tokenExpired');
-  const mins = Math.round(diffMs / 60000);
-  let when: string;
-  if (mins < 60) when = `in ${mins}m`;
-  else if (mins < 60 * 24) when = `in ${Math.round(mins / 60)}h`;
-  else when = `in ${Math.round(mins / 60 / 24)}d`;
-  return t('connections.tokenExpires', { when });
+type TestState = 'idle' | 'testing' | 'ok' | 'fail';
+
+function normalizeShopDomain(s: string): string {
+  const v = s.trim();
+  if (!v) return v;
+  if (!v.includes('.')) return `${v}.myshopify.com`;
+  return v;
 }
 
 export default function SettingsConnections() {
-  const { t } = useTranslation('settings');
+  // --- existing connections list ---
   const [list, setList] = useState<Connection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<'token' | 'oauth'>('token');
-  const [shop, setShop] = useState('');
-  const [adminToken, setAdminToken] = useState('');
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+
+  // --- shopify inline form ---
+  const [shopDomain, setShopDomain] = useState('');
+  const [adminToken, setAdminToken] = useState('');
+  const [testState, setTestState] = useState<TestState>('idle');
+  const [testMsg, setTestMsg] = useState('');   // shop name on success, error on fail
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
+  // pre-fill form if a shopify connection already exists
+  const shopifyConn = list.find((c) => c.type === 'shopify');
 
   async function reload() {
     const slug = getCurrentTenantSlug();
     if (!slug) return;
-    setLoading(true);
+    setListLoading(true);
     try {
       const d = await apiJSON<{ connections: Connection[] }>(`/api/tenants/${slug}/connections`);
       setList(d.connections);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally { setLoading(false); }
+    } catch {/* silent */}
+    finally { setListLoading(false); }
   }
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { void reload(); }, []);
 
-  async function saveShopify() {
+  // reset test badge whenever inputs change
+  function handleShopChange(v: string) { setShopDomain(v); setTestState('idle'); setTestMsg(''); setSaveErr(null); }
+  function handleTokenChange(v: string) { setAdminToken(v); setTestState('idle'); setTestMsg(''); setSaveErr(null); }
+
+  async function testConnection() {
+    const slug = getCurrentTenantSlug();
+    if (!slug || !shopDomain || !adminToken) return;
+    setTestState('testing'); setTestMsg(''); setSaveErr(null);
+    try {
+      const r = await apiJSON<{ ok: true; shop: { name: string; domain: string } }>(
+        `/api/tenants/${slug}/connections/shopify/test`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shop_domain: normalizeShopDomain(shopDomain), admin_token: adminToken }),
+        },
+      );
+      setTestState('ok');
+      setTestMsg(r.shop.name);
+    } catch (e) {
+      setTestState('fail');
+      setTestMsg(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function saveConnection() {
     const slug = getCurrentTenantSlug();
     if (!slug) return;
-    setBusy(true); setErr(null);
+    setSaving(true); setSaveErr(null);
     try {
-      const config = mode === 'token'
-        ? { shop_domain: shop, admin_token: adminToken }
-        : { shop_domain: shop, client_id: clientId, client_secret: clientSecret };
       await apiJSON(`/api/tenants/${slug}/connections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'shopify', config }),
+        body: JSON.stringify({
+          type: 'shopify',
+          config: { shop_domain: normalizeShopDomain(shopDomain), admin_token: adminToken },
+        }),
       });
-      setOpen(false);
-      setShop(''); setAdminToken(''); setClientId(''); setClientSecret('');
-      reload();
+      setAdminToken(''); // clear sensitive input
+      await reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally { setBusy(false); }
+      setSaveErr(e instanceof Error ? e.message : String(e));
+    } finally { setSaving(false); }
   }
 
   async function refreshOne(id: string) {
@@ -87,207 +104,200 @@ export default function SettingsConnections() {
     setRefreshingId(id);
     try {
       await apiJSON(`/api/tenants/${slug}/connections/${id}/refresh`, { method: 'POST' });
-      reload();
+      await reload();
     } catch (e) {
       alert(e instanceof Error ? e.message : String(e));
-    } finally {
-      setRefreshingId(null);
-    }
+    } finally { setRefreshingId(null); }
   }
 
   async function del(id: string) {
-    if (!confirm(t('connections.deleteConfirm'))) return;
+    if (!confirm('删除此连接？')) return;
     const slug = getCurrentTenantSlug();
     if (!slug) return;
     try {
       await apiJSON(`/api/tenants/${slug}/connections/${id}`, { method: 'DELETE' });
-      reload();
+      await reload();
     } catch (e) {
       alert(e instanceof Error ? e.message : String(e));
     }
   }
 
+  const canTest = shopDomain.trim().length > 0 && adminToken.trim().length > 0;
+  const canSave = testState === 'ok' && !saving;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-medium">{t('connections.heading')}</h2>
-          <p className="text-sm text-muted-foreground">{t('connections.subheading')}</p>
-        </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setMode('token'); setShop(''); setAdminToken(''); setClientId(''); setClientSecret(''); setErr(null); } }}>
-          <DialogTrigger asChild>
-            <Button data-testid="connection-add-shopify">
-              <Plus className="h-4 w-4" /> {t('connections.addShopify')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('connections.shopifyDialog.title')}</DialogTitle>
-              <DialogDescription>{t('connections.shopifyDialog.description')}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              {/* Mode toggle */}
-              <div className="flex gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setMode('token')}
-                  className={`px-3 py-1 rounded-md border transition-colors ${
-                    mode === 'token'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                  }`}
-                >
-                  Admin API Token
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('oauth')}
-                  className={`px-3 py-1 rounded-md border transition-colors ${
-                    mode === 'oauth'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                  }`}
-                >
-                  OAuth (client_credentials)
-                </button>
-              </div>
-              <div>
-                <Label>{t('connections.shopifyDialog.shopDomain')}</Label>
-                <Input
-                  data-testid="shopify-shop-input"
-                  placeholder={t('connections.shopifyDialog.shopDomainPlaceholder')}
-                  value={shop}
-                  onChange={(e) => setShop(e.target.value)}
-                />
-              </div>
-              {mode === 'token' ? (
-                <div>
-                  <Label>Admin API Token</Label>
-                  <Input
-                    data-testid="shopify-admin-token-input"
-                    type="password"
-                    placeholder="shpat_…"
-                    value={adminToken}
-                    onChange={(e) => setAdminToken(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    从 Shopify Admin → Apps → Develop apps → API credentials 获取。
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <Label>{t('connections.shopifyDialog.clientId')}</Label>
-                    <Input
-                      data-testid="shopify-client-id-input"
-                      placeholder={t('connections.shopifyDialog.clientIdPlaceholder')}
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('connections.shopifyDialog.clientSecret')}</Label>
-                    <Input
-                      data-testid="shopify-client-secret-input"
-                      type="password"
-                      placeholder={t('connections.shopifyDialog.clientSecretPlaceholder')}
-                      value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-              {err && <p className="text-sm text-destructive break-all">{err}</p>}
+    <div className="space-y-6">
+
+      {/* ── Shopify 连接区域 ── */}
+      <Card data-testid="shopify-connection-card">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#96bf48]/10">
+              {/* Shopify-green icon placeholder */}
+              <Plug className="h-4 w-4 text-[#96bf48]" />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                {t('connections.shopifyDialog.cancel')}
+            <div>
+              <CardTitle className="text-base">Shopify 连接</CardTitle>
+              <CardDescription className="text-xs">
+                连接后工作流可直接读写 Shopify 商品、订单数据
+              </CardDescription>
+            </div>
+            {/* Current connected status badge */}
+            {shopifyConn?.enabled && (
+              <Badge className="ml-auto bg-green-600 text-white hover:bg-green-700 gap-1">
+                <CheckCircle2 className="h-3 w-3" /> 已连接
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* If already connected, show summary row */}
+          {shopifyConn && (
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+              <span className="font-mono flex-1 truncate text-xs">
+                {typeof shopifyConn.config.shop_domain === 'string'
+                  ? shopifyConn.config.shop_domain
+                  : 'Shopify'}
+              </span>
+              <Button
+                variant="ghost" size="sm"
+                onClick={() => refreshOne(shopifyConn.id)}
+                disabled={refreshingId === shopifyConn.id}
+                title="刷新 Token"
+              >
+                {refreshingId === shopifyConn.id
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <RefreshCw className="h-4 w-4" />}
               </Button>
               <Button
-                onClick={saveShopify}
-                disabled={busy || !shop || (mode === 'token' ? !adminToken : (!clientId || !clientSecret))}
-                data-testid="shopify-save"
+                variant="ghost" size="sm"
+                onClick={() => del(shopifyConn.id)}
+                title="删除连接"
+                data-testid="shopify-delete"
               >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t('connections.shopifyDialog.save')}
+                <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </div>
+          )}
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin inline" /> {t('connections.loading')}
-        </p>
-      ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('connections.empty')}</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('connections.type')}</TableHead>
-              <TableHead>{t('connections.details')}</TableHead>
-              <TableHead>{t('connections.status')}</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((c) => {
-              const cfg = c.config || {};
-              const shopDomain = typeof cfg.shop_domain === 'string' ? cfg.shop_domain : '';
-              const expiresAt = typeof cfg.token_expires_at === 'string' ? cfg.token_expires_at : '';
-              return (
-                <TableRow key={c.id} data-testid={`connection-row-${c.type}`}>
-                  <TableCell className="font-medium capitalize">{c.type}</TableCell>
-                  <TableCell className="text-xs">
-                    {c.type === 'shopify' ? (
-                      <div className="space-y-1">
-                        {shopDomain && (
-                          <Badge variant="outline" className="font-mono">{shopDomain}</Badge>
-                        )}
-                        {expiresAt ? (
-                          <div className="text-muted-foreground">{formatRelative(expiresAt, t)}</div>
-                        ) : (
-                          <div className="text-muted-foreground text-xs">Admin API Token (静态)</div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="font-mono">{JSON.stringify(cfg)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={c.enabled ? 'default' : 'outline'} className={c.enabled ? 'bg-green-600 text-white hover:bg-green-700' : ''}>
-                      {c.enabled ? '✓ ' + t('connections.enabled') : t('connections.disabled')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    {c.type === 'shopify' && (
-                      <Button
-                        variant="ghost" size="sm"
-                        onClick={() => refreshOne(c.id)}
-                        disabled={refreshingId === c.id}
-                        data-testid={`connection-refresh-${c.id}`}
-                        title={t('connections.refreshNow')}
-                      >
-                        {refreshingId === c.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost" size="sm"
-                      onClick={() => del(c.id)}
-                      data-testid={`connection-delete-${c.id}`}
-                      title={t('connections.delete')}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+          {/* Form — always visible so user can re-connect / update */}
+          <div className="space-y-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="shopify-domain">
+                店铺域名
+              </Label>
+              <Input
+                id="shopify-domain"
+                data-testid="shopify-shop-input"
+                placeholder="yourstore.myshopify.com"
+                value={shopDomain}
+                onChange={(e) => handleShopChange(e.target.value)}
+                autoComplete="off"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                填写格式：<code className="font-mono">yourstore.myshopify.com</code>
+              </p>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="shopify-token">
+                Admin API Token
+              </Label>
+              <Input
+                id="shopify-token"
+                data-testid="shopify-admin-token-input"
+                type="password"
+                placeholder="shpat_xxxxxxxxxxxxxxxxxxxx"
+                value={adminToken}
+                onChange={(e) => handleTokenChange(e.target.value)}
+                autoComplete="new-password"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                从 Shopify Admin → <strong>Apps</strong> → <strong>Develop apps</strong> → API credentials 获取
+              </p>
+            </div>
+
+            {/* Test result feedback */}
+            {testState === 'ok' && (
+              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>连接成功 ✅ — <strong>{testMsg}</strong></span>
+              </div>
+            )}
+            {testState === 'fail' && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span className="break-all">{testMsg}</span>
+              </div>
+            )}
+            {saveErr && (
+              <p className="text-sm text-destructive break-all">{saveErr}</p>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                onClick={testConnection}
+                disabled={!canTest || testState === 'testing'}
+                data-testid="shopify-test"
+              >
+                {testState === 'testing'
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> 测试中…</>
+                  : '测试连接'}
+              </Button>
+              <Button
+                onClick={saveConnection}
+                disabled={!canSave}
+                data-testid="shopify-save"
+                title={testState !== 'ok' ? '请先测试连接' : undefined}
+              >
+                {saving
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> 保存中…</>
+                  : shopifyConn ? '更新连接' : '保存连接'}
+              </Button>
+            </div>
+            {testState !== 'ok' && canTest && (
+              <p className="text-[11px] text-muted-foreground">请先点"测试连接"验证后再保存</p>
+            )}
+          </div>
+
+          {listLoading && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> 加载中…
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Other connections (non-shopify) ── */}
+      {list.filter((c) => c.type !== 'shopify').length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">其他连接</h3>
+          {list.filter((c) => c.type !== 'shopify').map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm"
+              data-testid={`connection-row-${c.type}`}
+            >
+              <span className="capitalize font-medium w-24">{c.type}</span>
+              <span className="font-mono text-xs text-muted-foreground flex-1 truncate">
+                {JSON.stringify(c.config)}
+              </span>
+              <Badge variant={c.enabled ? 'secondary' : 'outline'}>
+                {c.enabled ? '已启用' : '已禁用'}
+              </Badge>
+              <Button
+                variant="ghost" size="sm"
+                onClick={() => del(c.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
