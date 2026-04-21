@@ -26,11 +26,8 @@ export const shopifyUpdateInventoryHandler: Handler = async (input, ctx) => {
   const quantity = (payload.quantity as number) ?? (cfg.quantity as number) ?? 0;
 
   if (!inventory_item_id || !location_id) {
-    return {
-      status: 'failed',
-      output: { error: 'MissingInputs' },
-      error: 'shopify.update_inventory needs inventory_item_id and location_id',
-    };
+    // No specific item/location to update — skip gracefully in workflow context
+    return { output: { skipped: true, reason: 'no inventory_item_id or location_id provided' } };
   }
 
   const res = await shopifyFetch(creds, 'inventory_levels/set.json', {
