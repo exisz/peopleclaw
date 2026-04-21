@@ -431,11 +431,11 @@ function CreateDialog({
         <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="create-wf-name">
-              Name <span className="text-destructive">*</span>
+              名称 <span className="text-destructive">*</span>
             </Label>
             <Input
               id="create-wf-name"
-              placeholder="e.g. Product Review Workflow"
+              placeholder="例如：产品审核流程"
               value={name}
               onChange={(e) => onName(e.target.value)}
               autoFocus
