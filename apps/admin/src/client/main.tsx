@@ -15,11 +15,14 @@ import Credits from './pages/Credits';
 import CreditsSuccess from './pages/CreditsSuccess';
 import RunWorkflow from './pages/RunWorkflow';
 import Settings from './pages/Settings';
+import SettingsBackground from './pages/SettingsBackground';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <BrowserRouter>
+      <ErrorBoundary>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signin" element={<SignIn />} />
@@ -35,7 +38,9 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/credits/success" element={<CreditsSuccess />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/:tab" element={<Settings />} />
+        <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />
         </Routes>
+      </ErrorBoundary>
       <Toaster richColors closeButton position="top-right" />
       </BrowserRouter>
     </ThemeProvider>

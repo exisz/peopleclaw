@@ -16,7 +16,8 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon, BookOpen } from 'lucide-react';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
 import UserMenu from '../components/UserMenu';
 import { ThemeToggle } from '../components/theme-toggle';
@@ -285,6 +286,16 @@ export default function Workflows() {
         selected={selectedWorkflow}
         onSelect={handleSelect}
         onAddStepTemplate={handleAddStepFromTemplate}
+        onDeleteWorkflow={(id) => {
+          const target = workflows.find((w) => w.id === id);
+          if (!target) return;
+          const remaining = workflows.filter((w) => w.id !== id);
+          setWorkflows(remaining);
+          if (selectedWorkflow.id === id) {
+            if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
+            else navigate('/workflows');
+          }
+        }}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navigation bar */}
@@ -307,6 +318,11 @@ export default function Workflows() {
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
             <Link to="/settings" data-testid="nav-settings">
               <Settings className="h-4 w-4" /> Settings
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
+            <Link to="/settings/background" data-testid="nav-background-settings">
+              <BookOpen className="h-4 w-4" /> 背景设定
             </Link>
           </Button>
           <div className="mx-2 h-4 border-l border-border" />
@@ -334,13 +350,15 @@ export default function Workflows() {
           </div>
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
-          <WorkflowEditor
-            key={selectedWorkflow.id}
-            workflow={selectedWorkflow}
-            selectedCaseId={caseId ?? null}
-            templates={templates}
-            onSaved={() => toast.success('工作流已保存', { description: selectedWorkflow.name })}
-          />
+          <ErrorBoundary>
+            <WorkflowEditor
+              key={selectedWorkflow.id}
+              workflow={selectedWorkflow}
+              selectedCaseId={caseId ?? null}
+              templates={templates}
+              onSaved={() => toast.success('工作流已保存', { description: selectedWorkflow.name })}
+            />
+          </ErrorBoundary>
         </main>
       </div>
 

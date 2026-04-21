@@ -13,11 +13,29 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { cn } from '../../lib/utils';
 import { BuildBadge } from '../BuildBadge';
 import { useI18nField } from '../../i18n/useI18nField';
 import { apiClient } from '../../lib/api';
 import LEGACY_ZH_TO_KEY from '../../i18n/locales/zh/legacy-category-map.json';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const CATEGORY_KEYS = [
   'ecommerce', 'marketing', 'asset', 'sales', 'hr',
@@ -49,15 +67,34 @@ export default function Sidebar({
   selected,
   onSelect,
   onAddStepTemplate,
+  onDeleteWorkflow,
 }: {
   workflows: Workflow[];
   selected: Workflow;
   onSelect: (w: Workflow) => void;
   onAddStepTemplate?: (template: StepTemplate) => void;
+  onDeleteWorkflow?: (id: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'workflows' | 'library'>('workflows');
+  const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { t } = useTranslation('workflow');
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await apiClient.delete(`/api/workflows/${deleteTarget.id}`);
+      toast.success('工作流已删除', { description: deleteTarget.name });
+      onDeleteWorkflow?.(deleteTarget.id);
+    } catch (e: unknown) {
+      toast.error('删除失败', { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
 
   const filtered = search.trim()
     ? workflows.filter(
@@ -140,23 +177,47 @@ export default function Sidebar({
                     {g.label}
                   </p>
                   {g.items.map(w => (
-                    <Button
-                      key={w.id}
-                      variant={selected.id === w.id ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className={cn(
-                        'w-full justify-start gap-3 h-auto py-2 px-3 text-sm font-normal',
-                        selected.id === w.id && 'font-medium',
-                      )}
-                      onClick={() => onSelect(w)}
-                      data-testid={`sidebar-workflow-${w.id}`}
-                    >
-                      <span className="text-lg leading-none">{w.icon}</span>
-                      <span className="truncate flex-1 text-left">{w.name}</span>
-                      <span className="font-mono text-[9px] text-muted-foreground">
-                        {w.steps.length}
-                      </span>
-                    </Button>
+                    <div key={w.id} className="flex items-center group">
+                      <Button
+                        variant={selected.id === w.id ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className={cn(
+                          'flex-1 justify-start gap-3 h-auto py-2 px-3 text-sm font-normal',
+                          selected.id === w.id && 'font-medium',
+                        )}
+                        onClick={() => onSelect(w)}
+                        data-testid={`sidebar-workflow-${w.id}`}
+                      >
+                        <span className="text-lg leading-none">{w.icon}</span>
+                        <span className="truncate flex-1 text-left">{w.name}</span>
+                        <span className="font-mono text-[9px] text-muted-foreground">
+                          {w.steps.length}
+                        </span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0"
+                            data-testid={`sidebar-workflow-menu-${w.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}
+                            data-testid={`sidebar-workflow-delete-${w.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   ))}
                   {gi < grouped.length - 1 && <Separator className="my-2" />}
                 </div>
@@ -175,6 +236,29 @@ export default function Sidebar({
       ) : (
         <StepLibraryPanel onAdd={onAddStepTemplate} />
       )}
+
+      {/* PLANET-1052: delete confirm dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除工作流</AlertDialogTitle>
+            <AlertDialogDescription>
+              将删除「{deleteTarget?.name}」，此操作不可恢复。有履历案例的工作流不能删除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-delete-workflow"
+            >
+              {deleting ? '删除中…' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }
