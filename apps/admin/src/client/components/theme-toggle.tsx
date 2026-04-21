@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor, Check } from 'lucide-react';
+import { Sun, Moon, Eye, Leaf, Cloud, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -8,14 +8,18 @@ import {
 } from './ui/dropdown-menu';
 import { useTheme, type Theme } from './theme-provider';
 
-const OPTIONS: { value: Theme; label: string; testId: string }[] = [
-  { value: 'light', label: 'Light', testId: 'theme-option-light' },
-  { value: 'dark', label: 'Dark', testId: 'theme-option-dark' },
-  { value: 'system', label: 'System', testId: 'theme-option-system' },
+const OPTIONS: { value: Theme; label: string; icon: React.ElementType; testId: string }[] = [
+  { value: 'light',    label: '日间',  icon: Sun,   testId: 'theme-option-light' },
+  { value: 'dark',     label: '夜间',  icon: Moon,  testId: 'theme-option-dark' },
+  { value: 'eye-care', label: '护眼',  icon: Eye,   testId: 'theme-option-eye-care' },
+  { value: 'green',    label: '淡绿',  icon: Leaf,  testId: 'theme-option-green' },
+  { value: 'gray',     label: '浅灰',  icon: Cloud, testId: 'theme-option-gray' },
 ];
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const current = OPTIONS.find((o) => o.value === theme) ?? OPTIONS[0];
+  const Icon = current.icon;
 
   return (
     <DropdownMenu>
@@ -25,34 +29,14 @@ export function ThemeToggle() {
           size="icon"
           className="relative"
           data-testid="theme-toggle"
-          aria-label="Toggle theme"
+          aria-label="切换主题"
         >
-          <Sun
-            className={
-              'h-4 w-4 transition-all ' +
-              (resolvedTheme === 'dark'
-                ? '-rotate-90 scale-0'
-                : 'rotate-0 scale-100')
-            }
-          />
-          <Moon
-            className={
-              'absolute h-4 w-4 transition-all ' +
-              (resolvedTheme === 'dark'
-                ? 'rotate-0 scale-100'
-                : 'rotate-90 scale-0')
-            }
-          />
+          <Icon className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {OPTIONS.map((opt) => {
-          const Icon =
-            opt.value === 'light'
-              ? Sun
-              : opt.value === 'dark'
-              ? Moon
-              : Monitor;
+          const ItemIcon = opt.icon;
           const selected = theme === opt.value;
           return (
             <DropdownMenuItem
@@ -62,7 +46,7 @@ export function ThemeToggle() {
               className="justify-between"
             >
               <span className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
+                <ItemIcon className="h-4 w-4" />
                 {opt.label}
               </span>
               {selected ? (

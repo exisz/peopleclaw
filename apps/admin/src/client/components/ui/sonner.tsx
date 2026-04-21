@@ -4,10 +4,11 @@ import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { useTheme } from '../theme-provider';
 
 export function Toaster(props: ToasterProps) {
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
+  const sonnerTheme = theme === 'dark' ? 'dark' : 'light';
   return (
     <Sonner
-      theme={resolvedTheme as ToasterProps['theme']}
+      theme={sonnerTheme as ToasterProps['theme']}
       className="toaster group"
       toastOptions={{
         classNames: {

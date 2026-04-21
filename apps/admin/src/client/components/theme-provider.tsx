@@ -8,68 +8,50 @@ import {
   type ReactNode,
 } from 'react';
 
-export type Theme = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'eye-care' | 'green' | 'gray';
 
 type ThemeContextValue = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: ResolvedTheme;
 };
 
 const STORAGE_KEY = 'peopleclaw-theme';
-const DEFAULT_THEME: Theme = 'system';
+const DEFAULT_THEME: Theme = 'light';
+const VALID_THEMES: Theme[] = ['light', 'dark', 'eye-care', 'green', 'gray'];
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
-
-function getSystemTheme(): ResolvedTheme {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
 
 function readStoredTheme(): Theme {
   if (typeof window === 'undefined') return DEFAULT_THEME;
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v === 'light' || v === 'dark' || v === 'system') return v;
+    if (v && VALID_THEMES.includes(v as Theme)) return v as Theme;
   } catch {
     /* ignore */
   }
   return DEFAULT_THEME;
 }
 
-function applyTheme(resolved: ResolvedTheme) {
+function applyTheme(theme: Theme) {
   const root = document.documentElement;
+  // Remove legacy class-based tokens
   root.classList.remove('light', 'dark');
-  root.classList.add(resolved);
-  root.style.colorScheme = resolved;
+  root.removeAttribute('data-theme');
+
+  if (theme === 'dark') {
+    root.classList.add('dark');
+    root.style.colorScheme = 'dark';
+  } else {
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = 'light';
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => readStoredTheme());
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
-    const initial = readStoredTheme();
-    return initial === 'system' ? getSystemTheme() : initial;
-  });
 
-  // Apply theme whenever it changes; listen to system changes when in 'system' mode.
   useEffect(() => {
-    const resolved: ResolvedTheme =
-      theme === 'system' ? getSystemTheme() : theme;
-    setResolvedTheme(resolved);
-    applyTheme(resolved);
-
-    if (theme !== 'system') return;
-    const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      const next: ResolvedTheme = mql.matches ? 'dark' : 'light';
-      setResolvedTheme(next);
-      applyTheme(next);
-    };
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
+    applyTheme(theme);
   }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {
@@ -81,10 +63,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(next);
   }, []);
 
-  const value = useMemo(
-    () => ({ theme, setTheme, resolvedTheme }),
-    [theme, setTheme, resolvedTheme],
-  );
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
