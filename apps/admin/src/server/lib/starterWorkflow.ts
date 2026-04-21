@@ -48,14 +48,23 @@ export const DEFAULT_WORKFLOW = {
   name: '默认工作流',
   category: '默认流程',
   definition: {
-    steps: [],
+    // steps[] is what the canvas hydrate() reads — must be populated.
+    // nodes[] is retained for position-restore compatibility.
+    steps: [
+      { id: 'd1', name: 'AI SKU及价格生成',    type: 'agent', assignee: 'ai.generate_skus',        description: '', position: { x: 0,    y: 0 } },
+      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 200,  y: 0 } },
+      { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 400,  y: 0 } },
+      { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 600,  y: 0 } },
+      { id: 'd5', name: '更新库存',             type: 'agent', assignee: 'shopify.update_inventory', description: '', position: { x: 800,  y: 0 } },
+      { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 1000, y: 0 } },
+    ],
     nodes: [
-      { id: 'd1', type: 'ai.generate_skus',   kind: 'auto', handler: 'ai.generate_skus',        label: 'AI SKU 及价格生成',  config: {}, position: { x: 0,    y: 0 } },
-      { id: 'd2', type: 'ai.generate_title',  kind: 'auto', handler: 'ai.generate_title',       label: 'AI 标题生成',        config: {}, position: { x: 200,  y: 0 } },
-      { id: 'd3', type: 'ai.image_generate',  kind: 'auto', handler: 'ai.image_generate',       label: 'AI 图片生成',        config: {}, position: { x: 400,  y: 0 } },
-      { id: 'd4', type: 'ai.text_generate',   kind: 'auto', handler: 'ai.product_description',  label: 'AI 生成商品描述',    config: {}, position: { x: 600,  y: 0 } },
-      { id: 'd5', type: 'shopify.update_inventory', kind: 'auto', handler: 'shopify.update_inventory', label: '更新库存', config: {}, position: { x: 800,  y: 0 } },
-      { id: 'd6', type: 'shopify.list_product', kind: 'auto', handler: 'shopify.list_product',  label: '上架商品到 Shopify', config: {}, position: { x: 1000, y: 0 } },
+      { id: 'd1', position: { x: 0,    y: 0 } },
+      { id: 'd2', position: { x: 200,  y: 0 } },
+      { id: 'd3', position: { x: 400,  y: 0 } },
+      { id: 'd4', position: { x: 600,  y: 0 } },
+      { id: 'd5', position: { x: 800,  y: 0 } },
+      { id: 'd6', position: { x: 1000, y: 0 } },
     ],
     edges: [
       { source: 'd1', target: 'd2' },
