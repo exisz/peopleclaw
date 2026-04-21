@@ -34,9 +34,21 @@ function parseDef(s: string): WfDef {
   try {
     const v = JSON.parse(s);
     if (v?.nodes || v?.steps) {
-      // Normalise: merge steps into nodes if nodes is missing/empty
-      if ((!v.nodes || v.nodes.length === 0) && v.steps?.length) {
-        v.nodes = v.steps;
+      // Normalise: if nodes exist but lack handler/assignee, merge from steps
+      if (v.steps?.length) {
+        const stepMap = new Map(v.steps.map((s: WfNode) => [s.id, s]));
+        if (!v.nodes || v.nodes.length === 0) {
+          v.nodes = v.steps;
+        } else {
+          // Merge handler/assignee from steps into nodes
+          v.nodes = v.nodes.map((n: WfNode) => {
+            const step = stepMap.get(n.id);
+            if (step && !n.handler && !n.assignee) {
+              return { ...n, handler: step.assignee ?? step.handler, assignee: step.assignee ?? step.handler, name: step.name };
+            }
+            return n;
+          });
+        }
       }
       return v as WfDef;
     }
