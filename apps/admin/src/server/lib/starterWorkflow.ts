@@ -45,7 +45,7 @@ export const STARTER_WORKFLOW = {
  */
 export const DEFAULT_WORKFLOW = {
   baseId: 'default-workflow',
-  name: '默认工作流',
+  name: '默认工作流1',
   category: '默认流程',
   definition: {
     // steps[] is what the canvas hydrate() reads — must be populated.
@@ -76,18 +76,60 @@ export const DEFAULT_WORKFLOW = {
   },
 };
 
+/**
+ * PLANET-1068: Second default workflow — Shopify order fulfilment pipeline.
+ * 3 nodes laid out horizontally (200px apart).
+ */
+export const DEFAULT_WORKFLOW_2 = {
+  baseId: 'default-workflow-2',
+  name: '默认工作流2',
+  category: '默认流程',
+  definition: {
+    steps: [
+      { id: 'e1', name: '拉取订单',   type: 'agent', assignee: 'shopify.fetch_orders',       description: '', position: { x: 0,   y: 0 } },
+      { id: 'e2', name: '更新库存',   type: 'agent', assignee: 'shopify.update_inventory',   description: '', position: { x: 200, y: 0 } },
+      { id: 'e3', name: '标记已发货', type: 'agent', assignee: 'shopify.update_order_status', description: '', position: { x: 400, y: 0 } },
+    ],
+    nodes: [
+      { id: 'e1', position: { x: 0,   y: 0 } },
+      { id: 'e2', position: { x: 200, y: 0 } },
+      { id: 'e3', position: { x: 400, y: 0 } },
+    ],
+    edges: [
+      { source: 'e1', target: 'e2' },
+      { source: 'e2', target: 'e3' },
+    ],
+  },
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function seedDefaultWorkflows(prisma: any, tenantId: string): Promise<void> {
+  const id1 = `${DEFAULT_WORKFLOW.baseId}-${tenantId.slice(0, 8)}`;
+  const id2 = `${DEFAULT_WORKFLOW_2.baseId}-${tenantId.slice(0, 8)}`;
+  await prisma.workflow.createMany({
+    data: [
+      {
+        id: id1,
+        tenantId,
+        name: DEFAULT_WORKFLOW.name,
+        category: DEFAULT_WORKFLOW.category,
+        definition: JSON.stringify(DEFAULT_WORKFLOW.definition),
+      },
+      {
+        id: id2,
+        tenantId,
+        name: DEFAULT_WORKFLOW_2.name,
+        category: DEFAULT_WORKFLOW_2.category,
+        definition: JSON.stringify(DEFAULT_WORKFLOW_2.definition),
+      },
+    ],
+  });
+}
+
+/** @deprecated Use seedDefaultWorkflows instead */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function seedDefaultWorkflow(prisma: any, tenantId: string): Promise<void> {
-  const id = `${DEFAULT_WORKFLOW.baseId}-${tenantId.slice(0, 8)}`;
-  await prisma.workflow.create({
-    data: {
-      id,
-      tenantId,
-      name: DEFAULT_WORKFLOW.name,
-      category: DEFAULT_WORKFLOW.category,
-      definition: JSON.stringify(DEFAULT_WORKFLOW.definition),
-    },
-  });
+  return seedDefaultWorkflows(prisma, tenantId);
 }
 
 /**
