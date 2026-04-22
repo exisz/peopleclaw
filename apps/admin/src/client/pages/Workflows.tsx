@@ -20,7 +20,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Trash2, LayoutDashboard, ListChecks, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
 import UserMenu from '../components/UserMenu';
@@ -313,11 +313,6 @@ export default function Workflows() {
           <Button asChild size="sm" variant="secondary" className="text-xs gap-1.5">
             <Link to="/workflows" data-testid="nav-workflows">
               <WorkflowIcon className="h-4 w-4" /> 工作流
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/cases" data-testid="nav-cases">
-              <ListChecks className="h-4 w-4" /> 案例
             </Link>
           </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">

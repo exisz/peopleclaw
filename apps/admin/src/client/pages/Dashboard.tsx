@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, ListChecks, Settings, Plus, ChevronRight } from 'lucide-react';
+import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, Settings, Plus, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -86,11 +86,6 @@ export default function Dashboard() {
             <Button asChild variant="outline" size="sm">
               <Link to="/workflows" data-testid="nav-workflows">
                 <Workflow className="h-4 w-4" /> {t('common:nav.workflows')}
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/cases" data-testid="nav-cases">
-                <ListChecks className="h-4 w-4" /> {t('common:nav.cases')}
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
