@@ -21,7 +21,7 @@ export default function SettingsBackground() {
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm">
-              <Link to="/">
+              <Link to="/dashboard">
                 <ArrowLeft className="h-4 w-4" /> {t('buttons.back')}
               </Link>
             </Button>
