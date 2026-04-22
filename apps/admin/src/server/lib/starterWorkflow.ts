@@ -51,6 +51,7 @@ export const DEFAULT_WORKFLOW = {
     // steps[] is what the canvas hydrate() reads — must be populated.
     // nodes[] is retained for position-restore compatibility.
     steps: [
+      { id: 'd1', name: '创建 Case', type: 'create_case', kind: 'auto', handler: 'create_case', assignee: 'create_case', config: { fields: ['title', 'features', 'vendor'] }, position: { x: 0,    y: 0 } },
       { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 200,  y: 0 } },
       { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 400,  y: 0 } },
       { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 600,  y: 0 } },
@@ -58,6 +59,7 @@ export const DEFAULT_WORKFLOW = {
       { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 1000, y: 0 } },
     ],
     nodes: [
+      { id: 'd1', position: { x: 0,    y: 0 } },
       { id: 'd2', position: { x: 200,  y: 0 } },
       { id: 'd3', position: { x: 400,  y: 0 } },
       { id: 'd4', position: { x: 600,  y: 0 } },
@@ -84,16 +86,19 @@ export const DEFAULT_WORKFLOW_2 = {
   category: '默认流程',
   definition: {
     steps: [
+      { id: 'e0', name: '创建 Case', type: 'create_case', kind: 'auto', handler: 'create_case', assignee: 'create_case', config: { fields: ['title', 'features', 'vendor'] }, position: { x: -200, y: 0 } },
       { id: 'e1', name: '拉取订单',   type: 'agent', assignee: 'shopify.fetch_orders',       description: '', position: { x: 0,   y: 0 } },
       { id: 'e2', name: '更新库存',   type: 'agent', assignee: 'shopify.update_inventory',   description: '', position: { x: 200, y: 0 } },
       { id: 'e3', name: '标记已发货', type: 'agent', assignee: 'shopify.update_order_status', description: '', position: { x: 400, y: 0 } },
     ],
     nodes: [
+      { id: 'e0', position: { x: -200, y: 0 } },
       { id: 'e1', position: { x: 0,   y: 0 } },
       { id: 'e2', position: { x: 200, y: 0 } },
       { id: 'e3', position: { x: 400, y: 0 } },
     ],
     edges: [
+      { source: 'e0', target: 'e1' },
       { source: 'e1', target: 'e2' },
       { source: 'e2', target: 'e3' },
     ],
