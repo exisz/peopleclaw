@@ -13,7 +13,13 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
   const mock = process.env.SHOPIFY_MOCK === 'true';
   if (mock) {
     return {
-      output: { productId: 'mock_' + Date.now(), productAdminUrl: 'mock://admin', mock: true },
+      output: {
+        productId: 'mock_' + Date.now(),
+        productAdminUrl: 'mock://admin',
+        productHandle: 'mock-product',
+        productPublicUrl: 'https://example.myshopify.com/products/mock-product',
+        mock: true,
+      },
     };
   }
 
@@ -38,7 +44,8 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
         (payload.product_type as string) ||
         (stepConfig.product_type as string) ||
         'General',
-      status: (stepConfig.status as string) || 'draft',
+      status: (stepConfig.status as string) || 'active',
+      published: true,
     },
   };
 
@@ -65,14 +72,18 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     };
   }
 
-  const data = (await res.json()) as { product?: { id?: number; title?: string } };
+  const data = (await res.json()) as { product?: { id?: number; title?: string; handle?: string } };
   const productId = data.product?.id;
+  const productHandle = data.product?.handle ?? null;
+  const shopDomain = creds.shop; // already normalized to myshopify.com domain
   return {
     output: {
       productId,
       productAdminUrl: productId
         ? `https://admin.shopify.com/store/${shopHandle(creds)}/products/${productId}`
         : null,
+      productHandle,
+      productPublicUrl: productHandle ? `https://${shopDomain}/products/${productHandle}` : null,
       shopifyTitle: data.product?.title,
       source: creds.source,
     },
