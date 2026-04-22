@@ -1,26 +1,17 @@
 /**
- * ai.image_generate handler — PLANET-1048
+ * ai.image_generate handler — PLANET-1048 / PLANET-1115
  *
- * Calls OpenAI gpt-image-1 (or falls back to mock), downloads the result,
- * uploads to Vercel Blob for a permanent URL, and returns { imageUrl }.
+ * Calls Google Imagen 4 Fast, uploads result to Vercel Blob, returns { imageUrl }.
  *
  * Required env vars:
- *   OPENAI_API_KEY   — OpenAI API key
- *   BLOB_READ_WRITE_TOKEN — Vercel Blob token
+ *   GOOGLE_GENAI_API_KEY     — Google AI API key
+ *   BLOB_READ_WRITE_TOKEN    — Vercel Blob token (optional; falls back gracefully)
  *
  * Credit cost: 3 per call (AI_IMAGE).
  */
 import type { Handler } from './index.js';
 import { CREDIT_COSTS } from '../../lib/credits.js';
 import { checkAndDeductCredit } from '../../lib/credit-check.js';
-
-const ASPECT_RATIO_SIZES: Record<string, '1024x1024' | '1536x1024' | '1024x1536'> = {
-  '1:1': '1024x1024',
-  '4:3': '1536x1024',
-  '3:4': '1024x1536',
-  '16:9': '1536x1024',
-  '9:16': '1024x1536',
-};
 
 export const aiImageGenerateHandler: Handler = async (input, ctx) => {
   const remaining = await checkAndDeductCredit(
@@ -31,112 +22,70 @@ export const aiImageGenerateHandler: Handler = async (input, ctx) => {
     { caseId: ctx.caseId },
   );
 
+  const googleApiKey = process.env.GOOGLE_GENAI_API_KEY;
+  if (!googleApiKey) throw new Error('GOOGLE_GENAI_API_KEY missing — refusing to mock in production');
+
   const { payload } = input;
   const prompt = (payload.prompt as string) || 'A beautiful product photo';
   const aspectRatio = (payload.aspectRatio as string) || '1:1';
-  const referenceImageUrl = (payload.referenceImage as string) || null;
-  const size = ASPECT_RATIO_SIZES[aspectRatio] ?? '1024x1024';
 
-  // Real OpenAI path
-  if (process.env.OPENAI_API_KEY) {
-    try {
-      const reqBody: Record<string, unknown> = {
-        model: 'gpt-image-1',
-        prompt,
-        n: 1,
-        size,
-        output_format: 'url',
-      };
+  // Call Google Imagen 4 Fast
+  const imagenRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${googleApiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: { sampleCount: 1, aspectRatio },
+      }),
+    },
+  );
 
-      // If reference image URL provided, include as input (vision-enabled models)
-      if (referenceImageUrl) {
-        reqBody.input = [
-          {
-            type: 'image_url',
-            image_url: { url: referenceImageUrl },
-          },
-        ];
-      }
-
-      const res = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify(reqBody),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`OpenAI image API ${res.status}: ${errText.slice(0, 300)}`);
-      }
-
-      const data = await res.json() as {
-        data?: Array<{ url?: string; b64_json?: string }>;
-      };
-
-      const imageItem = data.data?.[0];
-      if (!imageItem) throw new Error('OpenAI returned no image data');
-
-      let permanentUrl: string;
-
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-        // Upload to Vercel Blob for a permanent URL
-        const { put } = await import('@vercel/blob');
-        const filename = `ai-image-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
-
-        if (imageItem.url) {
-          // Download from OpenAI temp URL then re-upload
-          const imgRes = await fetch(imageItem.url);
-          if (!imgRes.ok) throw new Error(`Failed to fetch OpenAI image: ${imgRes.status}`);
-          const blob = await imgRes.blob();
-          const uploaded = await put(filename, blob, {
-            access: 'public',
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-          });
-          permanentUrl = uploaded.url;
-        } else if (imageItem.b64_json) {
-          const binary = Buffer.from(imageItem.b64_json, 'base64');
-          const uploaded = await put(filename, binary, {
-            access: 'public',
-            contentType: 'image/png',
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-          });
-          permanentUrl = uploaded.url;
-        } else {
-          throw new Error('No URL or b64_json in OpenAI response');
-        }
-      } else {
-        // BLOB_READ_WRITE_TOKEN not set — return the temp URL and warn
-        permanentUrl = imageItem.url ?? '';
-        console.warn('[ai.image_generate] BLOB_READ_WRITE_TOKEN not set — returning temp OpenAI URL (may expire)');
-      }
-
-      return {
-        output: {
-          imageUrl: permanentUrl,
-          prompt,
-          aspectRatio,
-          model: 'gpt-image-1',
-          creditsRemaining: remaining,
-        },
-      };
-    } catch (e) {
-      // If OpenAI fails, fall through to mock below so workflow doesn't die in dev
-      console.error('[ai.image_generate] OpenAI error:', e instanceof Error ? e.message : e);
-      if (process.env.NODE_ENV === 'production') throw e;
-    }
+  if (!imagenRes.ok) {
+    const errText = await imagenRes.text();
+    throw new Error(`Google Imagen API ${imagenRes.status}: ${errText.slice(0, 300)}`);
   }
 
-  // Mock / dev fallback — return a stable placeholder image URL
-  const mockUrl = `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 20))}/512/512`;
+  const imagenData = await imagenRes.json() as {
+    predictions?: Array<{ bytesBase64Encoded?: string; mimeType?: string }>;
+  };
+
+  const prediction = imagenData.predictions?.[0];
+  if (!prediction?.bytesBase64Encoded) {
+    throw new Error('Google Imagen returned no image data');
+  }
+
+  const b64 = prediction.bytesBase64Encoded;
+  const mimeType = prediction.mimeType ?? 'image/png';
+  const ext = mimeType.split('/')[1] ?? 'png';
+
+  let imageUrl: string;
+
+  // Method A: Vercel Blob (preferred — auto-injected in Storage-integrated projects)
+  try {
+    const { put } = await import('@vercel/blob');
+    const filename = `ai-image-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const binary = Buffer.from(b64, 'base64');
+    const uploaded = await put(filename, binary, {
+      access: 'public',
+      contentType: mimeType,
+    });
+    imageUrl = uploaded.url;
+  } catch (blobErr) {
+    // Method B: return data URI if Blob not available
+    console.warn('[ai.image_generate] Vercel Blob unavailable, returning data URI:', blobErr instanceof Error ? blobErr.message : blobErr);
+    imageUrl = `data:${mimeType};base64,${b64}`;
+  }
+
   return {
     output: {
-      imageUrl: mockUrl,
+      imageUrl,
+      b64: imageUrl.startsWith('data:') ? b64 : undefined, // expose b64 for Shopify attachment upload when needed
+      mimeType,
       prompt,
       aspectRatio,
-      mock: true,
+      model: 'imagen-4.0-fast-generate-001',
       creditsRemaining: remaining,
     },
   };
