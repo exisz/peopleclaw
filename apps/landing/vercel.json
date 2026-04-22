@@ -1,3 +1,4 @@
 {
-  "framework": "astro"
+  "framework": "astro",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- . ../../pnpm-lock.yaml || exit 1"
 }
