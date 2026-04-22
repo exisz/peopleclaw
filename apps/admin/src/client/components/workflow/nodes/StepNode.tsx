@@ -17,6 +17,7 @@ const typeConfig: Record<
   condition:    { badge: '🔀', label: 'Condition', ring: 'ring-pink-500/40',    tint: 'bg-pink-500/5',    accent: 'from-pink-500' },
   input:        { badge: '📝', label: 'Data Input',ring: 'ring-teal-500/40',    tint: 'bg-teal-500/5',    accent: 'from-teal-500' },
   notification: { badge: '🔔', label: 'Notify',    ring: 'ring-yellow-400/40',  tint: 'bg-yellow-400/5',  accent: 'from-yellow-400' },
+  create_case:  { badge: '🆕', label: 'Create Case', ring: 'ring-blue-500/40',   tint: 'bg-blue-500/5',    accent: 'from-blue-500' },
 };
 
 // Per-status visual mapping (case execution states)

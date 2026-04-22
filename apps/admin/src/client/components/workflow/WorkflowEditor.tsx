@@ -594,32 +594,30 @@ function EditorInner({
     : undefined;
 
   // Case statuses → keyed by stepId (workflow step id)
-  // PLANET-1069: merge run statuses (run takes priority over case)
-  // PLANET-1122: runState is ALWAYS authoritative for any step id it knows about.
-  //   When a run is active or finished (status !== 'idle'), runState.stepStatuses
-  //   wins unconditionally — caseDetail cannot overwrite it back to 'running'.
+  // PLANET-1127: when run is active or finished (status !== 'idle'), use ONLY
+  // runState.stepStatuses. caseDetail is completely ignored — no partial merge,
+  // no "skip if key exists" — physical elimination of the race condition path.
   const caseStatuses: Record<string, string> = useMemo(() => {
     const out: Record<string, string> = {};
-    if (caseDetail?.steps) {
-      for (const s of caseDetail.steps) {
-        // PLANET-1122: skip case-step status for any id already tracked by the run
-        // (runState.stepStatuses will override below; don't let case bleed through)
-        if (runState.status !== 'idle' && s.stepId in runState.stepStatuses) continue;
-        out[s.stepId] = s.status;
+
+    if (runState.status !== 'idle') {
+      // Pre-fill all workflow steps as pending (grey border, no pulse)
+      for (const s of workflow.steps) {
+        out[s.id] = 'pending';
       }
+      // Overlay runState — the single source of truth during/after a run
+      for (const [k, v] of Object.entries(runState.stepStatuses)) {
+        out[k] = v === 'done' ? 'done' : v === 'failed' ? 'failed' : v === 'pending' ? 'pending' : 'running';
+      }
+      return out;
     }
-    // Overlay live run statuses — these are always authoritative
-    for (const [k, v] of Object.entries(runState.stepStatuses)) {
-      out[k] = v === 'done' ? 'done' : v === 'failed' ? 'failed' : v === 'pending' ? 'pending' : 'running';
+
+    // status === 'idle': no run active or ever started — use caseDetail
+    if (caseDetail?.steps) {
+      for (const s of caseDetail.steps) out[s.stepId] = s.status;
     }
-    console.log('[caseStatuses]', { // PLANET-1122 debug — remove next ticket
-      runStatus: runState.status,
-      runStateKeys: Object.keys(runState.stepStatuses),
-      caseStepIds: caseDetail?.steps?.map(s => s.stepId),
-      final: out,
-    });
     return out;
-  }, [caseDetail, runState.stepStatuses, runState.status]);
+  }, [caseDetail, runState.status, runState.stepStatuses, workflow.steps]);
 
   const caseErrors: Record<string, string> = useMemo(() => {
     if (!caseDetail?.steps) return {};
@@ -627,6 +625,25 @@ function EditorInner({
     for (const s of caseDetail.steps) if (s.error) out[s.stepId] = s.error;
     return out;
   }, [caseDetail]);
+
+  // PLANET-1127: when run finishes, lock all un-resolved steps immediately.
+  // Catches any node that never received step:done (network drop / parse failure).
+  useEffect(() => {
+    if (runState.status !== 'done' && runState.status !== 'error') return;
+    setRunState(prev => {
+      let changed = false;
+      const next = { ...prev.stepStatuses };
+      for (const s of workflow.steps) {
+        if (!(s.id in next) || next[s.id] === 'running' || next[s.id] === 'pending') {
+          next[s.id] = prev.status === 'error' ? 'failed' : 'done';
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      console.log('[PLANET-1127 stepStatuses lock-on-finish]', next);
+      return { ...prev, stepStatuses: next };
+    });
+  }, [runState.status, workflow.steps]);
 
   const runningPath = useMemo(() => {
     const set = new Set<string>();
