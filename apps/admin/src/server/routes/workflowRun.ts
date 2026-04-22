@@ -135,6 +135,7 @@ workflowRunRouter.post(
       const handlerKey = resolveHandlerKey(node);
       const handler = handlers[handlerKey];
 
+      console.log('[wfrun]', { runId, stepId: node.id, handlerKey, type: node.type });
       send('step:start', { stepId: node.id, stepType: node.type, handler: handlerKey });
 
       if (!handler) {
@@ -175,6 +176,7 @@ workflowRunRouter.post(
             error: result.error ?? 'Step failed',
             durationMs,
           };
+          console.log('[wfrun:failed]', { runId, stepId: node.id, error: row.error });
           stepResults.push(row);
           send('step:done', row);
           send('run:error', { runId, failedStep: node.id, error: row.error, steps: stepResults });
@@ -186,8 +188,10 @@ workflowRunRouter.post(
         context = { ...context, ...(result.output ?? {}) };
         finalOutput = context;
 
-        // Capture Shopify product URL if available
-        if (result.output?.productAdminUrl) {
+        // Capture Shopify product URL if available (publicUrl preferred over adminUrl)
+        if (result.output?.productPublicUrl) {
+          shopifyProductUrl = result.output.productPublicUrl as string;
+        } else if (result.output?.productAdminUrl) {
           shopifyProductUrl = result.output.productAdminUrl as string;
         }
 
@@ -198,11 +202,13 @@ workflowRunRouter.post(
           output: result.output ?? {},
           durationMs,
         };
+        console.log('[wfrun:done]', { runId, stepId: node.id, status: row.status, errorPreview: undefined });
         stepResults.push(row);
         send('step:done', row);
       } catch (e) {
         const durationMs = Date.now() - t0;
         const errMsg = e instanceof Error ? e.message : String(e);
+        console.log('[wfrun:catch]', { runId, stepId: node.id, error: errMsg });
         const row = {
           stepId: node.id,
           stepType: node.type,
@@ -219,11 +225,13 @@ workflowRunRouter.post(
       }
     }
 
+    console.log('[wfrun:complete]', { runId, totalSteps: stepResults.length, shopifyProductUrl });
     send('run:complete', {
       runId,
       steps: stepResults,
       finalOutput,
       shopifyProductUrl,
+      productPublicUrl: shopifyProductUrl,
     });
     res.end();
   },

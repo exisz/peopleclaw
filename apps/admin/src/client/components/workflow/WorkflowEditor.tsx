@@ -173,10 +173,15 @@ function EditorInner({
     flush();
     // Reset run state
     setRunState({ status: 'running', runId: null, stepStatuses: {}, stepResults: [], shopifyProductUrl: null, error: null });
+    // Clear previous case detail so old 'done' statuses don't bleed into the new run's color overlay
+    setCaseDetail(null);
     setActiveTab('runs');
 
     // Close any existing SSE
     if (sseRef.current) { sseRef.current.close(); sseRef.current = null; }
+
+    // Track whether we received a terminal event
+    let receivedTerminalEvent = false;
 
     // SSE via fetch (to include auth headers)
     try {
@@ -189,7 +194,26 @@ function EditorInner({
       const processStream = async () => {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          // Flush any remaining buffered data when stream closes
+          if (done) {
+            if (buffer.trim()) {
+              const lines = (buffer + '\n').split('\n');
+              let currentEvent = '';
+              for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                  currentEvent = line.slice(7).trim();
+                } else if (line.startsWith('data: ')) {
+                  try {
+                    const eventData = JSON.parse(line.slice(6)) as Record<string, unknown>;
+                    if (currentEvent === 'run:complete' || currentEvent === 'run:error') receivedTerminalEvent = true;
+                    handleSseEvent(currentEvent, eventData);
+                  } catch { /* ignore parse errors on flush */ }
+                  currentEvent = '';
+                }
+              }
+            }
+            break;
+          }
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() ?? '';
@@ -199,6 +223,7 @@ function EditorInner({
               currentEvent = line.slice(7).trim();
             } else if (line.startsWith('data: ')) {
               const eventData = JSON.parse(line.slice(6)) as Record<string, unknown>;
+              if (currentEvent === 'run:complete' || currentEvent === 'run:error') receivedTerminalEvent = true;
               handleSseEvent(currentEvent, eventData);
               currentEvent = '';
             }
@@ -206,10 +231,22 @@ function EditorInner({
         }
       };
       await processStream();
+      // If stream ended without run:complete or run:error, treat as error
+      if (!receivedTerminalEvent) {
+        setRunState(prev => ({
+          ...prev,
+          status: 'error',
+          error: '工作流执行中断（未收到完成信号）',
+        }));
+        toast.error('工作流中断', { description: '执行未完成，请查看 Vercel 日志定位问题' });
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setRunState(prev => ({ ...prev, status: 'error', error: msg }));
       toast.error('运行失败', { description: msg });
+    } finally {
+      // Ensure we never leave status as 'running' indefinitely
+      setRunState(prev => prev.status === 'running' ? { ...prev, status: 'error', error: prev.error ?? '执行未完成' } : prev);
     }
   }, [runState.status, workflow.id, flush, handleSseEvent]);
 
