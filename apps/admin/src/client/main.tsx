@@ -17,6 +17,7 @@ import RunWorkflow from './pages/RunWorkflow';
 import Settings from './pages/Settings';
 import SettingsBackground from './pages/SettingsBackground';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import Templates from './pages/Templates';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/cases/:id" element={<Cases />} />
         <Route path="/credits" element={<Credits />} />
         <Route path="/credits/success" element={<CreditsSuccess />} />
+        <Route path="/templates" element={<Templates />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/:tab" element={<Settings />} />
         <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />

@@ -45,7 +45,7 @@ export const STARTER_WORKFLOW = {
  */
 export const DEFAULT_WORKFLOW = {
   baseId: 'default-workflow',
-  name: '默认工作流1',
+  name: '商品工作流1',
   category: '默认流程',
   definition: {
     // steps[] is what the canvas hydrate() reads — must be populated.
@@ -80,7 +80,7 @@ export const DEFAULT_WORKFLOW = {
  */
 export const DEFAULT_WORKFLOW_2 = {
   baseId: 'default-workflow-2',
-  name: '默认工作流2',
+  name: '商品工作流2',
   category: '默认流程',
   definition: {
     steps: [
@@ -151,3 +151,16 @@ export async function provisionStarterWorkflow(prisma: any, tenantId: string): P
     },
   });
 }
+
+// PLANET-1103: Template library — global templates visible to all tenants.
+// Hardcoded on the server; no DB storage required.
+export const TEMPLATES = [
+  {
+    id: 'template-product-workflow-1',
+    ...DEFAULT_WORKFLOW,
+  },
+  {
+    id: 'template-product-workflow-2',
+    ...DEFAULT_WORKFLOW_2,
+  },
+] as const;
