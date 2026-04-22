@@ -10,19 +10,6 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
   const { payload } = input;
   const stepConfig = ctx.stepConfig ?? {};
 
-  const mock = process.env.SHOPIFY_MOCK === 'true';
-  if (mock) {
-    return {
-      output: {
-        productId: 'mock_' + Date.now(),
-        productAdminUrl: 'mock://admin',
-        productHandle: 'mock-product',
-        productPublicUrl: 'https://example.myshopify.com/products/mock-product',
-        mock: true,
-      },
-    };
-  }
-
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) {
     return {
@@ -89,4 +76,4 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     },
   };
 };
-// shopify mock enabled
+

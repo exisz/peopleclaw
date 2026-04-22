@@ -24,17 +24,6 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   const { payload } = input;
   const cfg = ctx.stepConfig ?? {};
 
-  if (process.env.SHOPIFY_MOCK === 'true') {
-    const mockId = Date.now();
-    return {
-      output: {
-        productId: `mock_${mockId}`,
-        productAdminUrl: `https://admin.shopify.com/store/mock/products/${mockId}`,
-        mock: true,
-      },
-    };
-  }
-
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) return failNotConfigured();
 
@@ -70,9 +59,15 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
     },
   };
 
-  // Add image if available
+  // Add image if available — use src for https URLs, attachment for data URIs
   if (imageUrl) {
-    (body.product as Record<string, unknown>).images = [{ src: imageUrl }];
+    if (imageUrl.startsWith('data:')) {
+      // Extract base64 payload from data URI
+      const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';
+      (body.product as Record<string, unknown>).images = [{ attachment: b64, filename: 'product.png' }];
+    } else {
+      (body.product as Record<string, unknown>).images = [{ src: imageUrl }];
+    }
   }
 
   let res: Response;
