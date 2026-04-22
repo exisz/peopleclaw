@@ -63,6 +63,36 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
   const productId = data.product?.id;
   const productHandle = data.product?.handle ?? null;
   const shopDomain = creds.shop; // already normalized to myshopify.com domain
+
+  // PLANET-1119: upload product image after creation (shopify.list_product was
+  // missing image handling — PLANET-1118 only fixed shopify.create_product).
+  const imageUrl = (payload.imageUrl as string) || (payload.image as string) || null;
+  if (imageUrl && productId) {
+    let imgBody: Record<string, unknown>;
+    if (imageUrl.startsWith('data:')) {
+      const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';
+      console.log('[shopify:image]', { handler: 'list_product', mode: 'attachment', attachmentSize: b64.length, productId });
+      imgBody = { image: { attachment: b64, filename: 'product.png' } };
+    } else {
+      console.log('[shopify:image]', { handler: 'list_product', mode: 'src', srcPreview: imageUrl.slice(0, 80), productId });
+      imgBody = { image: { src: imageUrl } };
+    }
+    try {
+      const imgRes = await shopifyFetch(creds, `products/${productId}/images.json`, {
+        method: 'POST',
+        body: JSON.stringify(imgBody),
+      });
+      if (!imgRes.ok) {
+        const errText = await imgRes.text();
+        console.warn('[shopify:image] upload failed', { handler: 'list_product', status: imgRes.status, body: errText.slice(0, 300) });
+      } else {
+        console.log('[shopify:image] upload ok', { handler: 'list_product', productId });
+      }
+    } catch (imgErr) {
+      console.warn('[shopify:image] upload error', { handler: 'list_product', err: imgErr instanceof Error ? imgErr.message : String(imgErr) });
+    }
+  }
+
   return {
     output: {
       productId,
