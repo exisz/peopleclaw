@@ -103,6 +103,7 @@ function StepNode({ data, selected }: NodeProps) {
         <button
           type="button"
           data-testid={`step-status-${step.id}`}
+          data-status={status}
           onClick={(e) => {
             e.stopPropagation();
             if (status === 'failed' && errorMessage) onErrorClick?.(errorMessage);
