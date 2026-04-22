@@ -19,6 +19,25 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     };
   }
 
+  // PLANET-1120: support variants from ai.generate_skus payload
+  const skus = Array.isArray(payload.skus)
+    ? (payload.skus as Array<{ sku?: string; title?: string; price?: string | number; inventory_quantity?: number }>)
+    : null;
+
+  const variants =
+    skus && skus.length > 0
+      ? skus.map(s => ({
+          title: s.title ?? 'Default',
+          sku: s.sku ?? '',
+          price: s.price != null ? String(s.price) : '0.00',
+          inventory_quantity: s.inventory_quantity ?? 0,
+          inventory_management: 'shopify',
+        }))
+      : undefined;
+
+  // fallback: no skus — use single price field if present
+  const fallbackPrice = (payload.price as string | number) ?? null;
+
   const body = {
     product: {
       title: (payload.title as string) || 'Untitled Product',
@@ -33,6 +52,11 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
         'General',
       status: (stepConfig.status as string) || 'active',
       published: true,
+      ...(variants
+        ? { variants }
+        : fallbackPrice != null
+          ? { variants: [{ price: String(fallbackPrice), inventory_management: 'shopify', inventory_quantity: 0 }] }
+          : {}),
     },
   };
 

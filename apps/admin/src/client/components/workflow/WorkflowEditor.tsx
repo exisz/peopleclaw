@@ -151,6 +151,13 @@ function EditorInner({
           status: 'done',
           shopifyProductUrl: (data.shopifyProductUrl as string) ?? null,
           stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
+          // PLANET-1120: force all still-running/unset steps to done so spinners stop
+          stepStatuses: Object.fromEntries(
+            workflow.steps.map(s => [
+              s.id,
+              (prev.stepStatuses[s.id] === 'failed') ? 'failed' : 'done',
+            ])
+          ),
         }));
         toast.success('工作流执行完成 🎉');
         break;
@@ -166,10 +173,20 @@ function EditorInner({
         break;
       case 'end':
         // Sentinel: if run:complete was already received this is a no-op; otherwise treat as done
-        setRunState(prev => prev.status === 'running' ? { ...prev, status: 'done' } : prev);
+        setRunState(prev => {
+          if (prev.status !== 'running') return prev;
+          // PLANET-1120: force-done any lingering running/unset steps
+          const finalStatuses = Object.fromEntries(
+            workflow.steps.map(s => [
+              s.id,
+              (prev.stepStatuses[s.id] === 'failed') ? 'failed' : 'done',
+            ])
+          );
+          return { ...prev, status: 'done', stepStatuses: finalStatuses };
+        });
         break;
     }
-  }, []);
+  }, [workflow.steps]);
 
   const handleRun = useCallback(async () => {
     if (runState.status === 'running') return;
