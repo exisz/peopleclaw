@@ -17,6 +17,16 @@ export const aiDescriptionHandler: Handler = async (input, ctx) => {
 
   const { payload } = input;
 
+  // Whitelist short text fields only — avoid feeding base64 image data URIs etc.
+  // into the LLM prompt (PLANET-1116: prior version JSON.stringify'd whole payload
+  // which blew through DeepSeek 64K context window when imageUrl was a data URI).
+  const promptInput: Record<string, string> = {};
+  const allow = ['title', 'features', 'category', 'product_type', 'vendor', 'description', 'price', 'tags', 'sku', 'productTitle'];
+  for (const k of allow) {
+    const v = payload[k];
+    if (typeof v === 'string' && v.length > 0 && v.length < 2000) promptInput[k] = v;
+  }
+
   const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -27,7 +37,7 @@ export const aiDescriptionHandler: Handler = async (input, ctx) => {
       model: 'deepseek-chat',
       messages: [
         { role: 'system', content: 'You write concise, persuasive Shopify product descriptions in 2-3 sentences.' },
-        { role: 'user', content: `Write a product description. Input: ${JSON.stringify(payload)}` },
+        { role: 'user', content: `Write a product description. Input: ${JSON.stringify(promptInput)}` },
       ],
       temperature: 0.7,
     }),
