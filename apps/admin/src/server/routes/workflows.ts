@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
-import { seedDefaultWorkflows } from '../lib/starterWorkflow.js';
+// seedDefaultWorkflows import removed (PLANET-1103: auto-seed disabled)
 
 export const workflowsRouter = Router();
 
@@ -22,15 +22,9 @@ workflowsRouter.get('/workflows', async (req, res) => {
     ? { OR: [{ tenantId: null }, { tenantId }] }
     : { tenantId: null };
   let list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
-  // PLANET-1065: Auto-seed default workflow for brand-new tenants (empty list).
-  if (list.length === 0 && tenantId) {
-    try {
-      await seedDefaultWorkflows(prisma, tenantId);
-      list = await prisma.workflow.findMany({ where, orderBy: { createdAt: 'desc' } });
-    } catch {
-      // Seed failure is non-fatal (e.g. concurrent request already seeded)
-    }
-  }
+  // PLANET-1103: Auto-seed disabled — new tenants start with an empty workspace.
+  // Users now choose workflows from the template library (/templates).
+  // (PLANET-1065 auto-seed logic removed)
   res.json({
     workflows: list.map((w) => ({
       ...w,

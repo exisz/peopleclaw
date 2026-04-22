@@ -9,6 +9,7 @@ import { creditsRouter } from './routes/credits.js';
 import { stripeWebhookRouter } from './routes/stripeWebhook.js';
 import { tenantsRouter } from './routes/tenants.js';
 import { stepTemplatesRouter } from './routes/step-templates.js';
+import { templatesRouter } from './routes/templates.js';
 import { internalRouter } from './routes/internal.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
@@ -32,6 +33,7 @@ export function createApp(): Express {
   app.use('/api', creditsRouter);
   app.use('/api', tenantsRouter);
   app.use('/api', stepTemplatesRouter);
+  app.use('/api', templatesRouter);
   app.use('/api', internalRouter);
   if (process.env.E2E_TEST_TOKEN) {
     app.use('/api', testRouter);
