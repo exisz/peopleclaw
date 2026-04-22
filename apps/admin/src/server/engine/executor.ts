@@ -76,6 +76,16 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
 
   const def = parseDef(c.workflow.definition);
 
+  // Guard: if definition has no nodes or no entry node, fail the case immediately
+  // instead of silently resolving to 'done' with 0 steps (the "fake green" bug, PLANET-1107).
+  if (!def.nodes.length || firstNodeId(def) === null) {
+    await prisma.case.update({
+      where: { id: caseId },
+      data: { status: 'failed' },
+    });
+    return { status: 'failed', lastStepId: null };
+  }
+
   // Determine which node to run next:
   // - if currentStepId is null → first node
   // - else → next from currentStepId
