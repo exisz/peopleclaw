@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
@@ -35,6 +35,43 @@ interface CaseRow {
   updatedAt: string;
   steps?: CaseStep[];
   workflow?: { name: string };
+}
+
+function ShopifyPublicUrlCard({ output }: { output: string }) {
+  let parsed: Record<string, unknown> = {};
+  try { parsed = JSON.parse(output); } catch {}
+  const publicUrl = parsed.productPublicUrl as string | undefined;
+  const adminUrl = parsed.productAdminUrl as string | undefined;
+  if (!publicUrl) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 p-4 space-y-3">
+      <div className="font-semibold text-green-800 dark:text-green-300 text-sm">🛍️ 商品已上架</div>
+      <div className="flex gap-2">
+        <a href={publicUrl} target="_blank" rel="noreferrer" className="flex-1">
+          <Button size="sm" className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
+            <ExternalLink className="h-4 w-4" />
+            打开商品页
+          </Button>
+        </a>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            navigator.clipboard.writeText(publicUrl).then(() => toast.success('链接已复制'));
+          }}
+        >
+          <Copy className="h-4 w-4" />
+          复制链接
+        </Button>
+      </div>
+      {adminUrl && (
+        <p className="text-xs text-muted-foreground">
+          后台管理：<a href={adminUrl} target="_blank" rel="noreferrer" className="underline hover:text-foreground">{adminUrl}</a>
+        </p>
+      )}
+    </div>
+  );
 }
 
 const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -186,6 +223,7 @@ function CaseDetail({ id }: { id: string }) {
                   </div>
                 </div>
                 {s.error && <p className="mt-2 text-xs text-red-600">{s.error}</p>}
+                <ShopifyPublicUrlCard output={s.output} />
                 {outPreview && outPreview !== '{}' && (
                   <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-48">{outPreview}</pre>
                 )}
