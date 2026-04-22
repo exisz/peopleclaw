@@ -19,24 +19,51 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     };
   }
 
-  // PLANET-1120: support variants from ai.generate_skus payload
+  // PLANET-1120 / PLANET-1121: support variants from ai.generate_skus payload.
+  // Shopify REST requires `options: [{name}]` + `option1` per variant when there
+  // are multiple variants — a `title` field on the variant alone yields 422
+  // "Invalid variant". For a single variant, omit options entirely.
   const skus = Array.isArray(payload.skus)
-    ? (payload.skus as Array<{ sku?: string; title?: string; price?: string | number; inventory_quantity?: number }>)
+    ? (payload.skus as Array<{ sku?: string; title?: string; price?: string | number; inventory_quantity?: number; option1?: string }>)
     : null;
 
-  const variants =
-    skus && skus.length > 0
-      ? skus.map(s => ({
-          title: s.title ?? 'Default',
-          sku: s.sku ?? '',
-          price: s.price != null ? String(s.price) : '0.00',
-          inventory_quantity: s.inventory_quantity ?? 0,
-          inventory_management: 'shopify',
-        }))
-      : undefined;
+  // Pick a unique option1 per variant. Prefer explicit option1, then derive from
+  // title's last segment after the last " - " separator (DeepSeek output
+  // pattern), then fall back to a generated label.
+  let variants: Array<Record<string, unknown>> | undefined;
+  let options: Array<{ name: string }> | undefined;
+  if (skus && skus.length > 0) {
+    const seen = new Set<string>();
+    variants = skus.map((s, i) => {
+      let opt = (s.option1 ?? '').toString().trim();
+      if (!opt && s.title) {
+        const parts = String(s.title).split(/\s*[-\u2013\u2014\u00b7]\s*/).filter(Boolean);
+        opt = parts[parts.length - 1] || '';
+      }
+      if (!opt) opt = `Variant ${i + 1}`;
+      // ensure uniqueness
+      let candidate = opt;
+      let n = 2;
+      while (seen.has(candidate)) candidate = `${opt} ${n++}`;
+      seen.add(candidate);
+      const v: Record<string, unknown> = {
+        option1: candidate,
+        sku: s.sku ?? '',
+        price: s.price != null ? String(s.price) : '0.00',
+      };
+      if (s.inventory_quantity != null) {
+        v.inventory_quantity = s.inventory_quantity;
+        v.inventory_management = 'shopify';
+      }
+      return v;
+    });
+    if (variants.length > 1) options = [{ name: 'Style' }];
+  }
 
   // fallback: no skus — use single price field if present
   const fallbackPrice = (payload.price as string | number) ?? null;
+
+  console.log('[shopify:variants]', { count: variants?.length ?? 0, hasOptions: !!options });
 
   const body = {
     product: {
@@ -53,9 +80,11 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
       status: (stepConfig.status as string) || 'active',
       published: true,
       ...(variants
-        ? { variants }
+        ? options
+          ? { options, variants }
+          : { variants }
         : fallbackPrice != null
-          ? { variants: [{ price: String(fallbackPrice), inventory_management: 'shopify', inventory_quantity: 0 }] }
+          ? { variants: [{ price: String(fallbackPrice) }] }
           : {}),
     },
   };
