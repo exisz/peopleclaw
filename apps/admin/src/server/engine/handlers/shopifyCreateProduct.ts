@@ -60,15 +60,9 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   };
 
   // Add image if available — use src for https URLs, attachment for data URIs
-  if (imageUrl) {
-    if (imageUrl.startsWith('data:')) {
-      // Extract base64 payload from data URI
-      const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';
-      (body.product as Record<string, unknown>).images = [{ attachment: b64, filename: 'product.png' }];
-    } else {
-      (body.product as Record<string, unknown>).images = [{ src: imageUrl }];
-    }
-  }
+  // NOTE: We intentionally omit images from the create-product body and upload them
+  // via the dedicated POST /products/:id/images.json endpoint after creation, which
+  // has more reliable attachment support than the inline `images` field.
 
   let res: Response;
   try {
@@ -96,6 +90,34 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   const data = (await res.json()) as { product?: { id?: number; title?: string; handle?: string } };
   const productId = data.product?.id;
   const handle = shopHandle(creds);
+
+  // Upload image via dedicated images endpoint (more reliable attachment support)
+  if (imageUrl && productId) {
+    let imgBody: Record<string, unknown>;
+    if (imageUrl.startsWith('data:')) {
+      const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';
+      const hasAttachment = b64.length > 0;
+      console.log('[shopify:image]', { mode: 'attachment', hasAttachment, attachmentSize: b64?.length, hasSrc: false });
+      imgBody = { image: { attachment: b64, filename: 'product.png' } };
+    } else {
+      console.log('[shopify:image]', { mode: 'src', hasAttachment: false, attachmentSize: 0, hasSrc: true });
+      imgBody = { image: { src: imageUrl } };
+    }
+    try {
+      const imgRes = await shopifyFetch(creds, `products/${productId}/images.json`, {
+        method: 'POST',
+        body: JSON.stringify(imgBody),
+      });
+      if (!imgRes.ok) {
+        const errText = await imgRes.text();
+        console.warn('[shopify:image] upload failed', { status: imgRes.status, body: errText.slice(0, 200) });
+      } else {
+        console.log('[shopify:image] upload ok', { productId });
+      }
+    } catch (imgErr) {
+      console.warn('[shopify:image] upload error', imgErr instanceof Error ? imgErr.message : imgErr);
+    }
+  }
 
   return {
     output: {

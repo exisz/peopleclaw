@@ -72,10 +72,12 @@ export const aiImageGenerateHandler: Handler = async (input, ctx) => {
       contentType: mimeType,
     });
     imageUrl = uploaded.url;
+    console.log('[imagen]', { mode: 'blob', imageUrlLen: imageUrl.length });
   } catch (blobErr) {
     // Method B: return data URI if Blob not available
     console.warn('[ai.image_generate] Vercel Blob unavailable, returning data URI:', blobErr instanceof Error ? blobErr.message : blobErr);
     imageUrl = `data:${mimeType};base64,${b64}`;
+    console.log('[imagen]', { mode: 'datauri', imageUrlLen: imageUrl.length });
   }
 
   return {
