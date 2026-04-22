@@ -310,11 +310,6 @@ export default function Workflows() {
               <LayoutDashboard className="h-4 w-4" /> 我的
             </Link>
           </Button>
-          <Button asChild size="sm" variant="secondary" className="text-xs gap-1.5">
-            <Link to="/workflows" data-testid="nav-workflows">
-              <WorkflowIcon className="h-4 w-4" /> 工作流
-            </Link>
-          </Button>
           <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
             <Link to="/settings" data-testid="nav-settings">
               <Settings className="h-4 w-4" /> {t('common:nav.settings', { defaultValue: 'Settings' })}
@@ -327,7 +322,7 @@ export default function Workflows() {
           </Button>
           <div className="mx-2 h-4 border-l border-border" />
           <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)} data-testid="create-workflow-btn">
-            <Plus className="h-4 w-4 mr-1" /> New
+            <Plus className="h-4 w-4 mr-1" /> 新工作流
           </Button>
           <Button
             size="sm"
