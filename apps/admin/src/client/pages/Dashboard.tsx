@@ -84,11 +84,6 @@ export default function Dashboard() {
             <ThemeToggle />
             <LanguageToggle />
             <Button asChild variant="outline" size="sm">
-              <Link to="/workflows" data-testid="nav-workflows">
-                <Workflow className="h-4 w-4" /> {t('common:nav.workflows')}
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
               <Link to="/settings" data-testid="nav-settings">
                 <Settings className="h-4 w-4" /> {t('common:nav.settings')}
               </Link>
