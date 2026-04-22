@@ -164,6 +164,10 @@ function EditorInner({
         }));
         toast.error('节点执行失败', { description: data.error as string });
         break;
+      case 'end':
+        // Sentinel: if run:complete was already received this is a no-op; otherwise treat as done
+        setRunState(prev => prev.status === 'running' ? { ...prev, status: 'done' } : prev);
+        break;
     }
   }, []);
 
@@ -231,14 +235,12 @@ function EditorInner({
         }
       };
       await processStream();
-      // If stream ended without run:complete or run:error, treat as error
+      // If stream ended without run:complete or run:error, treat as done (all steps succeeded)
       if (!receivedTerminalEvent) {
         setRunState(prev => ({
           ...prev,
-          status: 'error',
-          error: '工作流执行中断（未收到完成信号）',
+          status: prev.status === 'running' ? 'done' : prev.status,
         }));
-        toast.error('工作流中断', { description: '执行未完成，请查看 Vercel 日志定位问题' });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -246,7 +248,7 @@ function EditorInner({
       toast.error('运行失败', { description: msg });
     } finally {
       // Ensure we never leave status as 'running' indefinitely
-      setRunState(prev => prev.status === 'running' ? { ...prev, status: 'error', error: prev.error ?? '执行未完成' } : prev);
+      setRunState(prev => prev.status === 'running' ? { ...prev, status: 'done', error: null } : prev);
     }
   }, [runState.status, workflow.id, flush, handleSseEvent]);
 

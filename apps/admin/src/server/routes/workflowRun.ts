@@ -226,6 +226,8 @@ workflowRunRouter.post(
     }
 
     console.log('[wfrun:complete]', { runId, totalSteps: stepResults.length, shopifyProductUrl });
+    // Flush buffer before terminal events so proxies/CDNs don't hold data
+    res.write(': flush\n\n');
     send('run:complete', {
       runId,
       steps: stepResults,
@@ -233,6 +235,12 @@ workflowRunRouter.post(
       shopifyProductUrl,
       productPublicUrl: shopifyProductUrl,
     });
+    // Sentinel event so frontend has a second chance to detect stream end
+    res.write('event: end\ndata: {}\n\n');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (res as any).flush === 'function') (res as any).flush();
+    // Yield event loop so Node actually flushes the write buffer before closing
+    await new Promise(r => setImmediate(r));
     res.end();
   },
 );
