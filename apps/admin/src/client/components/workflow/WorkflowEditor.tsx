@@ -127,61 +127,81 @@ function EditorInner({
   const { state: saveState, schedule, flush } = useDebouncedSave(workflow, 800, onSaved);
 
   // PLANET-1069: run handlers (after flush is declared)
+  // PLANET-1122: helper — merge all known step ids to done/failed, using prev.stepStatuses
+  // as source-of-truth for 'failed', filling any missing keys with 'done'.
+  // Uses BOTH workflow.steps (prop) and prev.stepStatuses (event-tracked) so stale closures
+  // never leave a step without an explicit final status.
   const handleSseEvent = useCallback((event: string, data: Record<string, unknown>) => {
+    console.log('[SSE event]', event, data); // PLANET-1122 debug — remove next ticket
     switch (event) {
       case 'step:start':
-        setRunState(prev => ({
-          ...prev,
-          stepStatuses: { ...prev.stepStatuses, [data.stepId as string]: 'running' },
-        }));
+        setRunState(prev => {
+          const next = { ...prev.stepStatuses, [data.stepId as string]: 'running' };
+          console.log('[stepStatuses after step:start]', next); // PLANET-1122 debug
+          return { ...prev, stepStatuses: next };
+        });
         break;
       case 'step:done': {
         const stepId = data.stepId as string;
         const success = data.status === 'success';
-        setRunState(prev => ({
-          ...prev,
-          stepStatuses: { ...prev.stepStatuses, [stepId]: success ? 'done' : 'failed' },
-          stepResults: [...prev.stepResults, data as unknown as StepRunResult],
-        }));
+        setRunState(prev => {
+          const next = { ...prev.stepStatuses, [stepId]: success ? 'done' : 'failed' };
+          console.log('[stepStatuses after step:done]', next); // PLANET-1122 debug
+          return { ...prev, stepStatuses: next, stepResults: [...prev.stepResults, data as unknown as StepRunResult] };
+        });
         break;
       }
       case 'run:complete':
-        setRunState(prev => ({
-          ...prev,
-          status: 'done',
-          shopifyProductUrl: (data.shopifyProductUrl as string) ?? null,
-          stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
-          // PLANET-1120: force all still-running/unset steps to done so spinners stop
-          stepStatuses: Object.fromEntries(
-            workflow.steps.map(s => [
-              s.id,
-              (prev.stepStatuses[s.id] === 'failed') ? 'failed' : 'done',
-            ])
-          ),
-        }));
+        setRunState(prev => {
+          // PLANET-1122: build final statuses covering ALL known step ids —
+          // (a) start with every step in workflow.steps (prop)
+          // (b) also cover any step id already tracked in prev.stepStatuses (SSE events)
+          // This handles stale-closure mismatches between prop and editor state.
+          const allIds = new Set<string>([
+            ...workflow.steps.map(s => s.id),
+            ...Object.keys(prev.stepStatuses),
+          ]);
+          const finalStatuses = Object.fromEntries(
+            [...allIds].map(id => [id, prev.stepStatuses[id] === 'failed' ? 'failed' : 'done'])
+          );
+          console.log('[stepStatuses after run:complete]', finalStatuses); // PLANET-1122 debug
+          return {
+            ...prev,
+            status: 'done',
+            shopifyProductUrl: (data.shopifyProductUrl as string) ?? null,
+            stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
+            stepStatuses: finalStatuses,
+          };
+        });
         toast.success('工作流执行完成 🎉');
         break;
       case 'run:error':
-        setRunState(prev => ({
-          ...prev,
-          status: 'error',
-          error: data.error as string,
-          stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
-          stepStatuses: { ...prev.stepStatuses, [data.failedStep as string]: 'failed' },
-        }));
+        setRunState(prev => {
+          const next = { ...prev.stepStatuses, [data.failedStep as string]: 'failed' };
+          console.log('[stepStatuses after run:error]', next); // PLANET-1122 debug
+          return {
+            ...prev,
+            status: 'error',
+            error: data.error as string,
+            stepResults: (data.steps as StepRunResult[]) ?? prev.stepResults,
+            stepStatuses: next,
+          };
+        });
         toast.error('节点执行失败', { description: data.error as string });
         break;
       case 'end':
         // Sentinel: if run:complete was already received this is a no-op; otherwise treat as done
         setRunState(prev => {
           if (prev.status !== 'running') return prev;
-          // PLANET-1120: force-done any lingering running/unset steps
+          // PLANET-1122: same all-ids strategy as run:complete
+          const allIds = new Set<string>([
+            ...workflow.steps.map(s => s.id),
+            ...Object.keys(prev.stepStatuses),
+          ]);
           const finalStatuses = Object.fromEntries(
-            workflow.steps.map(s => [
-              s.id,
-              (prev.stepStatuses[s.id] === 'failed') ? 'failed' : 'done',
-            ])
+            [...allIds].map(id => [id, prev.stepStatuses[id] === 'failed' ? 'failed' : 'done'])
           );
+          console.log('[stepStatuses after end sentinel]', finalStatuses); // PLANET-1122 debug
           return { ...prev, status: 'done', stepStatuses: finalStatuses };
         });
         break;
@@ -192,8 +212,9 @@ function EditorInner({
     if (runState.status === 'running') return;
     // Flush unsaved changes first
     flush();
-    // Reset run state
-    setRunState({ status: 'running', runId: null, stepStatuses: {}, stepResults: [], shopifyProductUrl: null, error: null });
+    // PLANET-1122: initialize ALL steps to 'pending' so run:complete overlay always covers every node
+    const initialStatuses = Object.fromEntries(steps.map(s => [s.id, 'pending']));
+    setRunState({ status: 'running', runId: null, stepStatuses: initialStatuses, stepResults: [], shopifyProductUrl: null, error: null });
     // Clear previous case detail so old 'done' statuses don't bleed into the new run's color overlay
     setCaseDetail(null);
     setActiveTab('runs');
@@ -267,7 +288,7 @@ function EditorInner({
       // Ensure we never leave status as 'running' indefinitely
       setRunState(prev => prev.status === 'running' ? { ...prev, status: 'done', error: null } : prev);
     }
-  }, [runState.status, workflow.id, flush, handleSseEvent]);
+  }, [runState.status, workflow.id, flush, handleSseEvent, steps]);
 
   // When workflow id changes, reset
   useEffect(() => {
@@ -574,17 +595,31 @@ function EditorInner({
 
   // Case statuses → keyed by stepId (workflow step id)
   // PLANET-1069: merge run statuses (run takes priority over case)
+  // PLANET-1122: runState is ALWAYS authoritative for any step id it knows about.
+  //   When a run is active or finished (status !== 'idle'), runState.stepStatuses
+  //   wins unconditionally — caseDetail cannot overwrite it back to 'running'.
   const caseStatuses: Record<string, string> = useMemo(() => {
     const out: Record<string, string> = {};
     if (caseDetail?.steps) {
-      for (const s of caseDetail.steps) out[s.stepId] = s.status;
+      for (const s of caseDetail.steps) {
+        // PLANET-1122: skip case-step status for any id already tracked by the run
+        // (runState.stepStatuses will override below; don't let case bleed through)
+        if (runState.status !== 'idle' && s.stepId in runState.stepStatuses) continue;
+        out[s.stepId] = s.status;
+      }
     }
-    // Overlay live run statuses
+    // Overlay live run statuses — these are always authoritative
     for (const [k, v] of Object.entries(runState.stepStatuses)) {
-      out[k] = v === 'done' ? 'done' : v === 'failed' ? 'failed' : 'running';
+      out[k] = v === 'done' ? 'done' : v === 'failed' ? 'failed' : v === 'pending' ? 'pending' : 'running';
     }
+    console.log('[caseStatuses]', { // PLANET-1122 debug — remove next ticket
+      runStatus: runState.status,
+      runStateKeys: Object.keys(runState.stepStatuses),
+      caseStepIds: caseDetail?.steps?.map(s => s.stepId),
+      final: out,
+    });
     return out;
-  }, [caseDetail, runState.stepStatuses]);
+  }, [caseDetail, runState.stepStatuses, runState.status]);
 
   const caseErrors: Record<string, string> = useMemo(() => {
     if (!caseDetail?.steps) return {};
