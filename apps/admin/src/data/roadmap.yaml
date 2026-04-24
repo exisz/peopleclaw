@@ -1116,24 +1116,24 @@
   title: "批次 UI（1 行批次可展开 → N 个子 case 各自进度/播放键）S6"
   category: "Cases"
   stage: 4
-  status: todo
+  status: done
   description: "S6：案例列表按 batch_id 折叠为 1 行，显示整体进度'9/10 已上架'，展开看 10 个子 case 各自状态"
   prerequisites: [F088, F082]
   jira: "PLANET-763"
-  completed_at: ""
-  commit_sha: ""
+  completed_at: "2026-04-24"
+  commit_sha: "1a2b296fb7693c2fe6d163d8fce845ffe87f34d1"
   reject_reason: ""
 
 - id: F093
   title: "节点校验失败 → awaiting_fix 状态 + 错误 UI（S7）"
   category: "Cases"
   stage: 4
-  status: todo
+  status: done
   description: "S7：机器节点判定数据不达标时挂起 case 为 awaiting_fix，UI 在该节点显示具体错误（行+列+值+原因）"
   prerequisites: [F091, F081]
   jira: "PLANET-763"
-  completed_at: ""
-  commit_sha: ""
+  completed_at: "2026-04-24"
+  commit_sha: "1a2b296fb7693c2fe6d163d8fce845ffe87f34d1"
   reject_reason: ""
 
 - id: F094
@@ -1320,12 +1320,12 @@
   title: "商品工作流模板加 create_case 入口节点"
   category: "Workflow"
   stage: 4
-  status: in_progress
+  status: done
   description: "PLANET-1107：商品上架工作流模板缺 create_case 第一步，导致'跑通是假象'，修复后真实 Shopify 创建商品"
   prerequisites: [F104]
   jira: "PLANET-1107"
-  completed_at: ""
-  commit_sha: ""
+  completed_at: "2026-04-24"
+  commit_sha: "1a2b296fb7693c2fe6d163d8fce845ffe87f34d1"
   reject_reason: ""
 
 - id: F110
@@ -1356,12 +1356,12 @@
   title: "商品前台链接分享（Shopify productPublicUrl UI 展示）"
   category: "Cases"
   stage: 4
-  status: in_progress
+  status: done
   description: "PLANET-1105：工作流执行完成后显示可分享的 Shopify 商品前台 URL"
   prerequisites: [F106]
   jira: "PLANET-1105"
-  completed_at: ""
-  commit_sha: ""
+  completed_at: "2026-04-24"
+  commit_sha: "1a2b296fb7693c2fe6d163d8fce845ffe87f34d1"
   reject_reason: ""
 
 - id: F113
@@ -2506,4 +2506,28 @@
   jira: "PLANET-1204"
   completed_at: "2026-04-24"
   commit_sha: ""
+  reject_reason: ""
+
+- id: F207
+  title: "批量导入对话框默认选 Shopify 上架模板"
+  category: "UI"
+  stage: 4
+  status: done
+  description: "PLANET-1206：Cases 页批量导入按钒自动识别包含'上架'或 Shopify 的工作流，跳过工作流选择器直接开启导入对话框"
+  prerequisites: [F109, F089]
+  jira: "PLANET-1206"
+  completed_at: "2026-04-24"
+  commit_sha: "1a2b296fb7693c2fe6d163d8fce845ffe87f34d1"
+  reject_reason: ""
+
+- id: F208
+  title: "端到端 10 行表→ Shopify 上架 → 商品链接 v1"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "PLANET-1206：用户上传 10 行商品表 → 预设 Shopify 上架工作流模板 → fan-out N 个 case → 9 行 done+查看商品按钒，1 行 awaiting_fix+价格不能为负错误信息，全部 Playwright E2E 通过"
+  prerequisites: [F109, F112, F092, F093, F207]
+  jira: "PLANET-1206"
+  completed_at: "2026-04-24"
+  commit_sha: "1600677c8c9e1f9dfd8fce4b21ecbbfa40d77249"
   reject_reason: ""
