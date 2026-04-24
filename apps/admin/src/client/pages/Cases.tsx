@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, Copy, ExternalLink, Upload, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Upload, Workflow } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
@@ -251,6 +251,7 @@ interface WorkflowSummary {
 }
 
 function CasesList() {
+  const navigate = useNavigate();
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('all');
   const [err, setErr] = useState<string | null>(null);
@@ -269,7 +270,14 @@ function CasesList() {
 
   function openBatchImport() {
     if (workflows.length === 0) {
-      toast.error('暂无可用 Workflow，请先创建一个 Workflow。');
+      toast.error('暂无可用工作流', {
+        description: '请先创建一个工作流，再进行批量导入',
+        action: {
+          label: '去创建工作流',
+          onClick: () => navigate('/workflows'),
+        },
+        duration: 8000,
+      });
       return;
     }
     if (workflows.length === 1) {
@@ -303,11 +311,11 @@ function CasesList() {
     <div className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto space-y-6">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" data-testid="cases-back-dashboard">
-            <Link to="/dashboard">
-              <LayoutDashboard className="h-4 w-4" />
+          <Button asChild variant="ghost" size="sm" data-testid="cases-back-home">
+            <Link to="/workflows">
+              <Workflow className="h-4 w-4" />
               <ArrowLeft className="h-3 w-3 -ml-1" />
-              主页
+              工作流
             </Link>
           </Button>
           <div>

@@ -14,7 +14,7 @@ export default function Callback() {
     (async () => {
       try {
         await logtoClient.handleSignInCallback(window.location.href);
-        navigate('/dashboard', { replace: true });
+        navigate('/workflows', { replace: true });
       } catch (e) {
         setErr(e instanceof Error ? e.message : String(e));
       }
