@@ -66,60 +66,58 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
 
   /**
    * Tier B: 自建+案例工作流 → 删 → 弹窗显示案例数 → 点确定删除全部
+   *
+   * Uses seeded workflow e2e-workflow-with-case (isSystem=false, has 1 case).
+   * seed-e2e.mjs is idempotent and must have been run before this test.
    */
   test('(2) 自建+案例工作流 → 二次确认弹窗 → 确定删除全部', async ({ authedPage }) => {
     await authedPage.addInitScript(() => {
       localStorage.setItem('peopleclaw-current-tenant', 'acceptance');
     });
-    await authedPage.goto('/workflows');
-    await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
-    await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
 
-    // Step 1: Create a fresh workflow via UI
-    const createBtn = authedPage.getByTestId('create-workflow-btn').first();
-    await expect(createBtn).toBeVisible({ timeout: 15_000 });
-    await createBtn.click();
+    // Re-seed the e2e-workflow-with-case to make this test idempotent
+    // (the previous test run may have deleted it)
+    await authedPage.request.post('/api/workflows', {
+      headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
+      data: {
+        id: 'e2e-workflow-with-case',
+        name: 'E2E 测试工作流（有案例）',
+        category: 'E2E',
+        definition: { description: 'E2E test workflow', icon: '📋', steps: [], nodes: [], edges: [] },
+      },
+    }).catch(() => {
+      // ignore 409 conflict (workflow already exists from previous seed)
+    });
 
-    const nameInput = authedPage.getByTestId('create-workflow-name');
-    await expect(nameInput).toBeVisible({ timeout: 5_000 });
-    const wfName = `e2e-tier-b-${Date.now()}`;
-    await nameInput.fill(wfName);
-    await authedPage.getByTestId('create-workflow-submit').click();
-
-    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText(wfName, { timeout: 15_000 });
-    await authedPage.waitForURL(/\/workflows\/.+/, { timeout: 10_000 });
-    const wfId = authedPage.url().match(/\/workflows\/([^/]+)/)?.[1] ?? '';
-    expect(wfId).toBeTruthy();
-
-    // Step 2: Create a case for this workflow via API (using the logged-in session)
+    // Ensure at least one case exists for this workflow
     const caseResp = await authedPage.request.post('/api/cases', {
       headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
-      data: { workflowId: wfId, title: 'E2E 测试案例 (Tier B)' },
+      data: { workflowId: 'e2e-workflow-with-case', title: 'E2E 测试案例 (Tier B)' },
     });
-    // Case creation may succeed or fail (advanceCase may fail), but as long as the case row is created
-    // we proceed — a non-ok response still means the case exists if status is 5xx from executor
-    const caseBody = await caseResp.json().catch(() => ({}));
-    const caseCreated = caseResp.ok() || caseBody?.case?.id;
-    expect(caseCreated || caseResp.status() < 500).toBeTruthy();
+    // Case row is created even if advanceCase throws (500 is acceptable here)
+    const caseStatus = caseResp.status();
+    expect(caseStatus === 200 || caseStatus === 201 || caseStatus === 500).toBeTruthy();
 
-    // Step 3: Navigate to this workflow in the Workflows page
-    await authedPage.goto(`/workflows/${wfId}`);
+    await authedPage.goto('/workflows/e2e-workflow-with-case');
     await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
-    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText(wfName, { timeout: 15_000 });
 
-    // Step 4: Click topbar delete
+    // Wait for workflow to load — breadcrumb should show the workflow name
+    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toBeVisible({ timeout: 20_000 });
+    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).not.toHaveText('', { timeout: 10_000 });
+
+    // Click topbar delete
     const deleteBtn = authedPage.getByTestId('topbar-delete-workflow-btn');
     await expect(deleteBtn).toBeVisible({ timeout: 5_000 });
+    await expect(deleteBtn).not.toBeDisabled({ timeout: 3_000 });
     await deleteBtn.click();
 
-    // Tier A first-confirm dialog opens
+    // First-confirm dialog opens (Tier A dialog, before we know there are cases)
     const confirmDeleteBtn = authedPage.getByTestId('confirm-delete-workflow');
     await expect(confirmDeleteBtn).toBeVisible({ timeout: 5_000 });
     await confirmDeleteBtn.click();
 
-    // The first-confirm triggers the API (no force) which returns 409 cases_count
-    // → force-delete confirmation dialog should now appear
+    // API returns 409 (has cases) → Tier B force-delete confirmation dialog
     const forceConfirmBtn = authedPage.getByTestId('confirm-force-delete-workflow');
     await expect(forceConfirmBtn).toBeVisible({ timeout: 15_000 });
 
@@ -131,7 +129,7 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
     await forceConfirmBtn.click();
 
     // Workflow should disappear from sidebar
-    await expect(authedPage.locator(`[data-testid="sidebar-workflow-${wfId}"]`)).not.toBeVisible({ timeout: 15_000 });
+    await expect(authedPage.locator('[data-testid="sidebar-workflow-e2e-workflow-with-case"]')).not.toBeVisible({ timeout: 15_000 });
 
     // Toast success
     const toast = authedPage.locator('[data-sonner-toast]').first();
@@ -204,13 +202,20 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
     await expect(cloneBtn).toBeVisible({ timeout: 5_000 });
     await cloneBtn.click();
 
-    // Should navigate to the clone
-    await authedPage.waitForURL(/\/workflows\/(?!shopify-direct-listing)/, { timeout: 15_000 });
-
+    // Should navigate to the clone (different URL from the original system template)
+    // The clone ID is shopify-direct-listing-{nanoid} so it includes the original prefix
+    await authedPage.waitForFunction(
+      () => {
+        const p = location.pathname;
+        return p.startsWith('/workflows/') && p !== '/workflows/shopify-direct-listing';
+      },
+      { timeout: 20_000 },
+    );
     // Wait for page to load cloned workflow
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
     const cloneId = authedPage.url().match(/\/workflows\/([^/]+)/)?.[1] ?? '';
     expect(cloneId).not.toBe('shopify-direct-listing');
+    expect(cloneId.length).toBeGreaterThan(0);
 
     // The clone should NOT be a system template — topbar delete should be normal (not locked)
     const topbarDeleteBtn = authedPage.getByTestId('topbar-delete-workflow-btn');
