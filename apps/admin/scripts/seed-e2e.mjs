@@ -256,20 +256,40 @@ async function ensureTenantUser(tenantId, userId) {
   console.log('[db] TenantUser created (owner)');
 }
 
-async function upsertWorkflow(id, tenantId, name, category, defObj) {
+async function upsertWorkflow(id, tenantId, name, category, defObj, isSystem = 0) {
   const definition = JSON.stringify(defObj);
   await db.execute({
-    sql: `INSERT INTO Workflow (id, tenantId, name, category, definition, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    sql: `INSERT INTO Workflow (id, tenantId, name, category, definition, isSystem, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           ON CONFLICT(id) DO UPDATE SET
             tenantId = excluded.tenantId,
             name = excluded.name,
             category = excluded.category,
             definition = excluded.definition,
+            isSystem = excluded.isSystem,
             updatedAt = CURRENT_TIMESTAMP`,
-    args: [id, tenantId, name, category, definition],
+    args: [id, tenantId, name, category, definition, isSystem],
   });
-  console.log(`[db] Workflow upserted: ${id}`);
+  console.log(`[db] Workflow upserted: ${id} (isSystem=${isSystem})`);
+}
+
+// PLANET-1210: Ensure at least one Case exists for a given workflow (for Tier B e2e)
+async function ensureCaseForWorkflow(workflowId, tenantId, ownerId) {
+  const existing = await db.execute({
+    sql: 'SELECT id FROM "Case" WHERE workflowId = ? LIMIT 1',
+    args: [workflowId],
+  });
+  if (existing.rows.length > 0) {
+    console.log(`[db] Case for workflow ${workflowId} already exists`);
+    return;
+  }
+  const id = cuid();
+  await db.execute({
+    sql: `INSERT INTO "Case" (id, tenantId, workflowId, ownerId, title, status, payload, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, 'running', '{}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    args: [id, tenantId, workflowId, ownerId, 'E2E 测试案例'],
+  });
+  console.log(`[db] Case created id=${id} for workflow ${workflowId}`);
 }
 
 async function ensureShopifyConnection(tenantId) {
@@ -340,7 +360,11 @@ async function main() {
   await upsertWorkflow('shopify-auto-smoketest', tenantId, 'Shopify Auto Smoke Test', 'E-commerce', SMOKETEST_DEF);
   await upsertWorkflow('shopify-product-listing-demo', tenantId, 'Shopify Product Listing (PeopleClaw Demo)', 'E-commerce', DEMO_DEF);
   // PLANET-1206 / PLANET-1107: Shopify 直传上架工作流（批量导入专用，无 AI 步骤）
-  await upsertWorkflow('shopify-direct-listing', tenantId, 'Shopify 商品上架（批量）', 'E-commerce', SHOPIFY_DIRECT_LISTING_DEF);
+  // PLANET-1210: isSystem=1 — starter template, cannot be deleted
+  await upsertWorkflow('shopify-direct-listing', tenantId, 'Shopify 商品上架（批量）', 'E-commerce', SHOPIFY_DIRECT_LISTING_DEF, 1);
+  // PLANET-1210: seed an e2e workflow with a case attached (for Tier B delete test)
+  await upsertWorkflow('e2e-workflow-with-case', tenantId, 'E2E 测试工作流（有案例）', 'E2E', SMOKETEST_DEF, 0);
+  await ensureCaseForWorkflow('e2e-workflow-with-case', tenantId, userId);
   await ensureShopifyConnection(tenantId);
   console.log('— running seed-step-templates.mjs —');
   await runStepTemplatesSeed();
@@ -350,7 +374,7 @@ async function main() {
     userId,
     tenantId,
     tenantSlug: TENANT_SLUG,
-    workflows: ['shopify-auto-smoketest', 'shopify-product-listing-demo', 'shopify-direct-listing'],
+    workflows: ['shopify-auto-smoketest', 'shopify-product-listing-demo', 'shopify-direct-listing', 'e2e-workflow-with-case'],
   }, null, 2));
 }
 

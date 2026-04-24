@@ -68,45 +68,50 @@ export default function Sidebar({
   const [tab, setTab] = useState<'workflows' | 'library'>('workflows');
   const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
   const [deleting, setDeleting] = useState(false);
-  // PLANET-1208: tracks workflow ids that are in-use (have cases) so we can disable delete
-  const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
+  // PLANET-1210: force-delete confirmation (Tier B: self-built + has cases)
+  const [forceDeleteTarget, setForceDeleteTarget] = useState<{ workflow: Workflow; casesCount: number } | null>(null);
   const { t } = useTranslation('workflow');
   const navigate = useNavigate();
 
-  async function handleConfirmDelete() {
-    if (!deleteTarget) return;
+  async function doDelete(workflow: Workflow, force = false) {
     setDeleting(true);
     try {
-      await apiClient.delete(`/api/workflows/${deleteTarget.id}`);
-      toast.success('工作流已删除', { description: deleteTarget.name });
-      onDeleteWorkflow?.(deleteTarget.id);
+      const url = force
+        ? `/api/workflows/${workflow.id}?force=true`
+        : `/api/workflows/${workflow.id}`;
+      await apiClient.delete(url);
+      toast.success('已删除', { description: workflow.name });
+      onDeleteWorkflow?.(workflow.id);
+      setDeleteTarget(null);
+      setForceDeleteTarget(null);
     } catch (e: unknown) {
-      // PLANET-1208: parse 409 workflow_in_use and show human-readable details
-      if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
-        const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
-        // Mark this workflow as in-use so the menu button shows a lock icon
-        setInUseIds(prev => new Set([...prev, deleteTarget.id]));
-        if (cases.length === 1) {
-          toast.error('无法删除：以下案例正在使用此工作流', {
-            description: cases[0].name,
-            action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
-            duration: 8000,
-          });
-        } else {
-          const desc = cases.slice(0, 5).map((c) => `• ${c.name}`).join('\n') +
-            (cases.length > 5 ? `\n… 共 ${cases.length} 个案例` : '');
-          toast.error(`无法删除：${cases.length} 个案例正在使用此工作流`, {
-            description: desc,
-            duration: 10000,
-          });
-        }
+      if (e instanceof ApiError && e.status === 409 && e.data?.cases_count != null) {
+        // Tier B: has cases — ask for 2nd confirmation
+        setDeleteTarget(null);
+        setForceDeleteTarget({ workflow, casesCount: e.data.cases_count as number });
+      } else if (e instanceof ApiError && e.status === 403 && e.data?.error === 'system_template') {
+        toast.error('系统模板不可删除', { description: '请点「克隆」复制后修改' });
+        setDeleteTarget(null);
       } else {
         const msg = e instanceof Error ? e.message : String(e);
         toast.error('删除失败', { description: msg });
       }
     } finally {
       setDeleting(false);
-      setDeleteTarget(null);
+    }
+  }
+
+  async function handleClone(workflow: Workflow) {
+    try {
+      const { workflow: cloned } = await apiClient.post<{ workflow: { id: string; name: string; category: string | null; isSystem: boolean; definition: unknown } }>(
+        `/api/workflows/${workflow.id}/clone`,
+        {},
+      );
+      toast.success(`已克隆「${cloned.name}」`, { description: '副本已加入工作流列表' });
+      // Full reload so Workflows.tsx re-fetches the list and navigates to clone
+      window.location.href = `/workflows/${cloned.id}`;
+    } catch (e) {
+      toast.error('克隆失败', { description: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -235,21 +240,29 @@ export default function Sidebar({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
-                          {inUseIds.has(w.id) ? (
-                            // PLANET-1208: workflow has cases — show disabled state with tooltip
-                            <TooltipProvider delayDuration={0}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground cursor-not-allowed">
-                                    <Lock className="h-3.5 w-3.5" />
-                                    <span>有案例，不可删除</span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-[200px] text-xs">
-                                  此工作流仍有关联案例，请先删除或移除所有案例后再删除工作流。
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          {w.isSystem ? (
+                            // Tier C: system template — lock icon + clone button
+                            <>
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground cursor-not-allowed" data-testid={`sidebar-workflow-locked-${w.id}`}>
+                                      <Lock className="h-3.5 w-3.5" />
+                                      <span>系统模板</span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-[200px] text-xs">
+                                    系统模板不可删除，可点「克隆」复制后修改
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); handleClone(w); }}
+                                data-testid={`sidebar-workflow-clone-${w.id}`}
+                              >
+                                克隆
+                              </DropdownMenuItem>
+                            </>
                           ) : (
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
@@ -281,25 +294,48 @@ export default function Sidebar({
         <StepLibraryPanel onAdd={onAddStepTemplate} />
       )}
 
-      {/* PLANET-1052: delete confirm dialog */}
+      {/* PLANET-1210 Tier A: simple confirmation (no cases) */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除工作流</AlertDialogTitle>
             <AlertDialogDescription>
               将删除「{deleteTarget?.name}」，此操作不可恢复。
-              有关联案例的工作流将无法删除，系统会显示具体原因。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmDelete}
+              onClick={() => deleteTarget && doDelete(deleteTarget, false)}
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="confirm-delete-workflow"
             >
               {deleting ? '删除中…' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* PLANET-1210 Tier B: force-delete confirmation (has cases) */}
+      <AlertDialog open={!!forceDeleteTarget} onOpenChange={(open) => { if (!open) setForceDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除工作流和案例</AlertDialogTitle>
+            <AlertDialogDescription>
+              将删除「{forceDeleteTarget?.workflow.name}」及关联的{' '}
+              <strong>{forceDeleteTarget?.casesCount}</strong> 个案例。此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => forceDeleteTarget && doDelete(forceDeleteTarget.workflow, true)}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-force-delete-workflow"
+            >
+              {deleting ? '删除中…' : '确定删除全部'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

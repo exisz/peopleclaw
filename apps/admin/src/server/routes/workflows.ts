@@ -28,6 +28,7 @@ workflowsRouter.get('/workflows', async (req, res) => {
   res.json({
     workflows: list.map((w) => ({
       ...w,
+      isSystem: w.isSystem ?? false,
       definition: safeParse(w.definition),
     })),
   });
@@ -92,6 +93,11 @@ workflowsRouter.put('/workflows/:id', requireAuth, requireTenant, async (req, re
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });
 
+// PLANET-1210: Three-tier workflow delete
+// A. is_system=true  → 403 (never deletable)
+// B. has cases, force=true  → cascade delete cases, then workflow (transaction)
+// C. has cases, no force  → 409 with cases_count
+// D. no cases  → delete immediately
 workflowsRouter.delete('/workflows/:id', requireAuth, requireTenant, async (req, res) => {
   const r = req as unknown as TenantedRequest;
   const prisma = getPrisma();
@@ -101,22 +107,66 @@ workflowsRouter.delete('/workflows/:id', requireAuth, requireTenant, async (req,
     res.status(403).json({ error: 'workflow belongs to another tenant' });
     return;
   }
-  // Refuse delete if any case still references this workflow (cascade-safe v1)
-  const refCases = await prisma.case.findMany({
-    where: { workflowId: req.params.id },
-    select: { id: true, title: true },
-  });
-  if (refCases.length > 0) {
-    const cases = refCases.map((c) => ({
-      id: c.id,
-      name: c.title,
-      url: `/cases/${c.id}`,
-    }));
-    res.status(409).json({ error: 'workflow_in_use', cases });
+  // Tier C: system template — hard block
+  if (existing.isSystem) {
+    res.status(403).json({ error: 'system_template', message: '系统模板不可删除' });
     return;
   }
+  const force = req.query.force === 'true' || req.body?.force === true;
+  const refCases = await prisma.case.findMany({
+    where: { workflowId: req.params.id },
+    select: { id: true },
+  });
+  if (refCases.length > 0 && !force) {
+    // Tier B without force — return count for confirmation dialog
+    res.status(409).json({
+      error: 'workflow_in_use',
+      cases_count: refCases.length,
+      message: `此工作流有 ${refCases.length} 个关联案例，请确认是否一并删除`,
+    });
+    return;
+  }
+  if (refCases.length > 0 && force) {
+    // Tier B with force — cascade delete in transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete child cases first (subflow children), then case steps, then cases, then workflow
+      const caseIds = refCases.map((c) => c.id);
+      // Also get any child cases
+      const childCases = await tx.case.findMany({
+        where: { parentCaseId: { in: caseIds } },
+        select: { id: true },
+      });
+      const allCaseIds = [...caseIds, ...childCases.map((c) => c.id)];
+      await tx.caseStep.deleteMany({ where: { caseId: { in: allCaseIds } } });
+      await tx.case.deleteMany({ where: { id: { in: allCaseIds } } });
+      await tx.workflow.delete({ where: { id: req.params.id } });
+    });
+    res.json({ ok: true, deleted_cases: refCases.length });
+    return;
+  }
+  // Tier A: no cases, delete directly
   await prisma.workflow.delete({ where: { id: req.params.id } });
   res.json({ ok: true });
+});
+
+// PLANET-1210: Clone workflow (system templates → user copy)
+workflowsRouter.post('/workflows/:id/clone', requireAuth, requireTenant, async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const source = await prisma.workflow.findUnique({ where: { id: req.params.id } });
+  if (!source) { res.status(404).json({ error: 'not found' }); return; }
+  const newId = `${source.id.slice(0, 30)}-${nanoid(8)}`;
+  const cloned = await prisma.workflow.create({
+    data: {
+      id: newId,
+      tenantId: r.tenant.id,
+      name: `${source.name} 副本`,
+      category: source.category,
+      definition: source.definition,
+      isSystem: false, // clone is always user-owned
+    },
+  });
+  res.json({ workflow: { ...cloned, definition: safeParse(cloned.definition) } });
 });
 
 function safeParse(s: string): unknown {

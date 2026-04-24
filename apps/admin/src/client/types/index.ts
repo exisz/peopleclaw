@@ -24,6 +24,7 @@ export interface Workflow {
   icon: string;
   steps: WorkflowStep[];
   category: string;
+  isSystem?: boolean; // PLANET-1210: true = system template (locked)
 }
 
 export interface Case {

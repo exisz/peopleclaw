@@ -20,7 +20,23 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Trash2, LayoutDashboard, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch, LibraryBig, Briefcase } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch, LibraryBig, Briefcase, Lock } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
 import UserMenu from '../components/UserMenu';
@@ -31,6 +47,7 @@ interface ServerWorkflow {
   id: string;
   name: string;
   category: string | null;
+  isSystem?: boolean;
   definition: {
     description?: string;
     icon?: string;
@@ -59,6 +76,7 @@ function hydrate(w: ServerWorkflow): Workflow {
     description: def.description ?? '',
     icon: def.icon ?? '📋',
     steps,
+    isSystem: w.isSystem ?? false,
   };
 }
 
@@ -76,6 +94,8 @@ export default function Workflows() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [deleting, setDeleting] = useState(false);
+  // PLANET-1210: force-delete confirmation state (type B: has cases)
+  const [forceDeletePending, setForceDeletePending] = useState<{ workflow: Workflow; casesCount: number } | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -200,37 +220,33 @@ export default function Workflows() {
     }
   }, [newName, navigate]);
 
-  const handleDelete = useCallback(async () => {
+  const handleDelete = useCallback(async (force = false) => {
     if (!selectedWorkflow || deleting) return;
     const target = selectedWorkflow;
+
+    // Tier C: system template — blocked
+    if (target.isSystem) return;
+
     setDeleting(true);
     try {
-      await apiClient.delete(`/api/workflows/${target.id}`);
+      const url = force
+        ? `/api/workflows/${target.id}?force=true`
+        : `/api/workflows/${target.id}`;
+      await apiClient.delete(url);
       // Only update UI after confirmed server-side delete
       const remaining = workflows.filter((w) => w.id !== target.id);
       setWorkflows(remaining);
       setSelectedWorkflow(null);
+      setForceDeletePending(null);
       if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
       else navigate('/workflows');
       toast.success(`已删除「${target.name}」`);
     } catch (e) {
-      // PLANET-1208: show specific human-readable errors, never a generic crash
-      if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
-        const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
-        if (cases.length === 1) {
-          toast.error('无法删除：以下案例正在使用此工作流', {
-            description: cases[0].name,
-            action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
-            duration: 8000,
-          });
-        } else {
-          const desc = cases.slice(0, 5).map((c) => `• ${c.name}`).join('\n') +
-            (cases.length > 5 ? `\n… 共 ${cases.length} 个案例` : '');
-          toast.error(`无法删除：${cases.length} 个案例正在使用此工作流`, {
-            description: desc,
-            duration: 10000,
-          });
-        }
+      if (e instanceof ApiError && e.status === 409 && e.data?.cases_count != null) {
+        // Tier B: has cases — show 2nd confirmation dialog
+        setForceDeletePending({ workflow: target, casesCount: e.data.cases_count as number });
+      } else if (e instanceof ApiError && e.status === 403 && e.data?.error === 'system_template') {
+        toast.error('系统模板不可删除', { description: '请点「克隆」复制后修改' });
       } else {
         toast.error('删除失败', { description: e instanceof Error ? e.message : String(e) });
       }
@@ -322,16 +338,58 @@ export default function Workflows() {
           <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)} data-testid="create-workflow-btn">
             <Plus className="h-4 w-4 mr-1" /> 新工作流
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-            disabled={!selectedWorkflow || deleting}
-            data-testid="topbar-delete-workflow-btn"
-          >
-            <Trash2 className="h-4 w-4 mr-1" /> {deleting ? '删除中…' : '删除'}
-          </Button>
+          {/* PLANET-1210: Three-tier delete button */}
+          {selectedWorkflow?.isSystem ? (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground cursor-not-allowed"
+                    disabled
+                    data-testid="topbar-delete-workflow-btn"
+                  >
+                    <Lock className="h-4 w-4 mr-1" /> 删除
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>系统模板不可删除，可点「克隆」复制后修改</TooltipContent>
+              </Tooltip>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (!selectedWorkflow) return;
+                  try {
+                    const { workflow } = await apiClient.post<{ workflow: ServerWorkflow }>(
+                      `/api/workflows/${selectedWorkflow.id}/clone`,
+                      {},
+                    );
+                    const hydrated = hydrate(workflow);
+                    setWorkflows((prev) => [hydrated, ...prev]);
+                    navigate(`/workflows/${hydrated.id}`);
+                    toast.success(`已克隆「${hydrated.name}」`);
+                  } catch (e) {
+                    toast.error('克隆失败', { description: e instanceof Error ? e.message : String(e) });
+                  }
+                }}
+                data-testid="topbar-clone-workflow-btn"
+              >
+                克隆
+              </Button>
+            </TooltipProvider>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={() => handleDelete(false)}
+              disabled={!selectedWorkflow || deleting}
+              data-testid="topbar-delete-workflow-btn"
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> {deleting ? '删除中…' : '删除'}
+            </Button>
+          )}
           {/* Workflow name breadcrumb */}
           <div className="mx-2 h-4 border-l border-border" />
           <span className="text-sm font-medium truncate max-w-[240px]" data-testid="workflow-breadcrumb-name">
@@ -391,6 +449,33 @@ export default function Workflows() {
         onDesc={setNewDesc}
         onSubmit={handleCreate}
       />
+
+      {/* PLANET-1210 Tier B: force-delete confirmation */}
+      <AlertDialog
+        open={!!forceDeletePending}
+        onOpenChange={(open) => { if (!open) setForceDeletePending(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除工作流和案例</AlertDialogTitle>
+            <AlertDialogDescription>
+              将删除「{forceDeletePending?.workflow.name}」及关联的{' '}
+              <strong>{forceDeletePending?.casesCount}</strong> 个案例。此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(true)}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-force-delete-workflow"
+            >
+              {deleting ? '删除中…' : '确定删除全部'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
