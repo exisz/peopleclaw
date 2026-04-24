@@ -16,7 +16,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false, // multi-tenant DB writes — keep serial for reliability
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1, // 1 retry locally to handle Logto auth flakiness
   workers: 1,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
   use: {
