@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, Settings, Plus, ChevronRight, LibraryBig, Briefcase } from 'lucide-react';
+import { User, Mail, Calendar, Hash, Loader2, AlertCircle, Workflow, Settings, Plus, ChevronRight, LibraryBig, Briefcase, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -188,6 +188,26 @@ export default function Dashboard() {
             </Card>
 
             {/* My Workflows — PLANET-1050 */}
+            {/* Cases quick-access card — prominent entry point (PLANET-1196) */}
+            <Link to="/cases" data-testid="nav-cases-card" className="block group">
+              <Card className="transition-all hover:shadow-md hover:border-primary/50 cursor-pointer border-2">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
+                        <Briefcase className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">案例 Cases</CardTitle>
+                        <CardDescription>查看并管理所有工作流案例</CardDescription>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

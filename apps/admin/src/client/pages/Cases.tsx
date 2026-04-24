@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, Copy, ExternalLink, Upload } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Upload, LayoutDashboard } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
@@ -302,9 +302,18 @@ function CasesList() {
   return (
     <div className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto space-y-6">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Cases</h1>
-          <p className="text-sm text-muted-foreground mt-1">{cases.length} cases</p>
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="sm" data-testid="cases-back-dashboard">
+            <Link to="/dashboard">
+              <LayoutDashboard className="h-4 w-4" />
+              <ArrowLeft className="h-3 w-3 -ml-1" />
+              主页
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Cases</h1>
+            <p className="text-sm text-muted-foreground mt-1">{cases.length} cases</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
