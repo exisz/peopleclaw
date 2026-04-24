@@ -1,5 +1,7 @@
 .vercel
 .env*.local
+*.env.local.*
+scripts/test-products.xlsx
 
 # Playwright (PLANET-889)
 playwright-report/

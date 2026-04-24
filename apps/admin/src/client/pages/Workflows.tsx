@@ -96,6 +96,8 @@ export default function Workflows() {
   const [deleting, setDeleting] = useState(false);
   // PLANET-1210: force-delete confirmation state (type B: has cases)
   const [forceDeletePending, setForceDeletePending] = useState<{ workflow: Workflow; casesCount: number } | null>(null);
+  // First-level confirm dialog for topbar delete
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -383,7 +385,7 @@ export default function Workflows() {
               size="sm"
               variant="ghost"
               className="text-destructive hover:text-destructive"
-              onClick={() => handleDelete(false)}
+              onClick={() => setDeleteConfirmOpen(true)}
               disabled={!selectedWorkflow || deleting}
               data-testid="topbar-delete-workflow-btn"
             >
@@ -449,6 +451,32 @@ export default function Workflows() {
         onDesc={setNewDesc}
         onSubmit={handleCreate}
       />
+
+      {/* PLANET-1210 Tier A: simple first-confirm */}
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => { if (!open) setDeleteConfirmOpen(false); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除工作流</AlertDialogTitle>
+            <AlertDialogDescription>
+              将删除「{selectedWorkflow?.name}」，此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setDeleteConfirmOpen(false); handleDelete(false); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-delete-workflow"
+            >
+              {deleting ? '删除中…' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* PLANET-1210 Tier B: force-delete confirmation */}
       <AlertDialog

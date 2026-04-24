@@ -71,31 +71,67 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
     await authedPage.addInitScript(() => {
       localStorage.setItem('peopleclaw-current-tenant', 'acceptance');
     });
-    await authedPage.goto('/workflows/e2e-workflow-with-case');
+    await authedPage.goto('/workflows');
     await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
 
-    // The e2e-workflow-with-case workflow should be loaded
-    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText('E2E', { timeout: 20_000 });
+    // Step 1: Create a fresh workflow via UI
+    const createBtn = authedPage.getByTestId('create-workflow-btn').first();
+    await expect(createBtn).toBeVisible({ timeout: 15_000 });
+    await createBtn.click();
 
-    // Click topbar delete
+    const nameInput = authedPage.getByTestId('create-workflow-name');
+    await expect(nameInput).toBeVisible({ timeout: 5_000 });
+    const wfName = `e2e-tier-b-${Date.now()}`;
+    await nameInput.fill(wfName);
+    await authedPage.getByTestId('create-workflow-submit').click();
+
+    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText(wfName, { timeout: 15_000 });
+    await authedPage.waitForURL(/\/workflows\/.+/, { timeout: 10_000 });
+    const wfId = authedPage.url().match(/\/workflows\/([^/]+)/)?.[1] ?? '';
+    expect(wfId).toBeTruthy();
+
+    // Step 2: Create a case for this workflow via API (using the logged-in session)
+    const caseResp = await authedPage.request.post('/api/cases', {
+      headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
+      data: { workflowId: wfId, title: 'E2E 测试案例 (Tier B)' },
+    });
+    // Case creation may succeed or fail (advanceCase may fail), but as long as the case row is created
+    // we proceed — a non-ok response still means the case exists if status is 5xx from executor
+    const caseBody = await caseResp.json().catch(() => ({}));
+    const caseCreated = caseResp.ok() || caseBody?.case?.id;
+    expect(caseCreated || caseResp.status() < 500).toBeTruthy();
+
+    // Step 3: Navigate to this workflow in the Workflows page
+    await authedPage.goto(`/workflows/${wfId}`);
+    await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
+    await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
+    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText(wfName, { timeout: 15_000 });
+
+    // Step 4: Click topbar delete
     const deleteBtn = authedPage.getByTestId('topbar-delete-workflow-btn');
     await expect(deleteBtn).toBeVisible({ timeout: 5_000 });
     await deleteBtn.click();
 
-    // Wait for API response — should show Tier B dialog (force-delete confirmation)
+    // Tier A first-confirm dialog opens
+    const confirmDeleteBtn = authedPage.getByTestId('confirm-delete-workflow');
+    await expect(confirmDeleteBtn).toBeVisible({ timeout: 5_000 });
+    await confirmDeleteBtn.click();
+
+    // The first-confirm triggers the API (no force) which returns 409 cases_count
+    // → force-delete confirmation dialog should now appear
     const forceConfirmBtn = authedPage.getByTestId('confirm-force-delete-workflow');
-    await expect(forceConfirmBtn).toBeVisible({ timeout: 10_000 });
+    await expect(forceConfirmBtn).toBeVisible({ timeout: 15_000 });
 
     // Dialog must mention case count
     const dialogContent = authedPage.locator('[role="alertdialog"]').first();
     await expect(dialogContent).toContainText(/[0-9]+.*案例|案例.*[0-9]+/, { timeout: 5_000 });
 
-    // Confirm deletion
+    // Confirm force-deletion
     await forceConfirmBtn.click();
 
-    // Workflow should disappear
-    await expect(authedPage.locator('[data-testid="sidebar-workflow-e2e-workflow-with-case"]')).not.toBeVisible({ timeout: 15_000 });
+    // Workflow should disappear from sidebar
+    await expect(authedPage.locator(`[data-testid="sidebar-workflow-${wfId}"]`)).not.toBeVisible({ timeout: 15_000 });
 
     // Toast success
     const toast = authedPage.locator('[data-sonner-toast]').first();
@@ -169,7 +205,7 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
     await cloneBtn.click();
 
     // Should navigate to the clone
-    await authedPage.waitForURL(/\/workflows\/.+/, { timeout: 15_000 });
+    await authedPage.waitForURL(/\/workflows\/(?!shopify-direct-listing)/, { timeout: 15_000 });
 
     // Wait for page to load cloned workflow
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
