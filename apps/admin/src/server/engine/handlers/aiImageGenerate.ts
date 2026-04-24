@@ -1,19 +1,65 @@
 /**
+ * TODO (PLANET-1201): ai.image_generate is currently MOCKED by default.
+ * Real Google Imagen 4 Fast calls are disabled to prevent accidental API charges
+ * (3 credits per call). To re-enable real Imagen, set env: AI_IMAGE_MOCK=0
+ *
  * ai.image_generate handler — PLANET-1048 / PLANET-1115
  *
  * Calls Google Imagen 4 Fast, uploads result to Vercel Blob, returns { imageUrl }.
  *
- * Required env vars:
+ * Required env vars (real path only):
  *   GOOGLE_GENAI_API_KEY     — Google AI API key
  *   BLOB_READ_WRITE_TOKEN    — Vercel Blob token (optional; falls back gracefully)
  *
- * Credit cost: 3 per call (AI_IMAGE).
+ * Credit cost: 3 per call (AI_IMAGE) — only charged on real path.
  */
 import type { Handler } from './index.js';
 import { CREDIT_COSTS } from '../../lib/credits.js';
 import { checkAndDeductCredit } from '../../lib/credit-check.js';
 
+/** Map aspectRatio string to [width, height] for picsum. */
+function aspectRatioDimensions(ar: string): [number, number] {
+  switch (ar) {
+    case '16:9': return [1280, 720];
+    case '9:16': return [720, 1280];
+    case '4:3':  return [1024, 768];
+    case '3:4':  return [768, 1024];
+    case '1:1':
+    default:     return [1024, 1024];
+  }
+}
+
+/** Stable short hash of a string for picsum seed. */
+function promptHash(prompt: string): string {
+  return Buffer.from(prompt).toString('base64url').slice(0, 12);
+}
+
 export const aiImageGenerateHandler: Handler = async (input, ctx) => {
+  const { payload } = input;
+  const prompt = (payload.prompt as string) || 'A beautiful product photo';
+  const aspectRatio = (payload.aspectRatio as string) || '1:1';
+
+  // PLANET-1201: Default = mock. Set AI_IMAGE_MOCK=0 to opt into real Imagen.
+  const useMock = process.env.AI_IMAGE_MOCK !== '0';
+
+  if (useMock) {
+    const [w, h] = aspectRatioDimensions(aspectRatio);
+    const seed = promptHash(prompt);
+    const imageUrl = `https://picsum.photos/seed/${seed}/${w}/${h}`;
+    console.log(`[ai.image_generate] mock mode → ${imageUrl}`);
+    return {
+      output: {
+        imageUrl,
+        mimeType: 'image/jpeg',
+        prompt,
+        aspectRatio,
+        model: 'mock-picsum',
+        creditsRemaining: null,
+      },
+    };
+  }
+
+  // Real Imagen path — only runs when AI_IMAGE_MOCK=0
   const remaining = await checkAndDeductCredit(
     ctx.tenantId,
     ctx.userId,
@@ -24,10 +70,6 @@ export const aiImageGenerateHandler: Handler = async (input, ctx) => {
 
   const googleApiKey = process.env.GOOGLE_GENAI_API_KEY;
   if (!googleApiKey) throw new Error('GOOGLE_GENAI_API_KEY missing — refusing to mock in production');
-
-  const { payload } = input;
-  const prompt = (payload.prompt as string) || 'A beautiful product photo';
-  const aspectRatio = (payload.aspectRatio as string) || '1:1';
 
   // Call Google Imagen 4 Fast
   const imagenRes = await fetch(

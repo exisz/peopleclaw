@@ -44,6 +44,9 @@ function hydrate(row: StepTemplateRow) {
   };
 }
 
+// PLANET-1201: hidden until real Imagen re-enabled
+const HIDDEN_TEMPLATES = new Set(['ai.image_generate']);
+
 // GET /api/step-templates?domain=ecommerce&category=shopify
 stepTemplatesRouter.get('/step-templates', async (req, res) => {
   const prisma = getPrisma();
@@ -54,7 +57,9 @@ stepTemplatesRouter.get('/step-templates', async (req, res) => {
     where,
     orderBy: [{ category: 'asc' }, { id: 'asc' }],
   });
-  res.json({ templates: rows.map((r) => hydrate(r as unknown as StepTemplateRow)) });
+  // PLANET-1201: filter hidden templates from sidebar library
+  const visible = rows.filter((r) => !HIDDEN_TEMPLATES.has(r.id));
+  res.json({ templates: visible.map((r) => hydrate(r as unknown as StepTemplateRow)) });
 });
 
 // GET /api/step-templates/:id
