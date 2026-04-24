@@ -40,9 +40,9 @@ export function createApp(): Express {
   if (process.env.E2E_TEST_TOKEN) {
     app.use('/api', testRouter);
   }
+  app.use('/api', roadmapRouter);
   app.use('/api', casesRouter);
   app.use('/api', batchImportRouter);
-  app.use('/api', roadmapRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
