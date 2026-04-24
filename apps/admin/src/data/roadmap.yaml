@@ -1,0 +1,2497 @@
+# PeopleClaw Roadmap — Source of Truth
+# Generated: 2026-04-24 (PLANET-1204)
+# Schema: id / title / category / stage / status / description / prerequisites / jira / completed_at / commit_sha / reject_reason
+# Categories: Auth / Tenancy / Workflow / Cases / Nodes / UI / Billing / Integrations / Ops / Stage8+
+# Stages: 1=POC / 2=基建 / 3=多租户+起步工作流 / 4=Canonical MVP / 5=生态变现 / 6=版本快照 / 7=AI辅助 / 8=LLM自治
+
+# ─────────────────────────────────────────────────
+# Stage 1 — POC 起步（Vite SPA + Astro landing）
+# ─────────────────────────────────────────────────
+
+- id: F001
+  title: "GitHub 仓库初始化 + Vite + React 19 脚手架"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "创建 exisz/peopleclaw repo，Vite + React 19 + TypeScript strict 初始化，ESLint 配置"
+  prerequisites: []
+  jira: "PLANET-763"
+  completed_at: "2025-10-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F002
+  title: "Tailwind CSS 4 + @tailwindcss/vite 插件集成"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "Tailwind CSS 4 通过 @tailwindcss/vite 插件接入，全局样式 index.css 配置"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F003
+  title: "@xyflow/react 12 集成 + 基础 canvas 渲染"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "XYFlow 接入，WorkflowView.tsx 能把工作流节点/边在 canvas 上可视化"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-18"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F004
+  title: "自定义 StepNode 组件（human/agent/trigger/subflow 四种类型渲染）"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "StepNode.tsx 支持四种 StepType，不同颜色/图标区分节点类型"
+  prerequisites: [F003]
+  jira: "PLANET-763"
+  completed_at: "2025-10-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F005
+  title: "SubflowGroupNode 组件（子流程分组节点）"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "SubflowGroupNode.tsx 可视化包含多步骤的子流程分组"
+  prerequisites: [F004]
+  jira: "PLANET-763"
+  completed_at: "2025-10-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F006
+  title: "Sidebar 工作流列表导航"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "左侧 Sidebar.tsx 列出工作流列表，点击切换当前工作流"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F007
+  title: "TopBar 顶部导航 + Workflow/Cases 标签切换"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "TopBar.tsx 显示当前工作流名称 + Workflow/Cases 两个 tab 切换"
+  prerequisites: [F006]
+  jira: "PLANET-763"
+  completed_at: "2025-10-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F008
+  title: "CasesView 案例列表视图（静态数据）"
+  category: "Cases"
+  stage: 1
+  status: done
+  description: "CasesView.tsx 展示静态 cases 数据，每行显示案例状态和当前步骤"
+  prerequisites: [F007]
+  jira: "PLANET-763"
+  completed_at: "2025-10-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F009
+  title: "AddStepModal 新增步骤弹窗"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "AddStepModal.tsx 允许用户在工作流中添加新步骤节点"
+  prerequisites: [F004]
+  jira: "PLANET-763"
+  completed_at: "2025-10-25"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F010
+  title: "DetailPanel 步骤详情侧边栏"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "DetailPanel.tsx 点击节点显示步骤详情（名称/描述/类型/工具列表）"
+  prerequisites: [F004]
+  jira: "PLANET-763"
+  completed_at: "2025-10-25"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F011
+  title: "核心类型定义（StepType / WorkflowStep / Workflow / Case）"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "data/types.ts 定义全部核心 TypeScript 类型，strict 模式无 any"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-18"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F012
+  title: "静态工作流种子数据（10 条 facade 演示工作流）"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "data/workflows.ts 提供 10 个样例工作流（电商/租赁/报价/入职等），后续废弃"
+  prerequisites: [F011]
+  jira: "PLANET-763"
+  completed_at: "2025-10-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F013
+  title: "静态案例种子数据（10 条 demo cases）"
+  category: "Cases"
+  stage: 1
+  status: done
+  description: "data/cases.ts 提供静态案例数据用于 POC 展示，后续被真实 DB 数据替代"
+  prerequisites: [F011]
+  jira: "PLANET-763"
+  completed_at: "2025-10-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F014
+  title: "Hash 路由（/ = landing, #app = workflow SPA）"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "App.tsx hash-based routing，/ 显示 LandingPage，#app 显示主应用"
+  prerequisites: [F006]
+  jira: "PLANET-763"
+  completed_at: "2025-10-25"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F015
+  title: "SPA 内嵌 landing 页面（LandingPage.tsx）"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "SPA 内含静态 LandingPage.tsx 作为首屏，后续由 Astro landing 替代"
+  prerequisites: [F014]
+  jira: "PLANET-763"
+  completed_at: "2025-10-28"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F016
+  title: "Vercel 自动部署（peopleclaw.vercel.app，git push → production）"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "Vercel project 绑定 GitHub main 分支，push 即部署，禁用 Vercel CLI 直接部署"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-30"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F017
+  title: "npm run build 零错误 CI 验证"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "tsc + vite build 全量跑通，TypeScript strict 无报错作为硬门槛"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-30"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F018
+  title: "POC 架构文档初稿（spec.md + AGENTS.md）"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "planetbuild workspace 写 PeopleClaw 初始 spec，明确 Vision/Target Users/Architecture"
+  prerequisites: [F001]
+  jira: "PLANET-763"
+  completed_at: "2025-10-18"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F019
+  title: "工作流节点 palette 初版（节点类型选择面板）"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "工作流编辑器侧边 palette 展示可拖拽的节点类型（human/agent/trigger/subflow）"
+  prerequisites: [F004]
+  jira: "PLANET-763"
+  completed_at: "2025-11-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F020
+  title: "节点连线（Edge）交互 — 连接/断开/删除"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "XYFlow edge 创建与删除，支持拖拽连线"
+  prerequisites: [F003]
+  jira: "PLANET-763"
+  completed_at: "2025-11-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F021
+  title: "工作流命名与描述编辑"
+  category: "Workflow"
+  stage: 1
+  status: done
+  description: "可在 TopBar 或弹窗中修改工作流名称/描述/icon（emoji）"
+  prerequisites: [F007]
+  jira: "PLANET-763"
+  completed_at: "2025-11-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F022
+  title: "案例状态枚举（active/completed/paused）"
+  category: "Cases"
+  stage: 1
+  status: done
+  description: "定义 Case.status 枚举，UI 显示对应颜色/图标 badge"
+  prerequisites: [F011]
+  jira: "PLANET-763"
+  completed_at: "2025-11-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F023
+  title: "案例 currentStepId 进度追踪（步骤游标）"
+  category: "Cases"
+  stage: 1
+  status: done
+  description: "Case.currentStepId 记录当前执行到哪个步骤，cases 列表显示进度"
+  prerequisites: [F011]
+  jira: "PLANET-763"
+  completed_at: "2025-11-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F024
+  title: "响应式布局（Sidebar 折叠/展开）"
+  category: "UI"
+  stage: 1
+  status: done
+  description: "Sidebar 支持在小屏幕折叠，主内容区自适应"
+  prerequisites: [F006]
+  jira: "PLANET-763"
+  completed_at: "2025-11-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F025
+  title: "案例 stepStatuses 全步骤状态 map"
+  category: "Cases"
+  stage: 1
+  status: done
+  description: "Case.stepStatuses: Record<stepId, status> 记录每步完成情况，供进度条渲染"
+  prerequisites: [F011]
+  jira: "PLANET-763"
+  completed_at: "2025-11-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F026
+  title: "POC 展示 demo（Elen 内部演示可用）"
+  category: "Ops"
+  stage: 1
+  status: done
+  description: "POC 版本可公开演示，workflow canvas + cases list 基础功能跑通，peopleclaw.vercel.app 可访问"
+  prerequisites: [F016, F003, F008]
+  jira: "PLANET-763"
+  completed_at: "2025-11-15"
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 2 — 基建拼装（admin + Logto + Turso + Stripe + Shopify）
+# ─────────────────────────────────────────────────
+
+- id: F027
+  title: "Monorepo 重构（apps/landing + apps/admin 并存）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "仓库拆分为 apps/landing（Astro）+ apps/admin（React SPA API）+ 根 Vite SPA 兼容并存"
+  prerequisites: [F026]
+  jira: "PLANET-886"
+  completed_at: "2026-01-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F028
+  title: "Genstack 基础模板重建 admin app（genstack-astro-spa-api-2deploys）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "apps/admin 基于 genstack 标准模板重建，确保与 PosterAI/MeTuber 技术范式对齐"
+  prerequisites: [F027]
+  jira: "PLANET-886"
+  completed_at: "2026-01-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F029
+  title: "Astro 5 landing page（peopleclaw.rollersoft.com.au）"
+  category: "UI"
+  stage: 2
+  status: done
+  description: "apps/landing：Astro 5 + Tailwind 3 + Inter 字体；含 Hero/Features/BPM Comparison/Pricing/CTA/Footer；独立 Vercel project 部署"
+  prerequisites: [F027]
+  jira: "PLANET-875"
+  completed_at: "2026-01-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F030
+  title: "Vercel 双项目配置（peopleclaw-landing + peopleclaw-admin）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "Vercel 配置两个独立项目；landing rootDir=apps/landing；admin rootDir=apps/admin；分别部署到不同域名"
+  prerequisites: [F027, F029]
+  jira: "PLANET-875"
+  completed_at: "2026-01-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F031
+  title: "Logto OAuth 集成（SPA App + OIDC 回调）"
+  category: "Auth"
+  stage: 2
+  status: done
+  description: "apps/admin 接入 Logto，SPA App ID = new1hxumluqt5mfbima0i，OIDC 登录回调配置"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-01-25"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F032
+  title: "Logto API Resource 声明（API Indicator 注册）"
+  category: "Auth"
+  stage: 2
+  status: done
+  description: "Logto 注册 API resource: https://app.peopleclaw.rollersoft.com.au/api，配置 audience 验证"
+  prerequisites: [F031]
+  jira: "PLANET-886"
+  completed_at: "2026-01-26"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F033
+  title: "M2M token 颁发（服务端 → Logto Management API）"
+  category: "Auth"
+  stage: 2
+  status: done
+  description: "后端通过 M2M app 获取 Logto management token，用于 tenant 创建时注册用户"
+  prerequisites: [F032]
+  jira: "PLANET-886"
+  completed_at: "2026-01-28"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F034
+  title: "Logto 邮件连接器 via Resend webhook 中转（验证码注册）"
+  category: "Auth"
+  stage: 2
+  status: done
+  description: "Logto 原生邮件连接器替换为 Resend SMTP，注册/登录时发送验证码邮件"
+  prerequisites: [F031]
+  jira: "PLANET-1045"
+  completed_at: "2026-04-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F035
+  title: "Turso SQLite DB 接入（Vercel Marketplace 自动注入 env）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "通过 avercel integration 接入 Turso，TURSO_DATABASE_URL + TURSO_AUTH_TOKEN 自动注入，禁用 turso CLI 直接操作"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-01-28"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F036
+  title: "Drizzle ORM schema 初始化（users / organizations / workflows / cases）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "4 张核心表的 Drizzle ORM schema 定义 + migration 文件，Turso 上跑通"
+  prerequisites: [F035]
+  jira: "PLANET-886"
+  completed_at: "2026-02-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F037
+  title: "Stripe SDK 接入 + Webhook endpoint 硬化"
+  category: "Billing"
+  stage: 2
+  status: done
+  description: "Stripe npm 接入，POST /api/webhooks/stripe 实现；生产环境强制 STRIPE_WEBHOOK_SECRET 验证（无 secret 返回 503）"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-02-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F038
+  title: "Shopify 连接器（Partner API token / shpca_ 自定义 app token 接入）"
+  category: "Integrations"
+  stage: 2
+  status: done
+  description: "Connection 表存储 Shopify API credentials，支持 shpca_ 自定义 app token"
+  prerequisites: [F036]
+  jira: "PLANET-886"
+  completed_at: "2026-02-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F039
+  title: "Shopify shpca_ token 自动刷新（24h 过期处理）"
+  category: "Integrations"
+  stage: 2
+  status: done
+  description: "检测 shpca_ token 24h 过期，自动请求新 token，无需用户手动重连"
+  prerequisites: [F038]
+  jira: "PLANET-916"
+  completed_at: "2026-03-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F040
+  title: "GET /api/health liveness 端点"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "始终快速返回 {ok:true,ts,service}，用于 Vercel 和 uptime 监控"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-02-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F041
+  title: "GET /api/health/ready 深度就绪端点（DB + Logto + Stripe 检查）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "ping DB + Logto OIDC discovery + Stripe key 存在性检查；DB 不通返回 503"
+  prerequisites: [F040, F035, F031]
+  jira: "PLANET-886"
+  completed_at: "2026-02-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F042
+  title: "启动 checkEnv() 环境变量缺失告警"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "env-check.ts 在 boot 时打印 [env-check] 日志，列出缺失的必填/推荐 env vars，warn-only 不 crash"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-02-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F043
+  title: "i18n 中英文双语（zh + en）"
+  category: "UI"
+  stage: 2
+  status: done
+  description: "消除前端硬编码中英文混杂，所有 UI 文案通过 i18n key 管理，支持 zh/en 切换"
+  prerequisites: [F028]
+  jira: "PLANET-910"
+  completed_at: "2026-03-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F044
+  title: "工作流步骤字段翻译（name/description/assignee）"
+  category: "UI"
+  stage: 2
+  status: done
+  description: "工作流 definition.steps[].name/description/assignee 字段支持 i18n 翻译"
+  prerequisites: [F043]
+  jira: "PLANET-915"
+  completed_at: "2026-03-06"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F045
+  title: "Light/dark 主题切换（system preference 跟随）"
+  category: "UI"
+  stage: 2
+  status: done
+  description: "支持 light/dark mode 切换，默认跟随系统偏好；CSS variable 驱动"
+  prerequisites: [F028]
+  jira: "PLANET-909"
+  completed_at: "2026-03-06"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F046
+  title: "主题模式扩展（深灰夜间 / 护眼绿 / 浅灰模式）"
+  category: "UI"
+  stage: 2
+  status: done
+  description: "在 light/dark 基础上增加 4 种主题模式：深灰、护眼、淡绿、浅灰"
+  prerequisites: [F045]
+  jira: "PLANET-1067"
+  completed_at: "2026-04-12"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F047
+  title: "前端 mock data 清除（全部走 API + DB）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "删除前端 workflows.ts/cases.ts 静态 mock，所有数据通过 /api 接口从 Turso 读取"
+  prerequisites: [F036]
+  jira: "PLANET-908"
+  completed_at: "2026-03-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F048
+  title: "Build commit 版本号展示（前端 + API header）"
+  category: "Ops"
+  stage: 2
+  status: in_progress
+  description: "前端 footer 和 /api/health 返回当前 build commit SHA，方便 QA 追溯"
+  prerequisites: [F040]
+  jira: "PLANET-1044"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F049
+  title: "EN/ZH 语言切换器（顶部导航）"
+  category: "UI"
+  stage: 2
+  status: in_progress
+  description: "顶部导航添加语言切换按钮，即时切换全站语言不刷页"
+  prerequisites: [F043]
+  jira: "PLANET-927"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F050
+  title: "Logto passkey 注册流程（WebAuthn）"
+  category: "Auth"
+  stage: 2
+  status: blocked
+  description: "通过 Logto 实现 Passkey 注册/登录，PLANET-933 已确认需禁用 MFA onboarding 插帧"
+  prerequisites: [F031]
+  jira: "PLANET-933"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F051
+  title: "SSO 注册表文档（SSO_REGISTRY.md）"
+  category: "Auth"
+  stage: 2
+  status: done
+  description: "docs/SSO_REGISTRY.md 记录所有 Logto App ID / API resource / Connection 配置"
+  prerequisites: [F031]
+  jira: "PLANET-886"
+  completed_at: "2026-02-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F052
+  title: "架构文档（docs/ARCHITECTURE.md）"
+  category: "Ops"
+  stage: 2
+  status: done
+  description: "完整架构图：数据流 / tenant 隔离 / credit 生命周期 / deploy targets，与 peopleclaw.dna.md 互补"
+  prerequisites: [F028]
+  jira: "PLANET-886"
+  completed_at: "2026-02-15"
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 3 — 多租户 + 起步工作流
+# ─────────────────────────────────────────────────
+
+- id: F053
+  title: "Tenant（组织）模型 + 数据隔离（org_id 外键）"
+  category: "Tenancy"
+  stage: 3
+  status: done
+  description: "organizations 表 + 所有核心表加 org_id 外键；API 层按 org_id 过滤所有查询"
+  prerequisites: [F036]
+  jira: "PLANET-911"
+  completed_at: "2026-02-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F054
+  title: "Per-tenant 凭证存储（Shopify / Stripe key 隔离）"
+  category: "Tenancy"
+  stage: 3
+  status: done
+  description: "Connection 表按 org_id 隔离，每个 tenant 独立存储 Shopify API key 等凭证"
+  prerequisites: [F053, F038]
+  jira: "PLANET-911"
+  completed_at: "2026-02-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F055
+  title: "Tenant 创建 API（POST /api/tenants）"
+  category: "Tenancy"
+  stage: 3
+  status: done
+  description: "创建 organization，自动执行 tenant provision 流程（含 starter workflow）"
+  prerequisites: [F053]
+  jira: "PLANET-922"
+  completed_at: "2026-03-01"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F056
+  title: "User → Tenant 关联（user_id + org_id 绑定）"
+  category: "Tenancy"
+  stage: 3
+  status: done
+  description: "新用户注册后自动或手动关联到 org，users 表存 org_id，API 据此做 tenant 隔离"
+  prerequisites: [F053, F031]
+  jira: "PLANET-911"
+  completed_at: "2026-02-25"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F057
+  title: "新 tenant 自动 provision 起步工作流（Shopify 产品上架 5 步）"
+  category: "Tenancy"
+  stage: 3
+  status: done
+  description: "provisionStarterWorkflow() 在 tenant 创建时自动插入 5 步工作流：create_case → human:review → ai_description → human:approve_copy → shopify_upload"
+  prerequisites: [F055]
+  jira: "PLANET-922"
+  completed_at: "2026-03-02"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F058
+  title: "facade 演示工作流清除 + 迁移脚本（migrate-remove-facade-workflows）"
+  category: "Ops"
+  stage: 3
+  status: done
+  description: "删除 10 个无节点/边的 facade workflows（租赁/报价/入职等），migrate 脚本幂等已跑过 prod"
+  prerequisites: [F057]
+  jira: "PLANET-922"
+  completed_at: "2026-03-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F059
+  title: "内置步骤库（Step Library）+ 电商步骤种子数据"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "工作流编辑器侧边 Step Library 面板，内置 Shopify/AI/通用分类步骤，可直接拖入"
+  prerequisites: [F019]
+  jira: "PLANET-917"
+  completed_at: "2026-03-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F060
+  title: "工作流编辑器 UX 大改版（节点定位 / 无对话框 / 右键菜单 / 复制 / 分屏）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "节点自动定位、替换 AddStepModal 为 inline 操作、右键上下文菜单、节点复制快捷键、左右分屏视图"
+  prerequisites: [F009, F059]
+  jira: "PLANET-918"
+  completed_at: "2026-03-12"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F061
+  title: "Step Library 显示模板（非工作流列表）修复"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "Step Library 面板此前错误展示工作流列表而非模板，修复为正确显示步骤模板"
+  prerequisites: [F059]
+  jira: "PLANET-931"
+  completed_at: "2026-03-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F062
+  title: "工作流 CRUD API（create/read/update/delete）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "完整 CRUD：POST/GET/PATCH/DELETE /api/workflows，含 slug 唯一性检查"
+  prerequisites: [F053]
+  jira: "PLANET-912"
+  completed_at: "2026-03-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F063
+  title: "创建工作流 slug 碰撞静默失败修复"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "创建同名工作流时静默失败改为返回明确错误信息 + UI 提示"
+  prerequisites: [F062]
+  jira: "PLANET-930"
+  completed_at: "2026-03-16"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F064
+  title: "Case CRUD API（create/read/update/delete）"
+  category: "Cases"
+  stage: 3
+  status: done
+  description: "完整 Cases API，含 org_id 隔离，status/currentStepId 字段"
+  prerequisites: [F053]
+  jira: "PLANET-912"
+  completed_at: "2026-03-10"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F065
+  title: "工作流执行引擎 v1（SSE 驱动，步骤顺序推进）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "POST /api/run/workflow → SSE 流推送每步执行结果，机器节点自动推进到终点或人工节点"
+  prerequisites: [F064, F062]
+  jira: "PLANET-783"
+  completed_at: "2026-02-28"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F066
+  title: "工作流一键从头运行到 Shopify 上架（PLANET-1069）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "WorkflowEditor 的'运行'按钮从 create_case 跑到 shopify_upload，Shopify 店铺真实出现商品"
+  prerequisites: [F065]
+  jira: "PLANET-1069"
+  completed_at: "2026-04-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F067
+  title: "Shopify product 上架节点（shopifyUpload.ts）"
+  category: "Nodes"
+  stage: 3
+  status: done
+  description: "shopify_upload 节点实现：调 Shopify Admin API 创建 product，支持 title/description/price/images"
+  prerequisites: [F038, F065]
+  jira: "PLANET-1069"
+  completed_at: "2026-04-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F068
+  title: "AI description 节点（DeepSeek/OpenAI，根据产品图生成文案）"
+  category: "Nodes"
+  stage: 3
+  status: done
+  description: "ai_description 节点接入 DeepSeek/OpenAI，根据 case.payload.image_url 生成产品描述"
+  prerequisites: [F065]
+  jira: "PLANET-1069"
+  completed_at: "2026-04-08"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F069
+  title: "演示工作流种子（shopify-product-listing-demo + shopify-auto-smoketest）"
+  category: "Ops"
+  stage: 3
+  status: done
+  description: "seed-workflows.mjs 注入两条 default-tenant 演示工作流，替代旧 facade 数据"
+  prerequisites: [F058]
+  jira: "PLANET-922"
+  completed_at: "2026-03-05"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F070
+  title: "工作流模板库（新 tenant 从模板挑，不再自动 seed）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "引入模板库 UI，新 tenant 可一键使用预设模板，取代强制 seed starter workflow"
+  prerequisites: [F057]
+  jira: "PLANET-1103"
+  completed_at: "2026-04-14"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F071
+  title: "新用户进主页不强制创建工作流（空状态引导页）"
+  category: "UI"
+  stage: 3
+  status: done
+  description: "首次进入 admin app 不弹窗，显示友好的空状态页面，引导用户创建第一个工作流"
+  prerequisites: [F062]
+  jira: "PLANET-1063"
+  completed_at: "2026-04-12"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F072
+  title: "创建工作流弹窗 UX（从黑屏改为弹窗/侧边抽屉）"
+  category: "UI"
+  stage: 3
+  status: done
+  description: "顶部'+ 新'点击后改为弹窗或侧边抽屉，消除全屏黑屏体验"
+  prerequisites: [F071]
+  jira: "PLANET-1058"
+  completed_at: "2026-04-12"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F073
+  title: "顶部导航清理（删重复'案例'按钮 + '+ 新'改名'+ 新工作流'）"
+  category: "UI"
+  stage: 3
+  status: done
+  description: "移除顶部重复的'案例'按钮（PLANET-1099）；'+ 新'按钮改为'+ 新工作流'文字（PLANET-1101）"
+  prerequisites: [F007]
+  jira: "PLANET-1099"
+  completed_at: "2026-04-14"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F074
+  title: "编辑器顶部导航 + ARIA role 无障碍修复（audit Bug 3/5/7/10/11/14）"
+  category: "UI"
+  stage: 3
+  status: done
+  description: "Tab/TabList ARIA 属性修复，编辑器右侧面板 ARIA role=tab/tablist，顶部导航 UX polish"
+  prerequisites: [F060]
+  jira: "PLANET-932"
+  completed_at: "2026-03-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F075
+  title: "/signin 路由历史污染修复"
+  category: "Auth"
+  stage: 3
+  status: done
+  description: "登录后 history 栈出现多余 /signin 记录，浏览器返回键行为异常，修复 push/replace 逻辑"
+  prerequisites: [F031]
+  jira: "PLANET-934"
+  completed_at: "2026-03-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F076
+  title: "Playwright UI Smoke Audit（全 UI Bug 发现）"
+  category: "Ops"
+  stage: 3
+  status: done
+  description: "用 Playwright 全流程 smoke audit，发现 14 个 UI bug（PLANET-921）并逐一追踪"
+  prerequisites: [F065]
+  jira: "PLANET-921"
+  completed_at: "2026-03-18"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F077
+  title: "Playwright E2E 真实浏览器测试套件"
+  category: "Ops"
+  stage: 3
+  status: done
+  description: "PLANET-920: 浏览器驱动的 E2E 测试覆盖登录/工作流创建/案例运行主流程"
+  prerequisites: [F076]
+  jira: "PLANET-920"
+  completed_at: "2026-03-22"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F078
+  title: "Subflow schema 扩展（Case 加 parentCaseId + parentStepId）"
+  category: "Cases"
+  stage: 3
+  status: in_progress
+  description: "Case 表添加 parentCaseId/parentStepId 字段 + DB migration，支持子工作流嵌套执行"
+  prerequisites: [F064]
+  jira: "PLANET-941"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F079
+  title: "默认工作流命名（默认工作流1 + 默认工作流2 订单履约）"
+  category: "Workflow"
+  stage: 3
+  status: done
+  description: "starter workflow 改名'默认工作流1'，新增'默认工作流2'（订单履约示例）"
+  prerequisites: [F057]
+  jira: "PLANET-1068"
+  completed_at: "2026-04-12"
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 4 — Canonical Scenarios MVP（S1-S7 全跑通，当前阶段）
+# ─────────────────────────────────────────────────
+
+- id: F080
+  title: "Case payload 累积型 jsonb 数据对象（C1）"
+  category: "Cases"
+  stage: 4
+  status: in_progress
+  description: "case.payload 设计为 jsonb，每个步骤执行后只叠加新字段，不替换旧字段；满足 C1 架构约束"
+  prerequisites: [F064]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F081
+  title: "执行引擎「跑到撞墙」语义（机器节点连续 → 人工节点停）"
+  category: "Workflow"
+  stage: 4
+  status: in_progress
+  description: "C3：执行引擎遇机器节点自动推进，遇人工节点暂停等待 action；SSE 推送每步事件"
+  prerequisites: [F065, F080]
+  jira: "PLANET-1108"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F082
+  title: "案例列表视图（1 工作流 × N case + 进度步骤条 + ▶ 播放键）S2"
+  category: "Cases"
+  stage: 4
+  status: in_progress
+  description: "CasesView 重构：顶部锁定选中工作流，表格行=案例，每行显示当前步骤游标 + ▶ 播放按钮触发推进"
+  prerequisites: [F064, F081]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F083
+  title: "人工节点 '采取行动' UI（上传图 / 填文本 / 录语音）S5"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "C7：人工节点弹出 action 表单，支持文件上传/文本填写/语音录制，提交后产物落入 case.payload"
+  prerequisites: [F081, F080]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F084
+  title: "人工节点产物落 payload（C7）"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "人工节点的上传文件/文本/语音等产物序列化后写入 case.payload[stepId]，不丢失"
+  prerequisites: [F083]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F085
+  title: "工作流 Clone/Fork 操作（C5 基础）"
+  category: "Workflow"
+  stage: 4
+  status: todo
+  description: "工作流列表/编辑器提供'复制'按钮，创建完整副本（新 id，独立编辑）；是 S4 AI 编辑的前置"
+  prerequisites: [F062]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F086
+  title: "AI Chat 面板（节点 + 连线同时输出）C6"
+  category: "Workflow"
+  stage: 4
+  status: todo
+  description: "编辑器右侧 AI Chat 面板，用户用自然语言描述修改，AI 输出新节点 + 连接关系变更"
+  prerequisites: [F085, F062]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F087
+  title: "节点定义 = (元数据 + 运行器脚本) 数据模型（C4）"
+  category: "Nodes"
+  stage: 4
+  status: todo
+  description: "C4：node_definitions 表存储节点 (元数据 + runner script)，script 是第一公民数据，可手填/AI生成"
+  prerequisites: [F064]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F088
+  title: "Case 表加 batch_id 字段（C8）"
+  category: "Cases"
+  stage: 4
+  status: in_progress
+  description: "C8：cases 表添加 batch_id 列（nullable），同批 fan-out 的 N 个 case 共享同一 batch_id"
+  prerequisites: [F064]
+  jira: "PLANET-1196"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F089
+  title: "read_table 节点（Excel/CSV 批量导入 + fan-out + 局部挂起）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1196：SheetJS 解析 xlsx/csv，Zod 校验，ok_rows fan-out N 个 case，error_rows 创建 awaiting_fix case"
+  prerequisites: [F088, F081]
+  jira: "PLANET-1196"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F090
+  title: "read_table 节点列名归一化字典（中英文同义词映射）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "product_name/price/stock/image_url 字段的中英文别名字典，自动映射上传表格的列名"
+  prerequisites: [F089]
+  jira: "PLANET-1196"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F091
+  title: "read_table 节点 Zod 校验（row + column + value + reason 错误结构）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "每行每字段用 Zod 校验，错误携带 row/column/value/reason，供 UI 精确提示"
+  prerequisites: [F090]
+  jira: "PLANET-1196"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F092
+  title: "批次 UI（1 行批次可展开 → N 个子 case 各自进度/播放键）S6"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "S6：案例列表按 batch_id 折叠为 1 行，显示整体进度'9/10 已上架'，展开看 10 个子 case 各自状态"
+  prerequisites: [F088, F082]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F093
+  title: "节点校验失败 → awaiting_fix 状态 + 错误 UI（S7）"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "S7：机器节点判定数据不达标时挂起 case 为 awaiting_fix，UI 在该节点显示具体错误（行+列+值+原因）"
+  prerequisites: [F091, F081]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F094
+  title: "用户直接编辑 case 字段修复 awaiting_fix（S7 补救 A）"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "S7 补救路径 A：在 UI 上直接编辑 case.payload 字段 → 重跑节点校验 → 通过则继续"
+  prerequisites: [F093]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F095
+  title: "重新上传修正表格修复 awaiting_fix（S7 补救 B）"
+  category: "Cases"
+  stage: 4
+  status: todo
+  description: "S7 补救路径 B：重新上传修正后的 Excel/CSV，按 batch_id 比对，只更新仍挂起的行"
+  prerequisites: [F093, F089]
+  jira: "PLANET-763"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F096
+  title: "Subflow 执行器（子 case 派生 + waiting_subflow 状态 + 完成回传）"
+  category: "Workflow"
+  stage: 4
+  status: todo
+  description: "PLANET-942：执行引擎到 subflow 节点时 spawn 子 case，父 case 进 waiting_subflow，子完成后父继续"
+  prerequisites: [F078, F081]
+  jira: "PLANET-942"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F097
+  title: "Subflow UI（StepNode subflow 渲染 + 双击导航 + breadcrumb）"
+  category: "Workflow"
+  stage: 4
+  status: todo
+  description: "PLANET-943：subflow 节点双击进入子工作流视图，顶部面包屑导航回父流"
+  prerequisites: [F096]
+  jira: "PLANET-943"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F098
+  title: "Subflow PropertiesPanel（工作流选择器 + 输入/输出映射编辑器）"
+  category: "Workflow"
+  stage: 4
+  status: todo
+  description: "PLANET-944：subflow 节点属性面板，可选择目标子工作流，配置 input/output field 映射"
+  prerequisites: [F097]
+  jira: "PLANET-944"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F099
+  title: "Subflow E2E 验证（父工作流含子流程跑通）"
+  category: "Ops"
+  stage: 4
+  status: todo
+  description: "PLANET-945：Playwright E2E 验证含 subflow 的父工作流能跑完整套，子 case 完成后父继续"
+  prerequisites: [F098]
+  jira: "PLANET-945"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F100
+  title: "AI 生成标题节点（ai_title，符合 Shopify 字数限制）"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1059：AI 根据产品信息生成 SEO 优化的商品标题，控制在 Shopify 255 字符限制内"
+  prerequisites: [F068]
+  jira: "PLANET-1059"
+  completed_at: "2026-04-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F101
+  title: "AI 生成 SKU + 价格节点（ai_sku_price）"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1061：AI 根据产品信息推荐 SKU 编号 + 定价，用户可自由配置 SKU/价格组合"
+  prerequisites: [F068]
+  jira: "PLANET-1061"
+  completed_at: "2026-04-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F102
+  title: "AI 切换图片节点（ai_image_select）"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1060：展示多张候选图，AI 推荐最优一张，用户可自由选择并应用到 case"
+  prerequisites: [F068]
+  jira: "PLANET-1060"
+  completed_at: "2026-04-15"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F103
+  title: "AI 图片生成节点（ai_image_generate，Imagen/DALL-E）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1048/1201：根据产品描述 AI 生成商品图；含 mock 模式（全局禁用真实 Imagen 调用）"
+  prerequisites: [F068]
+  jira: "PLANET-1201"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F104
+  title: "电商工作流入口节点（图片 + 金额最简输入）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1043：create_case 入口节点支持图片 URL + 金额两个字段创建商品 case，最低摩擦入口"
+  prerequisites: [F065]
+  jira: "PLANET-1043"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F105
+  title: "AI description 节点修复（base64 图片不塞进 prompt）"
+  category: "Nodes"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1116：ai_description 节点之前把 base64 图片直接塞 DeepSeek prompt 导致 400，改为传 URL"
+  prerequisites: [F068]
+  jira: "PLANET-1116"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F106
+  title: "Shopify 商品 images 字段修复（上传带图商品）"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1118/1119：shopifyUpload.ts 处理 image 字段 + SSE run:complete 正确触发"
+  prerequisites: [F067]
+  jira: "PLANET-1118"
+  completed_at: "2026-04-18"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F107
+  title: "Shopify variants 修复（加 product.options + option1 字段）"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1121：Shopify 商品创建 422 报错，缺 product.options + variants[].option1 字段，已修"
+  prerequisites: [F106]
+  jira: "PLANET-1121"
+  completed_at: "2026-04-19"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F108
+  title: "Shopify 模板加 AI SKU + variants + d4 节点状态兜底"
+  category: "Nodes"
+  stage: 4
+  status: done
+  description: "PLANET-1120：商品上架工作流模板完善，AI SKU/variants/节点状态 done 兜底"
+  prerequisites: [F101, F107]
+  jira: "PLANET-1120"
+  completed_at: "2026-04-19"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F109
+  title: "商品工作流模板加 create_case 入口节点"
+  category: "Workflow"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1107：商品上架工作流模板缺 create_case 第一步，导致'跑通是假象'，修复后真实 Shopify 创建商品"
+  prerequisites: [F104]
+  jira: "PLANET-1107"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F110
+  title: "WorkflowEditor 运行按钮中途中断修复（假绿色 bug）"
+  category: "Workflow"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1108：运行按钮中途中断但前端显示绿色假成功；修复 SSE 断连检测 + workflowRun 读 productPublicUrl"
+  prerequisites: [F065]
+  jira: "PLANET-1108"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F111
+  title: "prod env 修复（SHOPIFY_MOCK=false + OPENAI_API_KEY + BLOB_READ_WRITE_TOKEN）"
+  category: "Ops"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1115：生产环境 SHOPIFY_MOCK=true 未关闭 + OpenAI/Blob token 缺失，全走 mock，修复 env 配置"
+  prerequisites: [F042]
+  jira: "PLANET-1115"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F112
+  title: "商品前台链接分享（Shopify productPublicUrl UI 展示）"
+  category: "Cases"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1105：工作流执行完成后显示可分享的 Shopify 商品前台 URL"
+  prerequisites: [F106]
+  jira: "PLANET-1105"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F113
+  title: "d4 节点状态徽章 done 修复（caseStatuses overlay 优先级）"
+  category: "Cases"
+  stage: 4
+  status: done
+  description: "PLANET-1122：第 4 个节点完成后状态徽章不变 done，caseStatuses overlay 优先级 bug 修复"
+  prerequisites: [F081]
+  jira: "PLANET-1122"
+  completed_at: "2026-04-20"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F114
+  title: "蓝圈不消失终极修复（caseDetail overlay race condition）"
+  category: "Cases"
+  stage: 4
+  status: done
+  description: "PLANET-1127：案例执行后节点蓝圈不消失，消灭 caseDetail overlay 的 race condition，不加兜底"
+  prerequisites: [F113]
+  jira: "PLANET-1127"
+  completed_at: "2026-04-21"
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F115
+  title: "设置页面 /settings/connections 修复"
+  category: "UI"
+  stage: 4
+  status: in_progress
+  description: "PLANET-1072/926：设置页面点进去报错/空白，修复路由 + API 调用"
+  prerequisites: [F054]
+  jira: "PLANET-1072"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F116
+  title: "种子 E2E demo 用户 + 工作流 + sudo-login 端点"
+  category: "Ops"
+  stage: 4
+  status: in_progress
+  description: "PLANET-925：注入标准 E2E demo 用户 + 绑定演示工作流，配合 sudo-login 端点无密码进入"
+  prerequisites: [F077]
+  jira: "PLANET-925"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F117
+  title: "? 快捷键 help overlay（keyboard shortcut audit Bug 6）"
+  category: "UI"
+  stage: 4
+  status: in_progress
+  description: "PLANET-928：? 键触发的 keyboard shortcut 帮助浮层不打开，修复事件绑定"
+  prerequisites: [F060]
+  jira: "PLANET-928"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 5 — 生态变现（计费 / 协作 / Trigger / 多 org）
+# ─────────────────────────────────────────────────
+
+- id: F118
+  title: "计费模型对齐 spec（确定计费单元：case run / AI token / seat）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "解决 OPEN_QUESTION #5：明确按 case run 数 / AI token 消耗 / seat 数计费，写入 spec 并对齐 Stripe plan"
+  prerequisites: [F037]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F119
+  title: "Stripe 订阅套餐定义（Free / Pro / Enterprise tier）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "在 Stripe 后台创建 3 个 Product + Price，前端展示 Pricing 页，webhook 处理订阅变更"
+  prerequisites: [F118, F037]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F120
+  title: "Case run 计费追踪（每次执行计入 usage）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "执行引擎每完成一个 case run 向 billing service 报告，超配额阻断执行并提示升级"
+  prerequisites: [F118, F081]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F121
+  title: "AI token 用量追踪（per-case AI cost）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "AI 节点执行时记录 token 用量到 case.ai_tokens，汇总到 org 级别月用量报表"
+  prerequisites: [F118, F068]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F122
+  title: "用量仪表板（tenant admin 查看 case/token 消耗）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "Admin 设置页展示本月 case 执行次数、AI token 消耗、剩余配额，支持历史趋势折线图"
+  prerequisites: [F120, F121]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F123
+  title: "计费隔离（每个 tenant 独立计费账单）"
+  category: "Billing"
+  stage: 5
+  status: todo
+  description: "billing_accounts 表按 org_id 隔离，Stripe customer_id 与 org 一对一绑定"
+  prerequisites: [F119]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F124
+  title: "Freelancer IT 管理多个客户 org（multi-org 视图）"
+  category: "Tenancy"
+  stage: 5
+  status: todo
+  description: "Freelancer 用户可在一个账号下管理多个 SME 客户的 org，顶部 org 切换器，权限隔离"
+  prerequisites: [F053]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F125
+  title: "Tenant 邀请流程（邮件邀请 + 接受加入 org）"
+  category: "Tenancy"
+  stage: 5
+  status: todo
+  description: "org admin 发送邀请邮件，被邀请者点链接注册/登录后自动加入 org，支持邀请过期"
+  prerequisites: [F055, F034]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F126
+  title: "角色权限模型（admin / builder / approver / viewer）"
+  category: "Tenancy"
+  stage: 5
+  status: todo
+  description: "4 种角色：admin 全权；builder 建工作流；approver 处理人工节点；viewer 只读；API 层权限检查"
+  prerequisites: [F124]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F127
+  title: "Trigger 节点 — Webhook 自动开 case"
+  category: "Nodes"
+  stage: 5
+  status: todo
+  description: "外部系统 POST webhook → 自动创建 case 并触发工作流，解决 OPEN_QUESTION #9"
+  prerequisites: [F087]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F128
+  title: "Trigger 节点 — Shopify 新订单自动开 case"
+  category: "Integrations"
+  stage: 5
+  status: todo
+  description: "Shopify Order webhook → read_table 扇出 → 每个订单一个 case 走订单履约工作流"
+  prerequisites: [F127, F089]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F129
+  title: "Trigger 节点 — Cron 定时触发"
+  category: "Nodes"
+  stage: 5
+  status: todo
+  description: "工作流支持定时 cron 触发（如每天 9 点自动批量检查库存），需后端 cron scheduler"
+  prerequisites: [F127]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F130
+  title: "Webhook 路由配置 UI（Trigger 节点 URL 显示 + 测试按钮）"
+  category: "Workflow"
+  stage: 5
+  status: todo
+  description: "Trigger 节点属性面板显示专属 webhook URL，一键复制 + 发送测试 payload"
+  prerequisites: [F127]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F131
+  title: "多人协作：case 内人工节点指派给特定用户"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #7：人工节点可指派给 org 内某个 approver，该用户的 inbox 显示待办"
+  prerequisites: [F126, F083]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F132
+  title: "跨 case 人工节点 Inbox 视图（今日全部待办）"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #8：「我今天需要处理的人工节点」跨工作流聚合视图，按优先级/时间排序"
+  prerequisites: [F131]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F133
+  title: "人工节点待办通知 — 站内消息 + 邮件推送"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #6：case 跑到人工节点停时，通过站内消息 + Resend 邮件通知指派用户"
+  prerequisites: [F131, F034]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F134
+  title: "公开 API（POST /api/cases/trigger 外部系统创建 case）"
+  category: "Integrations"
+  stage: 5
+  status: todo
+  description: "对外暴露 authenticated REST API，允许外部系统创建 case 并触发工作流"
+  prerequisites: [F127]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F135
+  title: "Workflow analytics — case 完成率 / 平均时长统计"
+  category: "Workflow"
+  stage: 5
+  status: todo
+  description: "每个工作流的 case 完成率、平均执行时长、常卡节点分析，帮助 SME 优化流程"
+  prerequisites: [F082]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F136
+  title: "Operator 组织级仪表板（全 org case 运行总览）"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "管理员总览视图：全 org 所有工作流的 case 运行状态、pending 人工节点数、错误数"
+  prerequisites: [F082, F122]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F137
+  title: "工作流 Marketplace（官方模板库，可一键安装）"
+  category: "Workflow"
+  stage: 5
+  status: todo
+  description: "内置官方模板库（Shopify 上架/SEO 检查/邮件回复等），用户一键安装到自己的 org"
+  prerequisites: [F070]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F138
+  title: "机器节点自动重试（指数退避 + 最大重试次数）"
+  category: "Workflow"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #12：机器节点挂掉（429/网络超时）自动重试 N 次，超限后挂起为 failed 状态"
+  prerequisites: [F081]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F139
+  title: "Case 失败错误恢复节点（机器节点失败 → 人工兜底）"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #12：机器节点超过重试次数后创建一个「故障人工节点」让用户决定重跑/跳过/取消"
+  prerequisites: [F138]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F140
+  title: "手机端优化（响应式 cases 视图，移动端处理人工节点）"
+  category: "UI"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #6 延伸：cases 列表 + 人工节点 action 表单做移动端响应式，方便运营手机处理"
+  prerequisites: [F082, F083]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F141
+  title: "Case 批量操作（批量完成 / 批量取消）"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "案例列表支持多选 + 批量操作（批量标完成、批量取消、批量重试），提升运营效率"
+  prerequisites: [F082]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F142
+  title: "Case payload 导出（JSON + CSV）"
+  category: "Cases"
+  stage: 5
+  status: todo
+  description: "单个 case 或批次 case 的 payload 数据导出为 JSON/CSV，方便离线分析"
+  prerequisites: [F082]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F143
+  title: "Workflow dry-run 试跑（不真执行 Shopify 等副作用）"
+  category: "Workflow"
+  stage: 5
+  status: todo
+  description: "OPEN_QUESTION #10：工作流 dry-run 模式，所有副作用节点走 mock，验证流程不上生产数据"
+  prerequisites: [F081]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 6 — 工作流版本/快照系统（C5 完整实现）
+# ─────────────────────────────────────────────────
+
+- id: F144
+  title: "Workflow version 表设计（version_number + snapshot jsonb）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "C5 完整实现前置：workflow_versions 表，每次 save 创建新版本，存储完整 definition snapshot"
+  prerequisites: [F062]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F145
+  title: "Case → workflow_version_id 绑定（历史 case 不被新版破坏）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "F8.4 完整实现：cases 表加 workflow_version_id，case 与创建时的 workflow 版本绑定"
+  prerequisites: [F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F146
+  title: "Workflow clone 创建新版本快照（fork → version bump）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "Clone/fork 工作流时自动创建 version 快照，确保原版不被修改"
+  prerequisites: [F144, F085]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F147
+  title: "版本差异视图（side-by-side diff 两版本工作流节点变化）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "可视化两个版本之间的节点/连线差异，帮助 builder 理解 AI 改了什么"
+  prerequisites: [F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F148
+  title: "回滚到历史版本（workflow rollback）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "在版本列表选择旧版本，一键 rollback，当前 active cases 保持原版本不受影响"
+  prerequisites: [F144, F145]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F149
+  title: "Active cases 迁移到新版本（opt-in 迁移向导）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "提供迁移向导：将仍在跑的旧版 cases 升级到新版 workflow，含冲突检测"
+  prerequisites: [F145, F148]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F150
+  title: "WooCommerce 连接器（上架节点扩展）"
+  category: "Integrations"
+  stage: 6
+  status: todo
+  description: "F8.2 第一步：WooCommerce REST API 上架节点，与 Shopify upload 节点共用统一 product schema"
+  prerequisites: [F067, F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F151
+  title: "Lazada 连接器（东南亚电商上架节点）"
+  category: "Integrations"
+  stage: 6
+  status: todo
+  description: "F8.2 第二步：Lazada Open Platform API 接入，商品上架到 Lazada 店铺"
+  prerequisites: [F150]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F152
+  title: "统一商品数据模型（跨平台上架标准 schema）"
+  category: "Integrations"
+  stage: 6
+  status: todo
+  description: "定义 platform-agnostic product schema，各平台上架节点各自做字段映射"
+  prerequisites: [F150]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F153
+  title: "Webhook 出站事件（case status 变更通知外部系统）"
+  category: "Integrations"
+  stage: 6
+  status: todo
+  description: "Case 状态变更（started/completed/failed/awaiting_fix）时向配置的 URL 发出 webhook 通知"
+  prerequisites: [F127, F134]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F154
+  title: "工作流执行审计日志（每步执行记录 + 入参/出参）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "execution_logs 表记录每个 case 每步的执行时间/输入/输出/错误，支持 30 天保留"
+  prerequisites: [F081]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F155
+  title: "Case 历史时间线视图（step-by-step 执行回放）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "单个 case 详情页显示完整执行历史时间线，每步可展开查看入参/出参"
+  prerequisites: [F154]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F156
+  title: "步骤重试次数 + 退避配置（per-node retry policy）"
+  category: "Nodes"
+  stage: 6
+  status: todo
+  description: "节点属性面板配置 max_retries + backoff_seconds，执行引擎遵循 per-node 策略"
+  prerequisites: [F138, F087]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F157
+  title: "工作流执行超时配置（workflow level timeout）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "工作流设置最大执行时间，超时后 case 自动进入 failed 状态并通知负责人"
+  prerequisites: [F081]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F158
+  title: "Org 级工作流访问策略（谁可以查看/编辑/运行）"
+  category: "Tenancy"
+  stage: 6
+  status: todo
+  description: "workflow 维度的权限：builder 以上可编辑，approver 可 trigger，viewer 只读；API 层强制"
+  prerequisites: [F126]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F159
+  title: "工作流版本变更历史 UI（版本列表 + 提交消息）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "类 git log 的版本列表，每个版本显示时间/操作者/可选提交消息"
+  prerequisites: [F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F160
+  title: "工作流从版本快照恢复（import/restore from snapshot）"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "可导出工作流定义为 JSON，也可从 JSON 文件导入/恢复工作流"
+  prerequisites: [F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F161
+  title: "产物大文件存储（S3/Vercel Blob，不 base64 内嵌）"
+  category: "Ops"
+  stage: 6
+  status: todo
+  description: "OPEN_QUESTION #11：人工节点上传的图片/语音存 Vercel Blob/S3，case payload 只存 URL 引用"
+  prerequisites: [F083]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F162
+  title: "Case 回退一步（step rollback）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "OPEN_QUESTION #1：允许 case 回退到上一步重跑（如 AI 描述太差），需版本绑定 + payload 快照"
+  prerequisites: [F154, F145]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F163
+  title: "Workflow Marketplace 版本化模板发布"
+  category: "Workflow"
+  stage: 6
+  status: todo
+  description: "官方模板库支持版本化，发布新版本时已安装的 org 可选择升级"
+  prerequisites: [F137, F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F164
+  title: "多 AI provider 抽象层（OpenAI / DeepSeek / Gemini 可配置）"
+  category: "Nodes"
+  stage: 6
+  status: todo
+  description: "AI 节点通过 provider 配置抽象，org 可选择自己的 AI provider + API key"
+  prerequisites: [F087]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F165
+  title: "案例 batch 操作审计（批次删除/取消追踪）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "批量操作（批量取消/删除 case）记录到 audit log，含操作人 + 时间 + 受影响 case 列表"
+  prerequisites: [F141, F154]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F166
+  title: "Discord/Slack webhook 通知接入（人工节点 pending）"
+  category: "Integrations"
+  stage: 6
+  status: todo
+  description: "OPEN_QUESTION #6 延伸：在 Slack/Discord 发通知卡片，支持直接在消息里点 approve/reject"
+  prerequisites: [F133]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F167
+  title: "工作流条件分支节点（if/else 路由）"
+  category: "Nodes"
+  stage: 6
+  status: todo
+  description: "新增 condition 节点类型，根据 case.payload 字段值动态路由到不同下一步"
+  prerequisites: [F087]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F168
+  title: "跨平台 case 交接（手机批 → 桌面细查）"
+  category: "Cases"
+  stage: 6
+  status: todo
+  description: "人工节点在手机端快速批量 approve，具体内容切换到桌面端查看，案例状态实时同步"
+  prerequisites: [F140, F082]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 7 — AI 局部辅助
+# ─────────────────────────────────────────────────
+
+- id: F169
+  title: "AI Chat 面板多轮对话（上下文记忆）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "Stage 7 增强 AI Chat：多轮对话携带工作流上下文，AI 能理解'刚才说的那步'是哪步"
+  prerequisites: [F086]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F170
+  title: "AI 单步节点生成（S3 主路径：AI 自动生成 runner script + 自定义节点）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "S3 核心：用户描述一步操作 → AI 自动生成 runner script + 填充节点元数据，产出可直接拖入工作流的自定义节点"
+  prerequisites: [F087, F086]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F171
+  title: "自定义节点安全沙箱执行（V8 Isolate / Node.js vm）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "OPEN_QUESTION #3：AI 生成的 runner script 在隔离 sandbox 中执行，阻止文件系统/网络等危险调用"
+  prerequisites: [F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F172
+  title: "AI Chat：add node 指令（「帮我加一步 X」）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "AI Chat 支持'帮我在第 3 步后面加一步人工审核'，输出新节点 + 自动插入到正确位置"
+  prerequisites: [F169]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F173
+  title: "AI Chat：reorder nodes 指令（「把 A 改成 B 之后跑」）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "AI Chat 支持改变节点顺序，正确更新 XYFlow edges，保持 case 游标一致性"
+  prerequisites: [F169]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F174
+  title: "AI Chat：add condition branch 指令"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "AI Chat 支持'如果价格 > 200 走审核节点，否则直接上架'，输出 condition 节点 + 两条 edge"
+  prerequisites: [F169, F167]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F175
+  title: "AI Chat：explain workflow 指令（工作流自然语言解释）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "AI Chat 支持'这个工作流是做什么的？'，用自然语言解释整个流程，帮助新 user 理解"
+  prerequisites: [F169]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F176
+  title: "LLM cost 追踪（per case run AI 费用）"
+  category: "Billing"
+  stage: 7
+  status: todo
+  description: "每次 AI 节点执行记录 token in/out + 模型 + 预估美元成本，汇总到 case 和 org 级别"
+  prerequisites: [F121, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F177
+  title: "AI description 节点 v2（multimodal 图片直接传 AI）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "升级 ai_description 节点：直接传图片给 vision model（GPT-4o / Gemini），生成更精准描述"
+  prerequisites: [F105, F164]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F178
+  title: "AI 图片生成节点 v2（DALL-E 3 / Imagen 3 高质量）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "ai_image_generate 升级到 DALL-E 3 / Imagen 3，支持风格/尺寸参数，结果写入 case.payload"
+  prerequisites: [F103, F164]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F179
+  title: "AI SEO 标题 v2（多变体生成 + A/B 选择）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "ai_title 升级：一次生成 3 个 SEO 标题变体，用户或 AI 选最优一条"
+  prerequisites: [F100, F164]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F180
+  title: "AI 工作流优化建议（「这步可以用 AI 代替」提示）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "分析工作流中的人工节点，AI 识别哪些人工步骤可以被自动化，显示优化建议卡片"
+  prerequisites: [F169]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F181
+  title: "AI 节点输出 Zod schema 强制（hallucination guard）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "AI 节点定义 output schema，执行后用 Zod 强制验证 AI 输出符合 schema，不符合则重试"
+  prerequisites: [F091, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F182
+  title: "Streaming AI 响应在节点执行中（SSE 实时打字效果）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "AI 节点执行时通过 SSE 流式推送生成中的文本，前端实时打字机效果展示"
+  prerequisites: [F081, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F183
+  title: "向量搜索工作流模板（语义检索匹配需求）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "用户描述业务需求 → 向量检索匹配最近似的工作流模板推荐，比分类浏览更高效"
+  prerequisites: [F137]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F184
+  title: "AI 辅助 case payload 补全建议（「这个字段可能是 X」）"
+  category: "Cases"
+  stage: 7
+  status: todo
+  description: "案例进行中，AI 根据已有 payload 字段建议可能的缺失字段值，用户一键接受"
+  prerequisites: [F083, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F185
+  title: "AI Step Library 建议（「下一步建议加 X」）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "编辑工作流时，Step Library 面板 AI 根据已有节点推荐「下一步常见步骤」"
+  prerequisites: [F059, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F186
+  title: "自定义节点版本管理（runner script 版本 + 回滚）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "自定义节点的 runner script 支持版本号，可回滚到旧版本，与工作流版本独立管理"
+  prerequisites: [F170, F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F187
+  title: "read_table v2 AI 兜底列名识别（F8.3 partial）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "字典未命中的列名用 AI 推断映射（GPT-4o one-shot）；v1 字典 + zod 稳定后开始做"
+  prerequisites: [F090, F164]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F188
+  title: "AI 节点热替换 provider（不改代码切模型）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "AI 节点 provider 在运行时可配置，org admin 在设置页切换 OpenAI/DeepSeek/Gemini"
+  prerequisites: [F164]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F189
+  title: "工作流节点 A/B 测试（同步骤两版本随机分配）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "某步骤可配置 A/B 变体，case 运行时随机分配，统计两版本完成率/质量差异"
+  prerequisites: [F135, F144]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F190
+  title: "AI 辅助错误诊断（awaiting_fix case 的修复建议）"
+  category: "Cases"
+  stage: 7
+  status: todo
+  description: "awaiting_fix case 的错误信息喂给 AI，生成具体修复建议（「第 3 行价格为负，建议改为 XX」）"
+  prerequisites: [F093, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F191
+  title: "自然语言 case 创建（无表单，直接描述产品）"
+  category: "Cases"
+  stage: 7
+  status: todo
+  description: "用户用自然语言描述（'帮我上架一件蓝色 T 恤，100 元'）→ AI 提取结构化字段 → 创建 case"
+  prerequisites: [F104, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F192
+  title: "AI 工作流健康检查（潜在死循环/孤节点检测）"
+  category: "Workflow"
+  stage: 7
+  status: todo
+  description: "AI 分析工作流图，检测潜在的死循环/无出边节点/孤立节点，工作流保存前警告"
+  prerequisites: [F062]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F193
+  title: "AI 生成节点单元测试（自动生成 runner script 的测试 case）"
+  category: "Nodes"
+  stage: 7
+  status: todo
+  description: "AI 为生成的 runner script 同时生成 unit test case，在 sandbox 中跑通才允许加入工作流"
+  prerequisites: [F171, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+# ─────────────────────────────────────────────────
+# Stage 8+ — LLM 自治 + 反人类区
+# ─────────────────────────────────────────────────
+
+- id: F194
+  title: "[AH1-反人类] 上传表格 → 自动生成上架工作流"
+  category: "Stage8+"
+  stage: 8
+  status: rejected
+  description: "反 C2（1 工作流 × N case 模型）。一张表里都是同类商品，应走同一个预设工作流。每个案例配一个独立工作流违反'工作流是模板，案例是实例'根本设计。正确做法：先建/挑工作流，上传表格 fan-out N 个 case 走同一工作流。"
+  prerequisites: []
+  jira: "PLANET-1200"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: "AH1 反人类：违反 C2 架构约束，颠倒'工作流是模板-案例是实例'关系"
+
+- id: F195
+  title: "[AH2-反人类] AI 从 0 自动 compose 整个工作流图（无任何模板）"
+  category: "Stage8+"
+  stage: 8
+  status: rejected
+  description: "S4 钦定 AI 编辑是'在已有工作流上局部修改'，不是从 0 生成。Stage 8+ LLM compose 能力需要节点元数据规范化、模板库稳定、LLM cost/latency 可控作为前置。"
+  prerequisites: []
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: "AH2 反人类：Stage 8+ 能力，前置条件未满足，现阶段实现风险极高"
+
+- id: F196
+  title: "[F8.1] AI 自动 compose 工作流（从用户描述/表格生成完整工作流图）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "用户用一句话描述业务流程 → LLM 生成完整工作流图（节点 + 连线 + runner scripts）。前置：节点元数据规范化、模板库稳定、多轮反馈循环机制、LLM cost/latency 可控。"
+  prerequisites: [F170, F183, F193]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F197
+  title: "[F8.2] 多平台同时上架（Shopify + Lazada + 抖店并行）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "单个 case 同时向多个电商平台上架商品。前置：Shopify 管线稳定跑通、WooCommerce/Lazada 连接器完成、统一商品数据模型就绪。"
+  prerequisites: [F150, F151, F152]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F198
+  title: "[F8.3-full] read_table v2 AI 完整兜底（所有未识别列 AI 推断）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "read_table v2 完整 AI 兜底：所有字典未命中的列名用 LLM 推断映射，含多列联合推断。前置：v1 字典+Zod 稳定，F187 部分实现验证。"
+  prerequisites: [F187]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F199
+  title: "[F8.4] 工作流版本/快照与 case 完整绑定（C5 全量实现）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "C5 完整实现：case 全生命周期绑定创建时 workflow 版本，历史 case 可用旧版节点回放执行。前置：版本号系统 + 迁移引擎就绪。（Stage 6 做基础框架，Stage 8 做全量）"
+  prerequisites: [F144, F145, F149]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F200
+  title: "[Stage 8+] 抖店（TikTok Shop）连接器"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "TikTok Shop Open Platform API 接入，国内/东南亚商家上架到抖店/TikTok Shop，F8.2 多平台集群之一"
+  prerequisites: [F197]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F201
+  title: "[Stage 8+] 多 Agent 工作流编排（AI agent 协作执行步骤）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "工作流中的机器节点可由多个专门 AI agent 协作执行（如 research agent → write agent → review agent）"
+  prerequisites: [F196, F170]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F202
+  title: "[Stage 8+] LLM 自主错误恢复（AI 代替人工处理 awaiting_fix）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "awaiting_fix case 由 LLM 自主诊断 + 修复 + 重跑，无需人工介入；仅在用户明确授权 org 级别 AI 自主修复时启用"
+  prerequisites: [F190, F196]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F203
+  title: "[Stage 8+] 工作流自动优化（AI 持续监测 + 自动改进）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "AI 分析历史 case 运行数据，自动提议并（经用户确认）应用工作流优化（节点合并、瓶颈消除）"
+  prerequisites: [F196, F135, F180]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F204
+  title: "[Stage 8+] 自然语言 SLA 设定（「每件商品 2 小时内上架」）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "用户用自然语言描述 SLA 目标，AI 自动配置节点超时/重试/通知策略实现 SLA 监控"
+  prerequisites: [F196, F157]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F205
+  title: "[Stage 8+] 跨 org 工作流协作（SME + 供应商共享执行同一 case）"
+  category: "Stage8+"
+  stage: 8
+  status: todo
+  description: "一个 case 的不同步骤可跨越不同 org（SME 发起，供应商完成某步骤），前置：完善的权限隔离 + 跨 tenant 数据共享模型"
+  prerequisites: [F124, F131, F153]
+  jira: ""
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""

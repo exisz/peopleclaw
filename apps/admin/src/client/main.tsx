@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import SettingsBackground from './pages/SettingsBackground';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Templates from './pages/Templates';
+import Roadmap from './pages/Roadmap';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/credits" element={<Credits />} />
         <Route path="/credits/success" element={<CreditsSuccess />} />
         <Route path="/templates" element={<Templates />} />
+        <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/:tab" element={<Settings />} />
         <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />
