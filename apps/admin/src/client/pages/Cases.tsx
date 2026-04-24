@@ -6,11 +6,13 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
-import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { ArrowLeft, Copy, ExternalLink, Upload } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
 import { ThemeToggle } from '../components/theme-toggle';
+import BatchImportDialog from '../components/workflow/BatchImportDialog';
 
 interface CaseStep {
   id: string;
@@ -243,11 +245,40 @@ function CaseDetail({ id }: { id: string }) {
 
 const FILTERS = ['all', 'running', 'waiting_human', 'awaiting_fix', 'done', 'failed', 'cancelled'] as const;
 
+interface WorkflowSummary {
+  id: string;
+  name: string;
+}
+
 function CasesList() {
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('all');
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchWorkflowId, setBatchWorkflowId] = useState<string>('');
+  const [workflows, setWorkflows] = useState<WorkflowSummary[]>([]);
+  const [showWorkflowPicker, setShowWorkflowPicker] = useState(false);
+
+  useEffect(() => {
+    apiClient
+      .get<{ workflows: WorkflowSummary[] }>('/api/workflows')
+      .then((d) => { setWorkflows(d.workflows ?? []); })
+      .catch(() => {});
+  }, []);
+
+  function openBatchImport() {
+    if (workflows.length === 0) {
+      toast.error('暂无可用 Workflow，请先创建一个 Workflow。');
+      return;
+    }
+    if (workflows.length === 1) {
+      setBatchWorkflowId(workflows[0].id);
+      setBatchDialogOpen(true);
+      return;
+    }
+    setShowWorkflowPicker(true);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -279,8 +310,65 @@ function CasesList() {
           <ThemeToggle />
           <LanguageToggle />
           <CreditsBadge />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={openBatchImport}
+            data-testid="cases-batch-import-btn"
+          >
+            <Upload className="h-4 w-4 mr-1.5" />
+            批量导入
+          </Button>
         </div>
       </header>
+
+      {/* Workflow picker overlay when multiple workflows exist */}
+      {showWorkflowPicker && (
+        <Card className="border-primary/40">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">选择 Workflow 进行批量导入</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-3">
+            <Select
+              value={batchWorkflowId}
+              onValueChange={setBatchWorkflowId}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="选择 Workflow…" />
+              </SelectTrigger>
+              <SelectContent>
+                {workflows.map((wf) => (
+                  <SelectItem key={wf.id} value={wf.id}>{wf.name || wf.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              disabled={!batchWorkflowId}
+              onClick={() => {
+                setShowWorkflowPicker(false);
+                setBatchDialogOpen(true);
+              }}
+            >
+              继续
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowWorkflowPicker(false)}>
+              取消
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <BatchImportDialog
+        open={batchDialogOpen}
+        onClose={() => { setBatchDialogOpen(false); setBatchWorkflowId(''); }}
+        workflowId={batchWorkflowId}
+        onSuccess={() => {
+          // Reload cases after import
+          const url = filter === 'all' ? '/api/cases' : `/api/cases?status=${filter}`;
+          apiClient.get<{ cases: CaseRow[] }>(url).then((d) => setCases(d.cases)).catch(() => {});
+        }}
+      />
 
       <div className="flex gap-2 flex-wrap">
         {FILTERS.map((f) => (
