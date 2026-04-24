@@ -75,4 +75,7 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
+  /** Upload multipart/form-data (e.g. file upload). Let browser set Content-Type + boundary. */
+  postForm: <T>(path: string, form: FormData) =>
+    apiJSON<T>(path, { method: 'POST', body: form }),
 };

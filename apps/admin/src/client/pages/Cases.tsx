@@ -29,6 +29,7 @@ interface CaseRow {
   workflowId: string;
   title: string;
   status: string;
+  batchId?: string | null;
   currentStepId: string | null;
   payload: string;
   createdAt: string;
@@ -77,6 +78,7 @@ function ShopifyPublicUrlCard({ output }: { output: string }) {
 const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   running: 'default',
   waiting_human: 'secondary',
+  awaiting_fix: 'destructive',
   done: 'outline',
   failed: 'destructive',
   cancelled: 'outline',
@@ -239,7 +241,7 @@ function CaseDetail({ id }: { id: string }) {
   );
 }
 
-const FILTERS = ['all', 'running', 'waiting_human', 'done', 'failed', 'cancelled'] as const;
+const FILTERS = ['all', 'running', 'waiting_human', 'awaiting_fix', 'done', 'failed', 'cancelled'] as const;
 
 function CasesList() {
   const [cases, setCases] = useState<CaseRow[]>([]);

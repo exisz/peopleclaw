@@ -149,6 +149,10 @@ async function main() {
   // Index for child lookup when a child case completes
   await exec(`CREATE INDEX IF NOT EXISTS Case_parentCaseId_idx ON "Case"(parentCaseId)`);
 
+  // PLANET-1196: batch fan-out support
+  await ensureColumn('Case', 'batchId', 'TEXT');
+  await exec(`CREATE INDEX IF NOT EXISTS Case_batchId_idx ON "Case"(batchId)`);
+
   // Verify
   const tables = await client.execute(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`);
   console.log('\n[migrate] tables now in DB:');

@@ -11,6 +11,7 @@ import { tenantsRouter } from './routes/tenants.js';
 import { stepTemplatesRouter } from './routes/step-templates.js';
 import { templatesRouter } from './routes/templates.js';
 import { internalRouter } from './routes/internal.js';
+import { batchImportRouter } from './routes/batchImport.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
 
@@ -39,6 +40,7 @@ export function createApp(): Express {
     app.use('/api', testRouter);
   }
   app.use('/api', casesRouter);
+  app.use('/api', batchImportRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });

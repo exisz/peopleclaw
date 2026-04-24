@@ -70,7 +70,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
   const prisma = getPrisma();
   const c = await prisma.case.findUnique({ where: { id: caseId }, include: { workflow: true } });
   if (!c) throw new Error(`Case not found: ${caseId}`);
-  if (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled') {
+  if (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled' || c.status === 'awaiting_fix') {
     return { status: c.status, lastStepId: c.currentStepId };
   }
 

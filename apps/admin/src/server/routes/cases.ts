@@ -56,6 +56,11 @@ casesRouter.get('/cases', async (req, res) => {
     where: { tenantId: r.tenant.id, ...(status ? { status } : {}) },
     orderBy: { updatedAt: 'desc' },
     take: 100,
+    select: {
+      id: true, workflowId: true, title: true, status: true, batchId: true,
+      currentStepId: true, payload: true, createdAt: true, updatedAt: true,
+      tenantId: true,
+    },
   });
   res.json({ cases });
 });

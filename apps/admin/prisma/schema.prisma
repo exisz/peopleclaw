@@ -81,7 +81,7 @@ model Case {
   ownerId       Int
   owner         User       @relation(fields: [ownerId], references: [id])
   title         String
-  status        String     @default("running") // running|waiting_human|waiting_subflow|done|failed|cancelled
+  status        String     @default("running") // running|waiting_human|waiting_subflow|done|failed|cancelled|awaiting_fix
   currentStepId String?
   payload       String     @default("{}") // JSON
   // Subflow execution (PLANET-941 P3.15a): a Case may be a child case spawned by a subflow step in a parent case.
@@ -90,12 +90,15 @@ model Case {
   parentStepId  String?
   parent        Case?      @relation("CaseSubflow", fields: [parentCaseId], references: [id])
   children      Case[]     @relation("CaseSubflow")
+  // PLANET-1196: batch_id for fan-out (read_table node)
+  batchId       String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   steps         CaseStep[]
   tenant        Tenant?    @relation(fields: [tenantId], references: [id])
 
   @@index([parentCaseId])
+  @@index([batchId])
 }
 
 model CaseStep {
