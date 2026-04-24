@@ -173,10 +173,13 @@ function CaseCard({
 
   let stepCount = 0;
   let errorInfo: { column?: string; reason?: string } | null = null;
+  let productPublicUrl: string | null = null;
   try {
     const p = JSON.parse(c.payload || '{}');
     stepCount = Array.isArray(p.stepResults) ? p.stepResults.length : 0;
     if (p._error) errorInfo = p._error as { column?: string; reason?: string };
+    // PLANET-1200: product URL written back by publish_shopify handler
+    if (p.productPublicUrl) productPublicUrl = p.productPublicUrl as string;
   } catch { /* */ }
 
   return (
@@ -208,6 +211,19 @@ function CaseCard({
         </div>
       </button>
       <div className="flex items-center justify-end gap-1 px-2 py-1 border-t border-border/40">
+        {/* PLANET-1200: "查看商品" button for done cases with Shopify URL */}
+        {c.status === 'done' && productPublicUrl && (
+          <a
+            href={productPublicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="h-6 text-[10px] px-2 inline-flex items-center gap-1 rounded text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950 border border-green-300 dark:border-green-700"
+            data-testid={`case-shopify-url-${c.id}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            🛍️ 查看商品
+          </a>
+        )}
         {c.status === 'waiting_human' && (
           <Button
             size="sm"

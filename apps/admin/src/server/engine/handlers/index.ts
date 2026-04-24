@@ -3,6 +3,7 @@ import { createCaseHandler } from './createCase.js';
 import { aiDescriptionHandler } from './aiDescription.js';
 import { shopifyUploadHandler } from './shopifyUpload.js';
 import { shopifyCreateProductHandler } from './shopifyCreateProduct.js';
+import { publishShopifyHandler } from './publishShopify.js';
 import {
   shopifyUpdateInventoryHandler,
   shopifyFetchOrdersHandler,
@@ -57,6 +58,9 @@ export const handlers: Record<string, Handler> = {
 
   // Canonical — Ecommerce entry (PLANET-1043)
   'ecommerce.entry': ecommerceEntryHandler,
+
+  // PLANET-1200 — direct table→Shopify publish (no AI steps)
+  'publish_shopify': publishShopifyHandler,
 
   // Legacy aliases (pre-PLANET-917) — keep the existing demo workflows green.
   create_case: createCaseHandler,

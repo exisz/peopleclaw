@@ -270,14 +270,9 @@ function CasesList() {
 
   function openBatchImport() {
     if (workflows.length === 0) {
-      toast.error('暂无可用工作流', {
-        description: '请先创建一个工作流，再进行批量导入',
-        action: {
-          label: '去创建工作流',
-          onClick: () => navigate('/workflows'),
-        },
-        duration: 8000,
-      });
+      // PLANET-1200: auto-compose workflow — no existing workflow required
+      setBatchWorkflowId('auto');
+      setBatchDialogOpen(true);
       return;
     }
     if (workflows.length === 1) {
@@ -357,6 +352,7 @@ function CasesList() {
                 {workflows.map((wf) => (
                   <SelectItem key={wf.id} value={wf.id}>{wf.name || wf.id}</SelectItem>
                 ))}
+                <SelectItem value="auto">🤖 自动生成工作流 (Shopify 直接上架)</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -416,6 +412,25 @@ function CasesList() {
                   <CardDescription className="text-xs">{c.workflowId}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* PLANET-1200: "查看商品" link when case has a Shopify public URL */}
+                  {(() => {
+                    try {
+                      const p = JSON.parse(c.payload || '{}');
+                      if (p.productPublicUrl) return (
+                        <a
+                          href={p.productPublicUrl as string}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400 hover:underline mb-2"
+                          data-testid={`case-shopify-url-${c.id}`}
+                        >
+                          🛍️ 查看商品
+                        </a>
+                      );
+                    } catch {}
+                    return null;
+                  })()}
                   <p className="font-mono text-[10px] text-muted-foreground">
                     Updated {new Date(c.updatedAt).toLocaleString()}
                   </p>

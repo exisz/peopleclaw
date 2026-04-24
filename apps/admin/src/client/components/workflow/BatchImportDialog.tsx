@@ -12,6 +12,7 @@ import { apiClient } from '../../lib/api';
 
 interface BatchImportResult {
   batchId: string;
+  workflowId: string;
   ok_count: number;
   error_count: number;
   unmapped_columns: string[];
@@ -21,7 +22,7 @@ interface BatchImportResult {
 interface BatchImportDialogProps {
   open: boolean;
   onClose: () => void;
-  workflowId: string;
+  workflowId: string; // pass 'auto' to let server auto-compose
   onSuccess: (result: BatchImportResult) => void;
 }
 
