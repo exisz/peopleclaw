@@ -126,7 +126,7 @@ function BatchGroupRow({
           </p>
         </div>
         {group.hasErrors && (
-          <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" title="有行待修复" />
+          <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label="有行待修复" />
         )}
       </button>
 

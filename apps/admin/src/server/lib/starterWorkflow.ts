@@ -160,9 +160,60 @@ export async function provisionStarterWorkflow(prisma: any, tenantId: string): P
   });
 }
 
+/**
+ * PLANET-1107 / PLANET-1206 — Shopify 直传上架工作流（表格批量导入专用）
+ * create_case → publish_shopify（无 AI 步骤，禁多平台，禁 AI compose）
+ * 适用场景：用户上传商品表格 → 每行 fan-out 一个 case → 直接上架 Shopify。
+ */
+export const SHOPIFY_DIRECT_LISTING = {
+  baseId: 'shopify-direct-listing',
+  name: 'Shopify 商品上架（批量）',
+  category: 'E-commerce',
+  description: '商品表格批量导入专用：create_case → publish_shopify 直传，无 AI 步骤。每行出 Shopify 商品前台 URL。',
+  icon: '🚀',
+  definition: {
+    description: '商品表格批量导入专用：create_case → publish_shopify 直传，无 AI 步骤。每行出 Shopify 商品前台 URL。',
+    icon: '🚀',
+    steps: [
+      {
+        id: 'sl1',
+        name: '创建 Case',
+        type: 'create_case',
+        kind: 'auto',
+        handler: 'create_case',
+        assignee: 'create_case',
+        config: { fields: ['product_name', 'price', 'stock', 'image_url'] },
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: 'sl2',
+        name: '上架到 Shopify',
+        type: 'agent',
+        kind: 'auto',
+        handler: 'publish_shopify',
+        assignee: 'publish_shopify',
+        description: '直接将商品信息推送到 Shopify，返回前台商品链接',
+        config: {},
+        position: { x: 200, y: 0 },
+      },
+    ],
+    nodes: [
+      { id: 'sl1', type: 'create_case', kind: 'auto', handler: 'create_case', config: { fields: ['product_name', 'price', 'stock', 'image_url'] }, position: { x: 0, y: 0 } },
+      { id: 'sl2', type: 'agent', kind: 'auto', handler: 'publish_shopify', config: {}, position: { x: 200, y: 0 } },
+    ],
+    edges: [
+      { source: 'sl1', target: 'sl2' },
+    ],
+  },
+};
+
 // PLANET-1103: Template library — global templates visible to all tenants.
 // Hardcoded on the server; no DB storage required.
 export const TEMPLATES = [
+  {
+    id: 'template-shopify-direct-listing',
+    ...SHOPIFY_DIRECT_LISTING,
+  },
   {
     id: 'template-product-workflow-1',
     ...DEFAULT_WORKFLOW,

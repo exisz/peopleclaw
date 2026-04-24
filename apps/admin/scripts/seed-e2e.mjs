@@ -95,6 +95,21 @@ const DEMO_DEF = {
   ],
 };
 
+// PLANET-1206 / PLANET-1107 — Shopify 直传上架工作流（批量导入专用，无 AI 步骤）
+const SHOPIFY_DIRECT_LISTING_DEF = {
+  steps: [
+    { id: 'sl1', name: '创建 Case', type: 'create_case', kind: 'auto', handler: 'create_case', assignee: 'create_case', config: { fields: ['product_name', 'price', 'stock', 'image_url'] }, position: { x: 0, y: 0 } },
+    { id: 'sl2', name: '上架到 Shopify', type: 'agent', kind: 'auto', handler: 'publish_shopify', assignee: 'publish_shopify', config: {}, position: { x: 200, y: 0 } },
+  ],
+  nodes: [
+    { id: 'sl1', type: 'create_case', kind: 'auto', handler: 'create_case', config: { fields: ['product_name', 'price', 'stock', 'image_url'] }, position: { x: 0, y: 0 } },
+    { id: 'sl2', type: 'agent', kind: 'auto', handler: 'publish_shopify', config: {}, position: { x: 200, y: 0 } },
+  ],
+  edges: [
+    { source: 'sl1', target: 'sl2' },
+  ],
+};
+
 // ─── Logto Management M2M ────────────────────────────────────────────────────
 async function getLogtoMgmtToken() {
   if (!LOGTO_M2M_APP_ID || !LOGTO_M2M_APP_SECRET) return null;
@@ -258,16 +273,7 @@ async function upsertWorkflow(id, tenantId, name, category, defObj) {
 }
 
 async function ensureShopifyConnection(tenantId) {
-  const existing = await db.execute({
-    sql: 'SELECT id FROM Connection WHERE tenantId = ? AND type = ? LIMIT 1',
-    args: [tenantId, 'shopify'],
-  });
-  if (existing.rows.length > 0) {
-    console.log('[db] Connection (shopify) exists');
-    return;
-  }
-
-  // Best-effort: copy default tenant's client_id + client_secret as starter creds
+  // Best-effort: copy ALL creds (admin_token + shop_domain + client_id/secret) from default tenant
   let cfg = {};
   try {
     const def = await db.execute({
@@ -280,17 +286,34 @@ async function ensureShopifyConnection(tenantId) {
     if (def.rows.length > 0) {
       const parsed = JSON.parse(String(def.rows[0].config || '{}'));
       cfg = {
+        shop_domain: parsed.shop_domain || '',
+        admin_token: parsed.admin_token || '',
         client_id: parsed.client_id || '',
         client_secret: parsed.client_secret || '',
+        token_expires_at: parsed.token_expires_at || '',
       };
-      console.log('[db] Connection (shopify) — copied client_id/secret from default tenant');
+      console.log('[db] Connection (shopify) — copied all creds from default tenant');
     }
   } catch (e) {
     console.warn(`[db] could not copy default shopify creds: ${e.message}`);
   }
 
+  const enabled = cfg.client_id && cfg.admin_token ? 1 : 0;
+  const existing = await db.execute({
+    sql: 'SELECT id FROM Connection WHERE tenantId = ? AND type = ? LIMIT 1',
+    args: [tenantId, 'shopify'],
+  });
+  if (existing.rows.length > 0) {
+    // Update existing connection with latest creds
+    await db.execute({
+      sql: 'UPDATE Connection SET config = ?, enabled = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      args: [JSON.stringify(cfg), enabled, existing.rows[0].id],
+    });
+    console.log(`[db] Connection (shopify) updated id=${existing.rows[0].id} enabled=${enabled}`);
+    return;
+  }
+
   const id = cuid();
-  const enabled = cfg.client_id ? 1 : 0;
   await db.execute({
     sql: `INSERT INTO Connection (id, tenantId, type, config, enabled, createdAt, updatedAt)
           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
@@ -316,6 +339,8 @@ async function main() {
   await ensureTenantUser(tenantId, userId);
   await upsertWorkflow('shopify-auto-smoketest', tenantId, 'Shopify Auto Smoke Test', 'E-commerce', SMOKETEST_DEF);
   await upsertWorkflow('shopify-product-listing-demo', tenantId, 'Shopify Product Listing (PeopleClaw Demo)', 'E-commerce', DEMO_DEF);
+  // PLANET-1206 / PLANET-1107: Shopify 直传上架工作流（批量导入专用，无 AI 步骤）
+  await upsertWorkflow('shopify-direct-listing', tenantId, 'Shopify 商品上架（批量）', 'E-commerce', SHOPIFY_DIRECT_LISTING_DEF);
   await ensureShopifyConnection(tenantId);
   console.log('— running seed-step-templates.mjs —');
   await runStepTemplatesSeed();
@@ -325,7 +350,7 @@ async function main() {
     userId,
     tenantId,
     tenantSlug: TENANT_SLUG,
-    workflows: ['shopify-auto-smoketest', 'shopify-product-listing-demo'],
+    workflows: ['shopify-auto-smoketest', 'shopify-product-listing-demo', 'shopify-direct-listing'],
   }, null, 2));
 }
 

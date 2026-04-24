@@ -280,6 +280,17 @@ function CasesList() {
       });
       return;
     }
+    // F207 (PLANET-1206): Auto-select the Shopify direct listing template
+    // when a matching workflow exists (name contains "上架" or "Shopify").
+    // If found, skip the picker and open the batch dialog directly.
+    const shopifyWorkflow = workflows.find((wf) =>
+      wf.name.includes('上架') || /shopify/i.test(wf.name),
+    );
+    if (shopifyWorkflow) {
+      setBatchWorkflowId(shopifyWorkflow.id);
+      setBatchDialogOpen(true);
+      return;
+    }
     if (workflows.length === 1) {
       setBatchWorkflowId(workflows[0].id);
       setBatchDialogOpen(true);
