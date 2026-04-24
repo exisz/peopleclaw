@@ -75,9 +75,14 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
       localStorage.setItem('peopleclaw-current-tenant', 'acceptance');
     });
 
+    // First navigate to establish browser context with acceptance tenant
+    await authedPage.goto('/workflows');
+    await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
+    await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
+
     // Re-seed the e2e-workflow-with-case to make this test idempotent
     // (the previous test run may have deleted it)
-    await authedPage.request.post('/api/workflows', {
+    const wfCreateResp = await authedPage.request.post('/api/workflows', {
       headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
       data: {
         id: 'e2e-workflow-with-case',
@@ -85,9 +90,9 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
         category: 'E2E',
         definition: { description: 'E2E test workflow', icon: '📋', steps: [], nodes: [], edges: [] },
       },
-    }).catch(() => {
-      // ignore 409 conflict (workflow already exists from previous seed)
     });
+    // 200/201 = created; 409 = already exists (both acceptable)
+    expect([200, 201, 409]).toContain(wfCreateResp.status());
 
     // Ensure at least one case exists for this workflow
     // (ignore errors — even if advanceCase fails with 402/500, the case row is created)
@@ -95,15 +100,14 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
       headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
       data: { workflowId: 'e2e-workflow-with-case', title: 'E2E 测试案例 (Tier B)' },
     }).catch(() => {});
-    // Don't assert on caseResp.status() — advanceCase may throw 402/500; case row still exists
 
     await authedPage.goto('/workflows/e2e-workflow-with-case');
     await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
 
     // Wait for workflow to load — breadcrumb should show the workflow name
-    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toBeVisible({ timeout: 20_000 });
-    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).not.toHaveText('', { timeout: 10_000 });
+    // Empty inline spans are considered hidden by Playwright, so we check for non-empty text
+    await expect(authedPage.getByTestId('workflow-breadcrumb-name')).not.toBeEmpty({ timeout: 20_000 });
 
     // Click topbar delete
     const deleteBtn = authedPage.getByTestId('topbar-delete-workflow-btn');
