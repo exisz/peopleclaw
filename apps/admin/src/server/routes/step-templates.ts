@@ -44,8 +44,9 @@ function hydrate(row: StepTemplateRow) {
   };
 }
 
-// PLANET-1201: hidden until real Imagen re-enabled
-const HIDDEN_TEMPLATES = new Set(['ai.image_generate']);
+// PLANET-1205: hide list cleared. ai.image_generate stays visible so AI compose
+// can still pick it; handler decides mock vs real via AI_IMAGE_MOCK env.
+const HIDDEN_TEMPLATES = new Set<string>([]);
 
 // GET /api/step-templates?domain=ecommerce&category=shopify
 stepTemplatesRouter.get('/step-templates', async (req, res) => {
@@ -57,7 +58,7 @@ stepTemplatesRouter.get('/step-templates', async (req, res) => {
     where,
     orderBy: [{ category: 'asc' }, { id: 'asc' }],
   });
-  // PLANET-1201: filter hidden templates from sidebar library
+  // PLANET-1205: filter hidden templates from sidebar library (currently empty)
   const visible = rows.filter((r) => !HIDDEN_TEMPLATES.has(r.id));
   res.json({ templates: visible.map((r) => hydrate(r as unknown as StepTemplateRow)) });
 });
