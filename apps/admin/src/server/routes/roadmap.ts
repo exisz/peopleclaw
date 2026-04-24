@@ -103,7 +103,8 @@ roadmapRouter.get('/roadmap.csv', (_req, res) => {
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="peopleclaw-roadmap.csv"');
-    res.send(csv);
+    // Prepend UTF-8 BOM (EF BB BF) so Excel auto-detects encoding for Chinese characters
+    res.send('\uFEFF' + csv);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

@@ -2495,3 +2495,15 @@
   completed_at: ""
   commit_sha: ""
   reject_reason: ""
+
+- id: F206
+  title: "CSV UTF-8 BOM 兼容 Excel 中文"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "/api/roadmap.csv 输出加 UTF-8 BOM (EF BB BF)，Excel 直接打开中文不乱码；同时加 Content-Disposition filename hint"
+  prerequisites: [F089]
+  jira: "PLANET-1204"
+  completed_at: "2026-04-24"
+  commit_sha: ""
+  reject_reason: ""
