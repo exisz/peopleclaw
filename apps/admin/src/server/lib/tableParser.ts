@@ -6,7 +6,7 @@
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 
-// ── v1 synonym dictionary ─────────────────────────────────────────────────────
+// ── v1 synonym dictionary (PLANET-1196 + PLANET-1200 expanded) ───────────────
 const SYNONYM_MAP: Record<string, string> = {
   // product_name
   商品名: 'product_name',
@@ -36,6 +36,23 @@ const SYNONYM_MAP: Record<string, string> = {
   photo: 'image_url',
   imageurl: 'image_url',
   image_url: 'image_url',
+  // sku (PLANET-1200)
+  sku: 'sku',
+  编号: 'sku',
+  货号: 'sku',
+  商品编号: 'sku',
+  // description (PLANET-1200)
+  描述: 'description',
+  简短描述: 'description',
+  简介: 'description',
+  商品描述: 'description',
+  desc: 'description',
+  description: 'description',
+  // category (PLANET-1200)
+  分类: 'category',
+  品类: 'category',
+  类别: 'category',
+  category: 'category',
 };
 
 /** Normalise a raw column header to a lookup key */
@@ -69,6 +86,10 @@ const rowSchema = z.object({
         .url('image_url 必须是合法 URL（http/https）')
         .optional(),
     ),
+  // Optional extended fields (PLANET-1200)
+  sku: z.union([z.string(), z.number()]).optional().transform((v) => (v == null || v === '' ? undefined : String(v))),
+  description: z.string().optional().transform((v) => (v === '' ? undefined : v)),
+  category: z.string().optional().transform((v) => (v === '' ? undefined : v)),
 });
 
 export type OkRow = {
@@ -77,6 +98,9 @@ export type OkRow = {
   price: number;
   stock: number;
   image_url?: string;
+  sku?: string;
+  description?: string;
+  category?: string;
 };
 
 export type ErrorRow = {
@@ -143,7 +167,13 @@ export function parseTableBuffer(buffer: Buffer, filename: string): ParseResult 
 
     const result = rowSchema.safeParse(mapped);
     if (result.success) {
-      ok_rows.push({ row: rowNum, ...result.data });
+      const d = result.data;
+      const okRow: OkRow = { row: rowNum, product_name: d.product_name, price: d.price, stock: d.stock };
+      if (d.image_url) okRow.image_url = d.image_url;
+      if (d.sku) okRow.sku = d.sku;
+      if (d.description) okRow.description = d.description;
+      if (d.category) okRow.category = d.category;
+      ok_rows.push(okRow);
     } else {
       // Report the first error per row
       const issue = result.error.issues[0];

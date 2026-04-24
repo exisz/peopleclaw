@@ -5,6 +5,9 @@
  * GET  /api/batch-import/:batchId — batch summary (progress)
  * POST /api/cases/:id/fix-field   — patch a field on awaiting_fix case + re-validate
  * POST /api/batch-import/:batchId/reupload — re-upload table, patch only awaiting_fix rows
+ *
+ * PLANET-1200 — auto-compose workflow:
+ * When workflowId == "auto" (or omitted), system creates a minimal read_table → publish_shopify workflow.
  */
 import { Router, type Request as ExpressRequest, type Response } from 'express';
 import { getPrisma } from '../lib/prisma.js';
@@ -87,7 +90,8 @@ batchImportRouter.post(
 
     // Extract workflowId from form-data text part
     const rawStr = r.rawBody.toString('latin1');
-    const wfMatch = rawStr.match(/name="workflowId"\r\n\r\n([^\r\n--]+)/);
+    // Fix: use [^\r\n]+ (not [^\r\n--]+ which incorrectly excludes hyphens via range)
+    const wfMatch = rawStr.match(/name="workflowId"\r\n\r\n([^\r\n]+)/);
     const workflowId = wfMatch ? wfMatch[1].trim() : null;
     if (!workflowId) {
       res.status(400).json({ error: 'workflowId required' });
@@ -106,7 +110,32 @@ batchImportRouter.post(
     }
 
     const prisma = getPrisma();
-    const wf = await prisma.workflow.findUnique({ where: { id: workflowId } });
+
+    // PLANET-1200: auto-compose workflow when workflowId == 'auto' or absent
+    let resolvedWorkflowId = workflowId;
+    if (!resolvedWorkflowId || resolvedWorkflowId === 'auto') {
+      // Create a minimal read_table → publish_shopify workflow for this tenant
+      const wfId = `wf-auto-${nanoid(8)}`;
+      const definition = JSON.stringify({
+        nodes: [
+          { id: 'n1', type: 'publish_shopify', kind: 'auto', handler: 'publish_shopify', label: 'Publish to Shopify' },
+        ],
+        edges: [],
+      });
+      await prisma.workflow.create({
+        data: {
+          id: wfId,
+          name: '自动生成工作流 (Shopify 上架)',
+          category: 'ecommerce',
+          tenantId: r.tenant.id,
+          definition,
+        },
+      });
+      resolvedWorkflowId = wfId;
+      console.log('[batch-import] auto-composed workflow:', wfId);
+    }
+
+    const wf = await prisma.workflow.findUnique({ where: { id: resolvedWorkflowId } });
     if (!wf) { res.status(404).json({ error: 'workflow not found' }); return; }
     if (wf.tenantId && wf.tenantId !== r.tenant.id) {
       res.status(403).json({ error: 'workflow belongs to another tenant' });
@@ -137,7 +166,7 @@ batchImportRouter.post(
     for (const row of ok_rows) {
       const c = await prisma.case.create({
         data: {
-          workflowId,
+          workflowId: resolvedWorkflowId,
           ownerId: r.user.id,
           tenantId: r.tenant.id,
           title: `[批次] ${row.product_name} (行${row.row})`,
@@ -148,6 +177,9 @@ batchImportRouter.post(
             price: row.price,
             stock: row.stock,
             ...(row.image_url ? { image_url: row.image_url } : {}),
+            ...(row.sku ? { sku: row.sku } : {}),
+            ...(row.description ? { description: row.description } : {}),
+            ...(row.category ? { category: row.category } : {}),
             batch_id: batchId,
             batch_row: row.row,
           }),
@@ -164,7 +196,7 @@ batchImportRouter.post(
     for (const row of error_rows) {
       const c = await prisma.case.create({
         data: {
-          workflowId,
+          workflowId: resolvedWorkflowId,
           ownerId: r.user.id,
           tenantId: r.tenant.id,
           title: `[批次·待修] 行${row.row} ${row.column}错误`,
@@ -182,6 +214,7 @@ batchImportRouter.post(
 
     res.json({
       batchId,
+      workflowId: resolvedWorkflowId,
       ok_count: ok_rows.length,
       error_count: error_rows.length,
       unmapped_columns,
