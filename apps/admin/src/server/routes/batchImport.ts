@@ -161,6 +161,7 @@ batchImportRouter.post(
     // Generate batch_id
     const batchId = `batch-${new Date().toISOString().slice(0, 10)}-${nanoid(6)}`;
     const createdCases: Array<{ id: string; status: string; row: number }> = [];
+    const caseIdsToAdvance: string[] = [];
 
     // Fan-out: ok_rows → running cases
     for (const row of ok_rows) {
@@ -186,10 +187,7 @@ batchImportRouter.post(
         },
       });
       createdCases.push({ id: c.id, status: 'running', row: row.row });
-      // Fire-and-forget: advance case (errors are non-fatal, case stays with status)
-      advanceCase(c.id).catch((e) =>
-        console.error(`[batch-import] advanceCase ${c.id} failed:`, e),
-      );
+      caseIdsToAdvance.push(c.id);
     }
 
     // Fan-out: error_rows → awaiting_fix cases
@@ -211,6 +209,16 @@ batchImportRouter.post(
       });
       createdCases.push({ id: c.id, status: 'awaiting_fix', row: row.row });
     }
+
+    // Await all case advances concurrently BEFORE responding
+    // (Vercel serverless terminates after response; fire-and-forget is unreliable)
+    await Promise.all(
+      caseIdsToAdvance.map((id) =>
+        advanceCase(id).catch((e) =>
+          console.error(`[batch-import] advanceCase ${id} failed:`, e),
+        ),
+      ),
+    );
 
     res.json({
       batchId,
