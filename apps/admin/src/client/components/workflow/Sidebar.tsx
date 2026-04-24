@@ -32,8 +32,9 @@ import {
 import { cn } from '../../lib/utils';
 import { BuildBadge } from '../BuildBadge';
 import { useI18nField } from '../../i18n/useI18nField';
-import { apiClient } from '../../lib/api';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { apiClient, ApiError } from '../../lib/api';
+import { useNavigate } from 'react-router-dom';
+import { MoreHorizontal, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface StepTemplate {
@@ -67,7 +68,10 @@ export default function Sidebar({
   const [tab, setTab] = useState<'workflows' | 'library'>('workflows');
   const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // PLANET-1208: tracks workflow ids that are in-use (have cases) so we can disable delete
+  const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
   const { t } = useTranslation('workflow');
+  const navigate = useNavigate();
 
   async function handleConfirmDelete() {
     if (!deleteTarget) return;
@@ -77,7 +81,29 @@ export default function Sidebar({
       toast.success('工作流已删除', { description: deleteTarget.name });
       onDeleteWorkflow?.(deleteTarget.id);
     } catch (e: unknown) {
-      toast.error('删除失败', { description: e instanceof Error ? e.message : String(e) });
+      // PLANET-1208: parse 409 workflow_in_use and show human-readable details
+      if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
+        const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
+        // Mark this workflow as in-use so the menu button shows a lock icon
+        setInUseIds(prev => new Set([...prev, deleteTarget.id]));
+        if (cases.length === 1) {
+          toast.error('无法删除：以下案例正在使用此工作流', {
+            description: cases[0].name,
+            action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
+            duration: 8000,
+          });
+        } else {
+          const desc = cases.slice(0, 5).map((c) => `• ${c.name}`).join('\n') +
+            (cases.length > 5 ? `\n… 共 ${cases.length} 个案例` : '');
+          toast.error(`无法删除：${cases.length} 个案例正在使用此工作流`, {
+            description: desc,
+            duration: 10000,
+          });
+        }
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error('删除失败', { description: msg });
+      }
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
@@ -208,15 +234,32 @@ export default function Sidebar({
                             <MoreHorizontal className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}
-                            data-testid={`sidebar-workflow-delete-${w.id}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" />
-                            删除
-                          </DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="w-44">
+                          {inUseIds.has(w.id) ? (
+                            // PLANET-1208: workflow has cases — show disabled state with tooltip
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground cursor-not-allowed">
+                                    <Lock className="h-3.5 w-3.5" />
+                                    <span>有案例，不可删除</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                                  此工作流仍有关联案例，请先删除或移除所有案例后再删除工作流。
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}
+                              data-testid={`sidebar-workflow-delete-${w.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                              删除
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -244,7 +287,8 @@ export default function Sidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除工作流</AlertDialogTitle>
             <AlertDialogDescription>
-              将删除「{deleteTarget?.name}」，此操作不可恢复。有履历案例的工作流不能删除。
+              将删除「{deleteTarget?.name}」，此操作不可恢复。
+              有关联案例的工作流将无法删除，系统会显示具体原因。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

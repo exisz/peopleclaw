@@ -75,6 +75,7 @@ export default function Workflows() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -200,56 +201,43 @@ export default function Workflows() {
   }, [newName, navigate]);
 
   const handleDelete = useCallback(async () => {
-    if (!selectedWorkflow) return;
+    if (!selectedWorkflow || deleting) return;
     const target = selectedWorkflow;
-    // Optimistic + toast undo (5s)
-    const prev = workflows;
-    const remaining = workflows.filter((w) => w.id !== target.id);
-    setWorkflows(remaining);
-    if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
-    else navigate('/workflows');
-
-    let undone = false;
-    toast(`Deleted "${target.name}"`, {
-      action: {
-        label: 'Undo',
-        onClick: () => {
-          undone = true;
-          setWorkflows(prev);
-          navigate(`/workflows/${target.id}`);
-        },
-      },
-      duration: 5000,
-    });
-    setTimeout(async () => {
-      if (undone) return;
-      try {
-        await apiClient.delete(`/api/workflows/${target.id}`);
-      } catch (e) {
-        setWorkflows(prev);
-        navigate(`/workflows/${target.id}`);
-        if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
-          const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
-          if (cases.length === 1) {
-            toast.error(`无法删除：以下案例正在使用此工作流`, {
-              description: cases[0].name,
-              action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
-              duration: 8000,
-            });
-          } else {
-            // Multiple cases — show a list in description
-            const desc = cases.map((c) => `• ${c.name}`).join('\n');
-            toast.error('以下案例正在使用此工作流，请先移除引用再删除：', {
-              description: desc,
-              duration: 10000,
-            });
-          }
+    setDeleting(true);
+    try {
+      await apiClient.delete(`/api/workflows/${target.id}`);
+      // Only update UI after confirmed server-side delete
+      const remaining = workflows.filter((w) => w.id !== target.id);
+      setWorkflows(remaining);
+      setSelectedWorkflow(null);
+      if (remaining.length > 0) navigate(`/workflows/${remaining[0].id}`);
+      else navigate('/workflows');
+      toast.success(`已删除「${target.name}」`);
+    } catch (e) {
+      // PLANET-1208: show specific human-readable errors, never a generic crash
+      if (e instanceof ApiError && e.status === 409 && e.data && Array.isArray(e.data.cases)) {
+        const cases = e.data.cases as Array<{ id: string; name: string; url: string }>;
+        if (cases.length === 1) {
+          toast.error('无法删除：以下案例正在使用此工作流', {
+            description: cases[0].name,
+            action: { label: '前往查看', onClick: () => navigate(cases[0].url) },
+            duration: 8000,
+          });
         } else {
-          toast.error('Delete failed; restoring', { description: e instanceof Error ? e.message : String(e) });
+          const desc = cases.slice(0, 5).map((c) => `• ${c.name}`).join('\n') +
+            (cases.length > 5 ? `\n… 共 ${cases.length} 个案例` : '');
+          toast.error(`无法删除：${cases.length} 个案例正在使用此工作流`, {
+            description: desc,
+            duration: 10000,
+          });
         }
+      } else {
+        toast.error('删除失败', { description: e instanceof Error ? e.message : String(e) });
       }
-    }, 5100);
-  }, [selectedWorkflow, workflows, navigate]);
+    } finally {
+      setDeleting(false);
+    }
+  }, [selectedWorkflow, deleting, workflows, navigate]);
 
   if (loading) {
     return (
@@ -339,9 +327,10 @@ export default function Workflows() {
             variant="ghost"
             className="text-destructive hover:text-destructive"
             onClick={handleDelete}
-            disabled={!selectedWorkflow}
+            disabled={!selectedWorkflow || deleting}
+            data-testid="topbar-delete-workflow-btn"
           >
-            <Trash2 className="h-4 w-4 mr-1" /> Delete
+            <Trash2 className="h-4 w-4 mr-1" /> {deleting ? '删除中…' : '删除'}
           </Button>
           {/* Workflow name breadcrumb */}
           <div className="mx-2 h-4 border-l border-border" />
