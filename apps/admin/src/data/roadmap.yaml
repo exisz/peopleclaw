@@ -2549,7 +2549,7 @@
   category: "Ops"
   stage: 4
   status: done
-  description: "PLANET-1210：(A) 自建空工作流直接确认删除 (B) 自建+有案例二次确认弹窗+cascade delete (C) 系统模板锁图标+tooltip+克隆按钮。后端 DELETE /workflows/:id 三档判定+force参数，新增 POST /workflows/:id/clone。Playwright 4 用例全过。"
+  description: "PLANET-1210：(A) 自建空工作流直接确认删除 (B) 自建+有案例二次确认弹窗+cascade delete (C) 系统模板锁图标+tooltip+克隆按钮。后端 DELETE /workflows/:id 三档判定+force参数，新增 POST /workflows/:id/clone。Playwright 4 用例全过。(PLANET-1213 修可见性 — Playwright 通过不等于用户能看到)"
   prerequisites: [F209]
   jira: "PLANET-1210"
   completed_at: "2026-04-24"
@@ -2566,4 +2566,16 @@
   jira: "PLANET-1210"
   completed_at: "2026-04-24"
   commit_sha: "369cb30"
+  reject_reason: ""
+
+- id: F212
+  title: "工作流删除按钮可见性修复（Elen 真视角）"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "PLANET-1213：诊断并修复 Elen 看不到删除按钮的根本原因：(1) Sidebar ··· 菜单按钮 opacity-0→opacity-40，始终可见不需 hover；(2) 顶栏删除按钮无工作流选中时为 ghost 静默禁用，选中后变 outline 红色边框明显标识；(3) 系统模板顶栏锁定删除按钮换 outline 样式，克隆按钮加蓝色 primary 边框并改为「克隆副本」；(4) 系统工作流在 sidebar 列表行内显示锁图标。Playwright 通过≠用户能看到，本轮以真实视角截图为证。"
+  prerequisites: [F210, F211]
+  jira: "PLANET-1213"
+  completed_at: "2026-04-24"
+  commit_sha: ""
   reject_reason: ""

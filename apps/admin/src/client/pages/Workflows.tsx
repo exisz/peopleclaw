@@ -340,19 +340,19 @@ export default function Workflows() {
           <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)} data-testid="create-workflow-btn">
             <Plus className="h-4 w-4 mr-1" /> 新工作流
           </Button>
-          {/* PLANET-1210: Three-tier delete button */}
+          {/* PLANET-1210/PLANET-1213: Three-tier delete button — visible regardless of selection state */}
           {selectedWorkflow?.isSystem ? (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground cursor-not-allowed"
+                    variant="outline"
+                    className="border-muted-foreground/40 text-muted-foreground cursor-not-allowed"
                     disabled
                     data-testid="topbar-delete-workflow-btn"
                   >
-                    <Lock className="h-4 w-4 mr-1" /> 删除
+                    <Lock className="h-4 w-4 mr-1" /> 删除（锁定）
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>系统模板不可删除，可点「克隆」复制后修改</TooltipContent>
@@ -360,6 +360,7 @@ export default function Workflows() {
               <Button
                 size="sm"
                 variant="outline"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                 onClick={async () => {
                   if (!selectedWorkflow) return;
                   try {
@@ -377,20 +378,31 @@ export default function Workflows() {
                 }}
                 data-testid="topbar-clone-workflow-btn"
               >
-                克隆
+                克隆副本
               </Button>
             </TooltipProvider>
           ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setDeleteConfirmOpen(true)}
-              disabled={!selectedWorkflow || deleting}
-              data-testid="topbar-delete-workflow-btn"
-            >
-              <Trash2 className="h-4 w-4 mr-1" /> {deleting ? '删除中…' : '删除'}
-            </Button>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      size="sm"
+                      variant={selectedWorkflow ? 'outline' : 'ghost'}
+                      className={selectedWorkflow ? 'border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground' : 'text-muted-foreground'}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      disabled={!selectedWorkflow || deleting}
+                      data-testid="topbar-delete-workflow-btn"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> {deleting ? '删除中…' : '删除'}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!selectedWorkflow && (
+                  <TooltipContent>请先在左侧选择一个工作流</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           )}
           {/* Workflow name breadcrumb */}
           <div className="mx-2 h-4 border-l border-border" />

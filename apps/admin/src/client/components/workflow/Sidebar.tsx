@@ -223,6 +223,7 @@ export default function Sidebar({
                       >
                         <span className="text-lg leading-none">{w.icon}</span>
                         <span className="truncate flex-1 text-left">{w.name}</span>
+                        {w.isSystem && <Lock className="h-3 w-3 text-muted-foreground/60 shrink-0" />}
                         <span className="font-mono text-[9px] text-muted-foreground">
                           {w.steps.length}
                         </span>
@@ -232,7 +233,7 @@ export default function Sidebar({
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0"
+                            className="h-7 w-7 opacity-40 group-hover:opacity-100 shrink-0"
                             data-testid={`sidebar-workflow-menu-${w.id}`}
                             onClick={(e) => e.stopPropagation()}
                           >
