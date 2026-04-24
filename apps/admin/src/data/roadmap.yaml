@@ -2531,3 +2531,15 @@
   completed_at: "2026-04-24"
   commit_sha: "1600677c8c9e1f9dfd8fce4b21ecbbfa40d77249"
   reject_reason: ""
+
+- id: F209
+  title: "工作流删除流程修复（错误显示 + Shopify 工作流处理）"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "PLANET-1208：(1) 顶栏删除按钮乐观undo模式导致ErrorBoundary崩溃→改为同步删除先API后UI；(2) Sidebar删除Shopify工作流（有batch cases）只显示机器码'workflow_in_use'→改为中文人话+案例列表+已知in-use工作流菜单显示锁图标"
+  prerequisites: [F207, F208]
+  jira: "PLANET-1208"
+  completed_at: "2026-04-24"
+  commit_sha: "a5aa396"
+  reject_reason: ""
