@@ -2537,9 +2537,33 @@
   category: "Ops"
   stage: 4
   status: done
-  description: "PLANET-1208：(1) 顶栏删除按钮乐观undo模式导致ErrorBoundary崩溃→改为同步删除先API后UI；(2) Sidebar删除Shopify工作流（有batch cases）只显示机器码'workflow_in_use'→改为中文人话+案例列表+已知in-use工作流菜单显示锁图标"
+  description: "PLANET-1208：(1) 顶栏删除按钮乐观undo模式导致ErrorBoundary崩溃→改为同步删除先API后UI；(2) Sidebar删除Shopify工作流（有batch cases）只显示机器码'workflow_in_use'→改为中文人话+案例列表+已知in-use工作流菜单显示锁图标。（PLANET-1208 第一版过严，PLANET-1210 拆三档重构）"
   prerequisites: [F207, F208]
   jira: "PLANET-1208"
   completed_at: "2026-04-24"
   commit_sha: "a5aa396"
+  reject_reason: ""
+
+- id: F210
+  title: "工作流删除三档分级（自建空/自建+案例二次确认/系统模板锁+克隆）"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "PLANET-1210：(A) 自建空工作流直接确认删除 (B) 自建+有案例二次确认弹窗+cascade delete (C) 系统模板锁图标+tooltip+克隆按钮。后端 DELETE /workflows/:id 三档判定+force参数，新增 POST /workflows/:id/clone。Playwright 4 用例全过。"
+  prerequisites: [F209]
+  jira: "PLANET-1210"
+  completed_at: "2026-04-24"
+  commit_sha: "b6a6c7d"
+  reject_reason: ""
+
+- id: F211
+  title: "workflow.isSystem 字段 + starter workflow 标记 + clone 接口"
+  category: "Ops"
+  stage: 4
+  status: done
+  description: "PLANET-1210：Workflow 表加 isSystem 字段（默认 false），migrate-add-is-system.mjs 迁移脚本，shopify-direct-listing 标记 isSystem=true，POST /workflows/:id/clone 复制 workflow+def 新名加副本后缀。"
+  prerequisites: [F209]
+  jira: "PLANET-1210"
+  completed_at: "2026-04-24"
+  commit_sha: "b6a6c7d"
   reject_reason: ""
