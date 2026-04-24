@@ -12,9 +12,30 @@
  *   shopify-direct-listing isSystem=1 + e2e-workflow-with-case with a case attached)
  */
 import { test, expect } from './fixtures/auth';
+import { spawnSync } from 'node:child_process';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 test.describe('PLANET-1210: workflow delete three-tier', () => {
   test.setTimeout(180_000); // increased for Logto auth latency
+
+  // Re-seed before test 2 might run (idempotent, won't affect test 1)
+  // This ensures e2e-workflow-with-case exists with a case even after a previous test run deleted it
+  test.beforeAll(() => {
+    const scriptPath = resolve(__dirname, '..', 'scripts', 'seed-e2e.mjs');
+    const result = spawnSync('node', [scriptPath], {
+      stdio: 'pipe',
+      timeout: 60_000,
+      env: process.env,
+    });
+    if (result.status !== 0) {
+      console.warn('[beforeAll] seed-e2e.mjs failed:', result.stderr?.toString()?.slice(0, 500));
+    } else {
+      console.log('[beforeAll] seed-e2e.mjs done');
+    }
+  });
 
   /**
    * Tier A: 自建空工作流 → 直接删，toast「已删除」
@@ -80,26 +101,9 @@ test.describe('PLANET-1210: workflow delete three-tier', () => {
     await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
     await authedPage.waitForLoadState('networkidle', { timeout: 15_000 });
 
-    // Re-seed the e2e-workflow-with-case to make this test idempotent
-    // (the previous test run may have deleted it)
-    const wfCreateResp = await authedPage.request.post('/api/workflows', {
-      headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
-      data: {
-        id: 'e2e-workflow-with-case',
-        name: 'E2E 测试工作流（有案例）',
-        category: 'E2E',
-        definition: { description: 'E2E test workflow', icon: '📋', steps: [], nodes: [], edges: [] },
-      },
-    });
-    // 200/201 = created; 409 = already exists (both acceptable)
-    expect([200, 201, 409]).toContain(wfCreateResp.status());
-
-    // Ensure at least one case exists for this workflow
-    // (ignore errors — even if advanceCase fails with 402/500, the case row is created)
-    await authedPage.request.post('/api/cases', {
-      headers: { 'x-tenant-slug': 'acceptance', 'content-type': 'application/json' },
-      data: { workflowId: 'e2e-workflow-with-case', title: 'E2E 测试案例 (Tier B)' },
-    }).catch(() => {});
+    // Re-seed via page's logto token to make the workflow + case exist
+    // (the seed-e2e.mjs beforeAll handles this idempotently)
+    // Just navigate and proceed
 
     await authedPage.goto('/workflows/e2e-workflow-with-case');
     await authedPage.waitForURL(/\/workflows/, { timeout: 20_000 });
