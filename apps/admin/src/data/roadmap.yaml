@@ -2577,5 +2577,5 @@
   prerequisites: [F210, F211]
   jira: "PLANET-1213"
   completed_at: "2026-04-24"
-  commit_sha: ""
+  commit_sha: "ca60c10"
   reject_reason: ""
