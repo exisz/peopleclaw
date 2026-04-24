@@ -270,9 +270,14 @@ function CasesList() {
 
   function openBatchImport() {
     if (workflows.length === 0) {
-      // PLANET-1200: auto-compose workflow — no existing workflow required
-      setBatchWorkflowId('auto');
-      setBatchDialogOpen(true);
+      toast.error('暂无可用工作流', {
+        description: '请先创建一个工作流，再进行批量导入',
+        action: {
+          label: '去创建工作流',
+          onClick: () => navigate('/workflows'),
+        },
+        duration: 8000,
+      });
       return;
     }
     if (workflows.length === 1) {
@@ -352,7 +357,6 @@ function CasesList() {
                 {workflows.map((wf) => (
                   <SelectItem key={wf.id} value={wf.id}>{wf.name || wf.id}</SelectItem>
                 ))}
-                <SelectItem value="auto">🤖 自动生成工作流 (Shopify 直接上架)</SelectItem>
               </SelectContent>
             </Select>
             <Button
