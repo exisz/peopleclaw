@@ -30,12 +30,12 @@ test.describe('PLANET-1208: workflow delete fixes', () => {
     await expect(createBtn).toBeVisible({ timeout: 15_000 });
     await createBtn.click();
 
-    // Dialog should open — use last textbox (as in other tests)
-    const nameInput = authedPage.getByRole('textbox').last();
+    // Dialog should open — use the named input testid
+    const nameInput = authedPage.getByTestId('create-workflow-name');
     await expect(nameInput).toBeVisible({ timeout: 5_000 });
     const wfName = `e2e-del-${Date.now()}`;
     await nameInput.fill(wfName);
-    await authedPage.getByRole('button', { name: /create|ok|submit|确认/i }).last().click();
+    await authedPage.getByTestId('create-workflow-submit').click();
 
     // Workflow should appear in sidebar + be selected
     await expect(authedPage.getByTestId('workflow-breadcrumb-name')).toContainText(wfName, { timeout: 15_000 });
