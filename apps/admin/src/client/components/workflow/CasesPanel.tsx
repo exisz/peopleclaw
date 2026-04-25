@@ -698,14 +698,13 @@ export default function CasesPanel({
       {payloadCase && (
         <CasePayloadDialog
           open
-          onClose={() => setPayloadCase(null)}
+          onClose={() => { setPayloadCase(null); setTimeout(() => void loadCases(), 150); }}
           caseId={payloadCase.id}
           caseTitle={payloadCase.title}
           payload={(() => {
             try { return JSON.parse(payloadCase.payload || '{}'); }
             catch { return {}; }
           })()}
-          onSaved={() => void loadCases()}
         />
       )}
 
