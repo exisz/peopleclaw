@@ -62,8 +62,10 @@ export default function TemplateLibraryDialog({ open, onOpenChange }: TemplateLi
     try {
       const data = await apiClient.post(`/api/templates/${t.id}/use`, {}) as { workflow: { id: string; name: string } };
       toast.success(`已创建工作流「${data.workflow.name}」`);
+      setUsingId(null);
       onOpenChange(false);
-      navigate(`/workflows/${data.workflow.id}`);
+      // Force full page reload so workflow list refreshes with the new workflow
+      window.location.href = `/workflows/${data.workflow.id}`;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`一键使用失败: ${msg}`);
