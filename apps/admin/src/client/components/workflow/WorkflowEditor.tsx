@@ -722,31 +722,14 @@ function EditorInner({
         </Panel>
         <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors" />
         <Panel defaultSize={initial[1] ?? 40} minSize={20}>
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as typeof activeTab)}
-            className="flex flex-col h-full"
-          >
-            <TabsList className="grid grid-cols-3 mx-2 mt-2">
-              <TabsTrigger value="properties" data-testid="tab-properties">{t('tabs.properties', { defaultValue: '属性' })}</TabsTrigger>
-              <TabsTrigger value="cases" data-testid="tab-cases">{t('tabs.cases', { defaultValue: '案例' })}</TabsTrigger>
-              <TabsTrigger value="runs" data-testid="tab-runs">{t('tabs.runs', { defaultValue: '运行记录' })}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="properties" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <PropertiesPanel
-                step={selectedStep}
-                templateMeta={templateMeta}
-                onChange={handlePropChange}
-                onDelete={(id) => deleteStepsWithUndo([id])}
-              />
-            </TabsContent>
-            <TabsContent value="cases" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
+          <div className="flex flex-col h-full">
+            <div className="mx-2 mt-2 mb-1">
+              <h3 className="text-sm font-semibold px-1">案例</h3>
+            </div>
+            <div className="flex-1 overflow-hidden flex flex-col">
               <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} onRun={() => void handleRun()} runStatus={runState.status} />
-            </TabsContent>
-            <TabsContent value="runs" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <RunsPanel workflowId={workflow.id} liveRun={runState} />
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </Panel>
       </PanelGroup>
 
