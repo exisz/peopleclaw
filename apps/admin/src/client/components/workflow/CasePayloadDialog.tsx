@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { apiClient } from '../../lib/api';
+import ImageUploader from '../ui/ImageUploader';
 import { Save, Loader2, X } from 'lucide-react';
 
 /** Fields we highlight at the top when present */
@@ -55,7 +56,6 @@ export default function CasePayloadDialog({
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [newFieldName, setNewFieldName] = useState('');
-  const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -180,46 +180,20 @@ export default function CasePayloadDialog({
                     onChange={(e) => updateField(key, e.target.value)}
                   />
                 ) : (
-                  <div className="flex gap-1.5 items-center">
+                  <div className="space-y-1.5">
+                    {(key === 'image_url' || isImageUrl(key, val)) && (
+                      <ImageUploader
+                        value={val}
+                        onChange={(url) => updateField(key, url)}
+                      />
+                    )}
                     <Input
                       type={isNum ? 'number' : 'text'}
-                      className="h-8 text-xs flex-1"
+                      className="h-8 text-xs"
                       value={val}
+                      placeholder={(key === 'image_url' || isImageUrl(key, val)) ? '或粘贴图片 URL' : ''}
                       onChange={(e) => updateField(key, e.target.value)}
                     />
-                    {(key === 'image_url' || isImageUrl(key, val)) && (
-                      <label className="inline-flex items-center gap-1 px-2 h-8 rounded-md border border-input bg-background text-xs cursor-pointer hover:bg-accent shrink-0">
-                        {uploadingField === key ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          '📷'
-                        )}
-                        <span>上传</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          hidden
-                          disabled={uploadingField === key}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setUploadingField(key);
-                            try {
-                              // Upload via multipart — server stores image, returns URL
-                              const formData = new FormData();
-                              formData.append('file', file);
-                              const data = await apiClient.postForm<{ url: string }>('/api/upload-image', formData);
-                              updateField(key, data.url);
-                            } catch (err) {
-                              setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
-                            } finally {
-                              setUploadingField(null);
-                              e.target.value = '';
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
                   </div>
                 )}
               </div>

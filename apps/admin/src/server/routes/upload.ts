@@ -1,15 +1,35 @@
 /**
- * PLANET-1260 — Image upload route
+ * PLANET-1260 — Image upload routes + UploadThing route handler
  *
- * POST /api/upload-image — upload image file, store in CaseImage table, return URL
- * GET  /api/images/:id   — serve stored image by ID
+ * POST /api/upload-image  — multipart upload via imageStorage abstraction
+ * DELETE /api/images/:key — delete image from storage provider
+ * /api/uploadthing/*      — UploadThing React component route handler
+ *
+ * Legacy GET /api/images/:id route removed — UploadThing serves CDN URLs directly.
  */
 import { Router, type Response, type Request } from 'express';
+import { createUploadthing, createRouteHandler } from 'uploadthing/express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant } from '../middleware/tenant.js';
-import crypto from 'crypto';
+import { imageStorage } from '../lib/image-storage.js';
 
 export const uploadRouter = Router();
+
+// ── UploadThing file router (for React component uploads) ────────────────────
+const f = createUploadthing();
+
+const utRouter = {
+  imageUploader: f({ image: { maxFileSize: '4MB', maxFileCount: 1 } })
+    .onUploadComplete(({ file }) => {
+      return { url: file.ufsUrl };
+    }),
+};
+
+/** Export type for client-side generateReactHelpers */
+export type OurFileRouter = typeof utRouter;
+
+// Mount UploadThing handler — createRouteHandler returns an Express Router
+export const uploadThingHandler = createRouteHandler({ router: utRouter });
 
 // ── Helper: extract file from multipart raw body ─────────────────────────────
 function extractFileFromRaw(
@@ -49,29 +69,18 @@ function splitBuffer(buf: Buffer, sep: Buffer): Buffer[] {
   return parts;
 }
 
-// ── GET /api/images/:id — serve stored image ─────────────────────────────────
-uploadRouter.get('/images/:id', async (req: Request, res: Response) => {
+// ── DELETE /api/images/:key — delete from storage provider ───────────────────
+uploadRouter.delete('/images/:key', requireAuth, requireTenant, async (req: Request, res: Response) => {
   try {
-    const { getPrisma } = await import('../lib/prisma.js');
-    const prisma = getPrisma();
-    // Use raw query since CaseImage isn't in Prisma schema
-    const result = await (prisma as any).$queryRawUnsafe(
-      'SELECT mimeType, data FROM CaseImage WHERE id = ?',
-      req.params.id,
-    );
-    const row = (result as any[])?.[0];
-    if (!row) { res.status(404).json({ error: 'not found' }); return; }
-    const buf = Buffer.from(row.data, 'base64');
-    res.setHeader('Content-Type', row.mimeType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.send(buf);
+    await imageStorage.delete(req.params.key);
+    res.json({ ok: true });
   } catch (e) {
-    console.error('[images] serve error:', e);
-    res.status(500).json({ error: 'Internal error' });
+    console.error('[images] delete error:', e);
+    res.status(500).json({ error: 'Delete failed' });
   }
 });
 
-// ── POST /api/upload-image — auth required ───────────────────────────────────
+// ── POST /api/upload-image — multipart upload via imageStorage ───────────────
 uploadRouter.post(
   '/upload-image',
   requireAuth,
@@ -109,27 +118,13 @@ uploadRouter.post(
     }
 
     try {
-      // Compress: resize to max 800px if image, using canvas is client-side only.
-      // Just store the raw image for now (client already compresses).
-      const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-      const b64 = file.buffer.toString('base64');
-
-      const { getPrisma } = await import('../lib/prisma.js');
-      const prisma = getPrisma();
-      await (prisma as any).$executeRawUnsafe(
-        'INSERT INTO CaseImage (id, mimeType, data) VALUES (?, ?, ?)',
-        id,
-        file.contentType,
-        b64,
-      );
-
-      // Return a URL that can be used in the payload
-      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-      const url = `${baseUrl}/api/images/${id}`;
-      res.json({ url });
+      const result = await imageStorage.upload(file);
+      res.json({ url: result.url, key: result.key });
     } catch (err) {
       console.error('[upload-image] error:', err);
-      res.status(500).json({ error: 'Upload failed: ' + (err instanceof Error ? err.message : String(err)) });
+      res.status(500).json({
+        error: 'Upload failed: ' + (err instanceof Error ? err.message : String(err)),
+      });
     }
   },
 );
