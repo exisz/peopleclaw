@@ -41,8 +41,40 @@ export interface HandlerResult {
 function parseDef(def: string): WorkflowDefinition {
   try {
     const v = JSON.parse(def);
-    if (!v?.nodes || !v?.edges) throw new Error('invalid');
-    return v as WorkflowDefinition;
+    if (!v?.edges) throw new Error('invalid');
+
+    let nodes = v.nodes as WorkflowDefinition['nodes'] | undefined;
+    const steps = v.steps as Array<Record<string, unknown>> | undefined;
+
+    if ((!nodes || !nodes.length) && steps?.length) {
+      // No nodes at all — derive from steps (some definitions only have steps[])
+      nodes = steps.map((s) => ({
+        id: s.id as string,
+        type: (s.type as string) || (s.assignee as string) || 'unknown',
+        kind: (s.kind as 'auto' | 'human') || 'auto',
+        handler: (s.handler as string) || (s.assignee as string) || undefined,
+        config: (s.config as Record<string, unknown>) || undefined,
+      }));
+    } else if (nodes?.length && steps?.length) {
+      // Both exist — nodes might be position-only (DEFAULT_WORKFLOW pattern)
+      // Merge step info into nodes when nodes lack kind/type
+      const stepMap = new Map(steps.map((s) => [s.id as string, s]));
+      nodes = nodes.map((n) => {
+        if (n.type && n.kind) return n; // already has full info
+        const step = stepMap.get(n.id);
+        if (!step) return n;
+        return {
+          ...n,
+          type: n.type || (step.type as string) || (step.assignee as string) || 'unknown',
+          kind: n.kind || (step.kind as 'auto' | 'human') || 'auto',
+          handler: n.handler || (step.handler as string) || (step.assignee as string) || undefined,
+          config: n.config || (step.config as Record<string, unknown>) || undefined,
+        };
+      });
+    }
+
+    if (!nodes?.length) throw new Error('invalid');
+    return { nodes, edges: v.edges };
   } catch {
     return { nodes: [], edges: [] };
   }
