@@ -26,8 +26,11 @@ interface CasePayloadDialogProps {
   onSaved?: () => void;
 }
 
-function isNumeric(v: unknown): boolean {
-  return typeof v === 'number' || (typeof v === 'string' && !Number.isNaN(Number(v)) && v.trim() !== '');
+/** Fields that should use number input */
+const NUMBER_FIELDS = ['price', 'stock'];
+
+function isNumberField(key: string, originalValue: unknown): boolean {
+  return NUMBER_FIELDS.includes(key) || (typeof originalValue === 'number' && !NUMBER_FIELDS.includes(key) && key !== 'product_name' && key !== 'description' && key !== 'image_url');
 }
 
 function isImageUrl(key: string, val: unknown): boolean {
@@ -67,11 +70,11 @@ export default function CasePayloadDialog({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Convert numeric strings back to numbers
+      // Convert numeric fields back to numbers
       const parsed: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(fields)) {
-        if (isNumeric(v) && !isImageUrl(k, v)) {
-          parsed[k] = Number(v);
+        if (NUMBER_FIELDS.includes(k) || (typeof payload[k] === 'number' && k !== 'product_name' && k !== 'description')) {
+          parsed[k] = Number(v) || 0;
         } else {
           parsed[k] = v;
         }
@@ -113,7 +116,7 @@ export default function CasePayloadDialog({
               const val = fields[key];
               const showImage = isImageUrl(key, val);
               const isKeyField = KEY_FIELDS.includes(key);
-              const isNum = isNumeric(payload[key]);
+              const isNum = isNumberField(key, payload[key]);
 
               return (
                 <div key={key} className="space-y-1">
