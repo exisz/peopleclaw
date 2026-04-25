@@ -181,14 +181,7 @@ export function CaseRow({
     });
   }
 
-  if (c.status === 'waiting_human') {
-    const hasMissing = missingFields && missingFields.length > 0;
-    menuItems.push({
-      label: hasMissing ? '请先填写必填字段' : '继续执行',
-      disabled: isCompleting || !!hasMissing,
-      onClick: () => onComplete(c),
-    });
-  }
+
 
   menuItems.push({
     label: '删除',
