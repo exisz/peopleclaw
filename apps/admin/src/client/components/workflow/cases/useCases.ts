@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '../../../lib/api';
 import type { CaseRecord, CaseStepRecord, FilterKey } from './types';
 
@@ -171,7 +171,7 @@ export function useCases(workflowId: string): UseCasesReturn {
     }
     setSelectedIds(new Set());
     await loadCases();
-  }, [cases, selectedIds, loadCases]);
+  }, [loadCases]);
 
   const batchDelete = useCallback(async () => {
     setBatchDeleting(true);
@@ -190,10 +190,18 @@ export function useCases(workflowId: string): UseCasesReturn {
     await loadCases();
   }, [selectedIds, loadCases]);
 
+  // Use refs to avoid stale closure in callbacks
+  const casesRef = useRef(cases);
+  casesRef.current = cases;
+  const selectedRef = useRef(selectedIds);
+  selectedRef.current = selectedIds;
+
   const runSelected = useCallback(async () => {
-    if (!cases) return;
-    // Only run explicitly selected cases — never auto-find
-    const target = cases.find((c) => selectedIds.has(c.id));
+    const currentCases = casesRef.current;
+    const currentSelected = selectedRef.current;
+    if (!currentCases || currentSelected.size === 0) return;
+    // Only run explicitly selected case
+    const target = currentCases.find((c) => currentSelected.has(c.id));
     if (!target) return;
     setRunningSelected(true);
     try {
@@ -211,7 +219,7 @@ export function useCases(workflowId: string): UseCasesReturn {
     } finally {
       setRunningSelected(false);
     }
-  }, [cases, selectedIds, loadCases]);
+  }, [loadCases]);
 
   return {
     cases,
