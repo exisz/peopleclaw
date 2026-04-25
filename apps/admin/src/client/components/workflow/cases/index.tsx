@@ -91,6 +91,7 @@ export default function CasesPanel({
           onRunAi={(c) => void hook.runAi(c)}
           onOpenPayload={setPayloadCase}
           onOpenSteps={(c) => void handleOpenSteps(c)}
+          onRename={(c, newTitle) => void hook.renameCase(c, newTitle)}
         />
       </div>
 
@@ -151,6 +152,11 @@ export default function CasesPanel({
           onClose={() => setStepsCase(null)}
           caseTitle={stepsCase.c.title}
           steps={stepsCase.steps}
+          onEditPayload={() => {
+            const c = stepsCase.c;
+            setStepsCase(null);
+            setPayloadCase(c);
+          }}
         />
       )}
 

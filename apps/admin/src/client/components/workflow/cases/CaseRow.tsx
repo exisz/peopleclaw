@@ -113,6 +113,7 @@ interface CaseRowProps {
   onRunAi: (c: CaseRecord) => void;
   onOpenPayload: (c: CaseRecord) => void;
   onOpenSteps: (c: CaseRecord) => void;
+  onRename: (c: CaseRecord, newTitle: string) => void;
 }
 
 export function CaseRow({
@@ -132,6 +133,7 @@ export function CaseRow({
   onRunAi,
   onOpenPayload,
   onOpenSteps,
+  onRename,
 }: CaseRowProps) {
   const isCompleting = completing === c.id;
   const isContinuing = continuing === c.id;
@@ -160,7 +162,27 @@ export function CaseRow({
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
     },
+    {
+      label: '✏️ 重命名',
+      icon: <Pencil className="h-3.5 w-3.5" />,
+      onClick: () => {
+        const newName = window.prompt('新名称', c.title);
+        if (newName && newName.trim() && newName.trim() !== c.title) {
+          onRename(c, newName.trim());
+        }
+      },
+    },
   ];
+
+  // Add "inspect problem steps" for failed or waiting_human with missing fields
+  if (c.status === 'failed' || (c.status === 'waiting_human' && missingFields && missingFields.length > 0)) {
+    menuItems.push({
+      label: '🔍 检查问题步骤',
+      icon: <ScrollText className="h-3.5 w-3.5" />,
+      disabled: isLoadingThisSteps,
+      onClick: () => onOpenSteps(c),
+    });
+  }
 
 
 

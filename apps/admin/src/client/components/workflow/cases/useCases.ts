@@ -30,6 +30,8 @@ export interface UseCasesReturn {
   loadCases: () => Promise<void>;
   /** Update a case's payload in local state without re-fetching */
   patchCasePayload: (caseId: string, newPayload: string) => void;
+  /** Rename a case title via PATCH /api/cases/:id */
+  renameCase: (c: CaseRecord, newTitle: string) => Promise<void>;
 }
 
 export function useCases(workflowId: string): UseCasesReturn {
@@ -250,5 +252,15 @@ export function useCases(workflowId: string): UseCasesReturn {
     patchCasePayload: useCallback((caseId: string, newPayload: string) => {
       setCases(prev => prev ? prev.map(c => c.id === caseId ? { ...c, payload: newPayload } : c) : prev);
     }, []),
+    renameCase: useCallback(async (c: CaseRecord, newTitle: string) => {
+      // Optimistic update
+      setCases(prev => prev ? prev.map(x => x.id === c.id ? { ...x, title: newTitle } : x) : prev);
+      try {
+        await apiClient.patch(`/api/cases/${c.id}`, { title: newTitle });
+      } catch (e) {
+        console.error('[useCases] renameCase failed:', e);
+        await loadCases();
+      }
+    }, [loadCases]),
   };
 }

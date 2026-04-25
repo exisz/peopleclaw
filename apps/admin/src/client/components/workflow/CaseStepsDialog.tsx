@@ -6,6 +6,7 @@ import {
 } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 
 interface CaseStep {
@@ -25,6 +26,7 @@ interface CaseStepsDialogProps {
   onClose: () => void;
   caseTitle: string;
   steps: CaseStep[];
+  onEditPayload?: () => void;
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -81,6 +83,7 @@ export default function CaseStepsDialog({
   onClose,
   caseTitle,
   steps,
+  onEditPayload,
 }: CaseStepsDialogProps) {
   const safeSteps = steps ?? [];
   return (
@@ -116,7 +119,10 @@ export default function CaseStepsDialog({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0 rounded-lg border bg-card p-2.5 space-y-1">
+                    <div className={cn(
+                      'flex-1 min-w-0 rounded-lg border bg-card p-2.5 space-y-1',
+                      (step.status === 'failed' || step.status === 'blocked') && 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20',
+                    )}>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold truncate">
                           {step.stepId}
@@ -141,9 +147,37 @@ export default function CaseStepsDialog({
                       </div>
 
                       {step.error && (
-                        <p className="text-[10px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded px-2 py-1 mt-1 break-words">
-                          {step.error}
-                        </p>
+                        <div className={cn(
+                          'rounded px-2 py-1.5 mt-1 space-y-1.5',
+                          'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800',
+                        )}>
+                          <p className="text-[10px] text-red-600 dark:text-red-400 break-words">
+                            {step.error}
+                          </p>
+                          {onEditPayload && (step.status === 'failed' || step.status === 'blocked') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-[10px] px-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                              onClick={onEditPayload}
+                            >
+                              🔧 修改属性
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      {!step.error && onEditPayload && (step.status === 'failed' || step.status === 'blocked') && (
+                        <div className="mt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[10px] px-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                            onClick={onEditPayload}
+                          >
+                            🔧 修改属性
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>

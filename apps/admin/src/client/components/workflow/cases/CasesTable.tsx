@@ -28,6 +28,7 @@ interface CasesTableProps {
   onRunAi: (c: CaseRecord) => void;
   onOpenPayload: (c: CaseRecord) => void;
   onOpenSteps: (c: CaseRecord) => void;
+  onRename: (c: CaseRecord, newTitle: string) => void;
 }
 
 export function CasesTable({
@@ -47,6 +48,7 @@ export function CasesTable({
   onRunAi,
   onOpenPayload,
   onOpenSteps,
+  onRename,
 }: CasesTableProps) {
   const { t } = useTranslation('workflow');
 
@@ -114,6 +116,7 @@ export function CasesTable({
               onRunAi={onRunAi}
               onOpenPayload={onOpenPayload}
               onOpenSteps={onOpenSteps}
+              onRename={onRename}
             />
           ))}
         </TableBody>

@@ -90,6 +90,24 @@ casesRouter.delete('/cases/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// PATCH /api/cases/:id — rename case title
+casesRouter.patch('/cases/:id', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const { title } = req.body ?? {};
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    res.status(400).json({ error: 'title (non-empty string) required' });
+    return;
+  }
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  const updated = await prisma.case.update({
+    where: { id: req.params.id },
+    data: { title: title.trim() },
+  });
+  res.json({ case: updated });
+});
+
 // PATCH /api/cases/:id/payload — update case payload fields
 casesRouter.patch('/cases/:id/payload', async (req, res) => {
   const r = req as unknown as TenantedRequest;
