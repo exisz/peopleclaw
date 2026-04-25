@@ -27,6 +27,8 @@ export interface UseCasesReturn {
   batchDeleting: boolean;
   runSelected: () => Promise<void>;
   runningSelected: boolean;
+  lastRunResult: { status: string; title: string; error?: string; productUrl?: string } | null;
+  clearLastRunResult: () => void;
   loadCases: () => Promise<void>;
   /** Update a case's payload in local state without re-fetching */
   patchCasePayload: (caseId: string, newPayload: string) => void;
@@ -46,6 +48,7 @@ export function useCases(workflowId: string): UseCasesReturn {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [runningSelected, setRunningSelected] = useState(false);
+  const [lastRunResult, setLastRunResult] = useState<{ status: string; title: string; error?: string; productUrl?: string } | null>(null);
 
   const loadCases = useCallback(async () => {
     try {
@@ -206,17 +209,29 @@ export function useCases(workflowId: string): UseCasesReturn {
     const target = currentCases.find((c) => currentSelected.has(c.id));
     if (!target) return;
     setRunningSelected(true);
+    setLastRunResult(null);
     try {
-      const resp = await apiClient.post<{ case: CaseRecord }>(`/api/cases/${target.id}/continue`);
+      const resp = await apiClient.post<{ case: CaseRecord; result?: { status: string; lastStepId?: string } }>(`/api/cases/${target.id}/continue`);
       // Optimistic update from response
       if (resp?.case) {
         setCases(prev => prev ? prev.map(c => c.id === resp.case.id ? resp.case : c) : prev);
+        // Extract run result for user feedback
+        const payload = (() => { try { return JSON.parse(resp.case.payload || '{}'); } catch { return {}; } })();
+        const productUrl = typeof payload.productPublicUrl === 'string' ? payload.productPublicUrl : undefined;
+        if (resp.case.status === 'done') {
+          setLastRunResult({ status: 'done', title: resp.case.title, productUrl });
+        } else if (resp.case.status === 'failed') {
+          const failedStep = resp.case.steps?.find((s: any) => s.status === 'failed');
+          setLastRunResult({ status: 'failed', title: resp.case.title, error: failedStep?.error || '未知错误' });
+        } else {
+          setLastRunResult({ status: resp.case.status, title: resp.case.title });
+        }
       } else {
         await loadCases();
       }
     } catch (e) {
       console.error('[useCases] runSelected failed:', e);
-      // Reload to show actual state
+      setLastRunResult({ status: 'failed', title: target.title, error: e instanceof Error ? e.message : '运行失败' });
       await loadCases();
     } finally {
       setRunningSelected(false);
@@ -248,6 +263,8 @@ export function useCases(workflowId: string): UseCasesReturn {
     batchDeleting,
     runSelected,
     runningSelected,
+    lastRunResult,
+    clearLastRunResult: () => setLastRunResult(null),
     loadCases,
     patchCasePayload: useCallback((caseId: string, newPayload: string) => {
       setCases(prev => prev ? prev.map(c => c.id === caseId ? { ...c, payload: newPayload } : c) : prev);

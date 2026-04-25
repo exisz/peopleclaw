@@ -74,6 +74,52 @@ export default function CasesPanel({
           onClearSelection={() => hook.setSelectedIds(new Set())}
         />
 
+        {/* Run result banner */}
+        {hook.lastRunResult && (
+          <div className={`mx-2 mb-2 rounded-lg border p-3 text-xs flex items-center justify-between gap-2 ${
+            hook.lastRunResult.status === 'done'
+              ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 text-green-800 dark:text-green-200'
+              : hook.lastRunResult.status === 'failed'
+              ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 text-red-800 dark:text-red-200'
+              : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 text-amber-800 dark:text-amber-200'
+          }`}>
+            <div className="flex-1">
+              {hook.lastRunResult.status === 'done' && (
+                <div>
+                  <span className="font-semibold">✅ 「{hook.lastRunResult.title}」运行完成！</span>
+                  {hook.lastRunResult.productUrl && (
+                    <a
+                      href={hook.lastRunResult.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 underline font-medium"
+                    >
+                      🛍️ 查看商品
+                    </a>
+                  )}
+                </div>
+              )}
+              {hook.lastRunResult.status === 'failed' && (
+                <div>
+                  <span className="font-semibold">❌ 「{hook.lastRunResult.title}」运行失败</span>
+                  {hook.lastRunResult.error && (
+                    <span className="ml-1 opacity-80">— {hook.lastRunResult.error}</span>
+                  )}
+                </div>
+              )}
+              {hook.lastRunResult.status !== 'done' && hook.lastRunResult.status !== 'failed' && (
+                <span className="font-semibold">⚠️ 「{hook.lastRunResult.title}」状态：{hook.lastRunResult.status}</span>
+              )}
+            </div>
+            <button
+              onClick={() => hook.clearLastRunResult()}
+              className="text-current opacity-50 hover:opacity-100 text-sm"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <CasesTable
           filtered={hook.filtered}
           workflow={workflow}
