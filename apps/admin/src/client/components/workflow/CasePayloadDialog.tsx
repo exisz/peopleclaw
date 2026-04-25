@@ -205,14 +205,29 @@ export default function CasePayloadDialog({
                             if (!file) return;
                             setUploadingField(key);
                             try {
-                              // Client-side: convert to data URI for Shopify upload
-                              const reader = new FileReader();
-                              const dataUri = await new Promise<string>((resolve, reject) => {
-                                reader.onload = () => resolve(reader.result as string);
-                                reader.onerror = () => reject(new Error('读取文件失败'));
-                                reader.readAsDataURL(file);
+                              // Compress image client-side: max 800px, JPEG 0.7 quality
+                              const compressed = await new Promise<string>((resolve, reject) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                  const MAX = 800;
+                                  let w = img.width, h = img.height;
+                                  if (w > MAX || h > MAX) {
+                                    const ratio = Math.min(MAX / w, MAX / h);
+                                    w = Math.round(w * ratio);
+                                    h = Math.round(h * ratio);
+                                  }
+                                  const canvas = document.createElement('canvas');
+                                  canvas.width = w;
+                                  canvas.height = h;
+                                  const ctx = canvas.getContext('2d')!;
+                                  ctx.drawImage(img, 0, 0, w, h);
+                                  resolve(canvas.toDataURL('image/jpeg', 0.7));
+                                  URL.revokeObjectURL(img.src);
+                                };
+                                img.onerror = () => reject(new Error('图片加载失败'));
+                                img.src = URL.createObjectURL(file);
                               });
-                              updateField(key, dataUri);
+                              updateField(key, compressed);
                             } catch (err) {
                               setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
                             } finally {
