@@ -238,10 +238,10 @@ export default function CasesPanel({
     try {
       await apiClient.delete(`/api/cases/${target.id}`);
       setCases((prev) => prev ? prev.filter((c) => c.id !== target.id) : prev);
-      toast.success(t('cases.deleted', { defaultValue: 'Case deleted' }));
+
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(t('cases.deleteFailed', { defaultValue: 'Delete failed' }), { description: msg });
+
     } finally {
       setDeleting(false);
     }
@@ -255,7 +255,7 @@ export default function CasesPanel({
       }>(`/api/cases/${c.id}`);
       const waitingStep = detail.steps?.find((s) => s.status === 'waiting_human');
       if (!waitingStep) {
-        toast.error(t('cases.noWaitingStep', { defaultValue: 'No waiting step found' }));
+
         return;
       }
       await apiClient.post(`/api/cases/${c.id}/advance`, {
@@ -263,11 +263,11 @@ export default function CasesPanel({
         output: { approved: true },
         action: 'approve',
       });
-      toast.success(t('cases.completed', { defaultValue: 'Case advanced' }));
+
       await loadCases();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(t('cases.completeFailed', { defaultValue: 'Complete failed' }), { description: msg });
+
     } finally {
       setCompleting(null);
     }
@@ -283,12 +283,12 @@ export default function CasesPanel({
         payload: {},
       });
       setNewTitle('');
-      toast.success(t('cases.created', { defaultValue: 'Case created' }));
+
       await loadCases();
       navigate(`/workflows/${workflow.id}/cases/${c.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(t('cases.createFailed', { defaultValue: 'Create failed' }), { description: msg });
+
     } finally {
       setCreating(false);
     }
@@ -303,7 +303,7 @@ export default function CasesPanel({
       setStepsCase({ c, steps: detail.steps ?? [] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error('加载运行记录失败', { description: msg });
+      // toast removed
     } finally {
       setLoadingSteps(null);
     }
@@ -314,11 +314,11 @@ export default function CasesPanel({
     setContinuing(c.id);
     try {
       await apiClient.post(`/api/cases/${c.id}/continue`);
-      toast.success('已继续到下一步');
+      // toast removed
       await loadCases();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error('继续失败', { description: msg });
+      // toast removed
     } finally {
       setContinuing(null);
     }
@@ -329,11 +329,11 @@ export default function CasesPanel({
     setRunningAi(c.id);
     try {
       await apiClient.post(`/api/cases/${c.id}/run-ai`);
-      toast.success('AI 已重新生成');
+      // toast removed
       await loadCases();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error('AI 生成失败', { description: msg });
+      // toast removed
     } finally {
       setRunningAi(null);
     }
@@ -343,7 +343,7 @@ export default function CasesPanel({
   async function handleBatchContinue() {
     if (!cases) return;
     const targets = cases.filter(c => selectedIds.has(c.id) && c.status === 'waiting_review');
-    if (!targets.length) { toast.error('没有可继续的案例（仅待审核状态可继续）'); return; }
+    if (!targets.length) { return; }
     let ok = 0;
     for (const c of targets) {
       try {
@@ -353,7 +353,7 @@ export default function CasesPanel({
         console.warn(`batch continue ${c.id} failed:`, e);
       }
     }
-    toast.success(`已批量继续 ${ok} 个案例`);
+    // toast removed
     setSelectedIds(new Set());
     await loadCases();
   }
@@ -371,7 +371,7 @@ export default function CasesPanel({
         console.warn(`batch delete ${id} failed:`, e);
       }
     }
-    toast.success(`已批量删除 ${ok} 个案例`);
+    // toast removed
     setSelectedIds(new Set());
     setBatchDeleteOpen(false);
     setBatchDeleting(false);
@@ -385,16 +385,16 @@ export default function CasesPanel({
     const target = cases.find(c => selectedIds.has(c.id) && c.status === 'waiting_review')
       ?? cases.find(c => c.status === 'waiting_review');
     if (!target) {
-      toast.error('没有可运行的案例', { description: '请先创建案例并填写属性' });
+      // toast removed
       return;
     }
     setRunningSelected(true);
     try {
       await apiClient.post(`/api/cases/${target.id}/continue`);
-      toast.success('已继续执行');
+      // toast removed
       await loadCases();
     } catch (e) {
-      toast.error('执行失败', { description: e instanceof Error ? e.message : String(e) });
+
     } finally {
       setRunningSelected(false);
     }
