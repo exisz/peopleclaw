@@ -39,21 +39,13 @@ casesRouter.post('/cases', async (req, res: Response) => {
         category: '',
         ...(payload ?? {}),
       }),
-      status: 'running',
+      status: 'waiting_human', // Created but not yet run — user must fill payload first
     },
   });
 
-  try {
-    const result = await advanceCase(c.id);
-    const fresh = await prisma.case.findUnique({ where: { id: c.id } });
-    res.json({ case: fresh, result });
-  } catch (e) {
-    if (e instanceof InsufficientCreditsError) {
-      res.status(402).json({ error: e.message, code: 'insufficient_credits' });
-      return;
-    }
-    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
-  }
+  // Don't auto-run — let user fill payload first, then manually run
+  const fresh = await prisma.case.findUnique({ where: { id: c.id } });
+  res.json({ case: fresh });
 });
 
 // GET /api/cases — list (tenant-scoped)

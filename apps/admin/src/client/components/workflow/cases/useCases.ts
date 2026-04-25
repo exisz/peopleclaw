@@ -192,9 +192,10 @@ export function useCases(workflowId: string): UseCasesReturn {
 
   const runSelected = useCallback(async () => {
     if (!cases) return;
+    // Find a case to run: prefer selected, then first non-terminal
     const target =
-      cases.find((c) => selectedIds.has(c.id) && c.status === 'running') ??
-      cases.find((c) => c.status === 'running');
+      cases.find((c) => selectedIds.has(c.id) && (c.status === 'running' || c.status === 'waiting_human')) ??
+      cases.find((c) => c.status === 'running' || c.status === 'waiting_human');
     if (!target) return;
     setRunningSelected(true);
     try {
