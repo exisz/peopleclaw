@@ -81,8 +81,9 @@ export default function CasePayloadDialog({
       }
       await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
       toast.success('属性已保存');
-      onSaved?.();
+      // Close dialog first, then refresh list on next tick to avoid DOM conflicts
       onClose();
+      setTimeout(() => onSaved?.(), 100);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('保存失败', { description: msg });
