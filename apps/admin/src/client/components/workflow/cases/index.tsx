@@ -132,6 +132,14 @@ export default function CasesPanel({
             try { return JSON.parse(payloadCase.payload || '{}'); }
             catch { return {}; }
           })()}
+          requiredFields={(() => {
+            // Collect all requiredFields from all steps (union)
+            const all = new Set<string>();
+            for (const s of workflow.steps ?? []) {
+              for (const f of s.requiredFields ?? []) all.add(f);
+            }
+            return Array.from(all);
+          })()}
         />
       )}
 

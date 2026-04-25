@@ -15,6 +15,7 @@ export interface WorkflowStep {
   templateId?: string;
   fromTemplate?: boolean;
   disabled?: boolean;
+  requiredFields?: string[];
 }
 
 export interface Workflow {

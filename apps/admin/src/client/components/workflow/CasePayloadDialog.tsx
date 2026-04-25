@@ -29,7 +29,17 @@ interface CasePayloadDialogProps {
   caseId: string;
   caseTitle: string;
   payload: Record<string, unknown>;
+  requiredFields?: string[];
 }
+
+const FIELD_LABELS: Record<string, string> = {
+  product_name: '商品名',
+  price: '价格',
+  stock: '库存',
+  image_url: '商品图片',
+  description: '描述',
+  category: '分类',
+};
 
 export default function CasePayloadDialog({
   open,
@@ -38,6 +48,7 @@ export default function CasePayloadDialog({
   caseId,
   caseTitle,
   payload,
+  requiredFields = [],
 }: CasePayloadDialogProps) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -100,6 +111,13 @@ export default function CasePayloadDialog({
     return a.localeCompare(b);
   });
 
+  // Compute missing required fields
+  const missingRequired = requiredFields.filter(f => {
+    const v = fields[f];
+    return !v || v.trim() === '' || v === '0';
+  });
+  const hasMissing = missingRequired.length > 0;
+
   if (!open) return null;
 
   // Simple overlay — NO Radix Dialog, NO Portal. Renders inline to avoid DOM crash.
@@ -125,13 +143,16 @@ export default function CasePayloadDialog({
             const val = fields[key];
             const showImage = isImageUrl(key, val);
             const isKeyField = KEY_FIELDS.includes(key);
+            const isRequired = requiredFields.includes(key);
+            const isEmpty = !val || val.trim() === '' || val === '0';
             const isNum = isNumberField(key, payload[key]);
 
             return (
               <div key={key} className="space-y-1">
                 <Label className="text-xs font-medium flex items-center gap-1.5">
-                  {isKeyField && <span className="text-amber-500">★</span>}
-                  {key}
+                  {isRequired ? <span className="text-red-500">*</span> : isKeyField ? <span className="text-amber-500">★</span> : null}
+                  {FIELD_LABELS[key] || key}
+                  {isRequired && isEmpty && <span className="text-red-400 text-[10px] ml-1">必填</span>}
                 </Label>
                 {showImage && val && (
                   <div className="rounded border bg-muted/30 p-2 mb-1">
@@ -192,6 +213,11 @@ export default function CasePayloadDialog({
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t">
           {saved && <span className="text-xs text-emerald-600 font-medium mr-auto">✅ 已保存</span>}
           {errorMsg && <span className="text-xs text-red-600 font-medium mr-auto">❌ {errorMsg}</span>}
+                    {hasMissing && (
+            <span className="text-xs text-red-500 mr-auto">
+              ❗ 还需填写: {missingRequired.map(f => FIELD_LABELS[f] || f).join(', ')}
+            </span>
+          )}
           <Button variant="outline" size="sm" onClick={onClose}>
             关闭
           </Button>

@@ -49,22 +49,24 @@ interface ServerWorkflow {
     description?: string;
     icon?: string;
     steps?: WorkflowStep[];
-    nodes?: Array<{ id: string; position?: { x: number; y: number } }>;
+    nodes?: Array<{ id: string; position?: { x: number; y: number }; requiredFields?: string[] }>;
     edges?: unknown[];
   } | null;
 }
 
 function hydrate(w: ServerWorkflow): Workflow {
   const def = w.definition ?? {};
-  // Restore positions: lookup nodes[].position by id and merge into steps[]
+  // Restore positions + requiredFields: lookup nodes[] by id and merge into steps[]
   const posMap = new Map<string, { x: number; y: number }>();
+  const reqMap = new Map<string, string[]>();
   for (const n of def.nodes ?? []) {
     if (n?.id && n.position) posMap.set(n.id, n.position);
+    if (n?.id && Array.isArray(n.requiredFields)) reqMap.set(n.id, n.requiredFields);
   }
   const steps = (def.steps ?? []).map((s) => ({
     ...s,
-    // Prefer step-embedded position (newer), fall back to nodes[] mapping
     position: s.position ?? posMap.get(s.id),
+    requiredFields: s.requiredFields ?? reqMap.get(s.id),
   }));
   return {
     id: w.id,
