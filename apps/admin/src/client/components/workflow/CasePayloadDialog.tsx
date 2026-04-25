@@ -199,12 +199,7 @@ export default function CasePayloadDialog({
                             try {
                               const formData = new FormData();
                               formData.append('file', file);
-                              const resp = await fetch('/api/upload-image', {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
-                              const data = await resp.json() as { url: string };
+                              const data = await apiClient.postForm<{ url: string }>('/api/upload-image', formData);
                               updateField(key, data.url);
                             } catch (err) {
                               setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
