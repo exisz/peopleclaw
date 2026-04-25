@@ -23,26 +23,24 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <BrowserRouter>
-      <ErrorBoundary>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/callback" element={<Callback />} />
         <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/workflows" element={<Workflows />} />
-          <Route path="/workflows/:id" element={<Workflows />} />
-          <Route path="/workflows/:id/cases/:caseId" element={<Workflows />} />
-          <Route path="/workflows/:id/run" element={<RunWorkflow />} />
-          <Route path="/credits" element={<Credits />} />
-          <Route path="/credits/success" element={<CreditsSuccess />} />
-          <Route path="/roadmap" element={<Roadmap />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/settings/:tab" element={<Settings />} />
+          <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+          <Route path="/workflows" element={<ErrorBoundary><Workflows /></ErrorBoundary>} />
+          <Route path="/workflows/:id" element={<ErrorBoundary><Workflows /></ErrorBoundary>} />
+          <Route path="/workflows/:id/cases/:caseId" element={<ErrorBoundary><Workflows /></ErrorBoundary>} />
+          <Route path="/workflows/:id/run" element={<ErrorBoundary><RunWorkflow /></ErrorBoundary>} />
+          <Route path="/credits" element={<ErrorBoundary><Credits /></ErrorBoundary>} />
+          <Route path="/credits/success" element={<ErrorBoundary><CreditsSuccess /></ErrorBoundary>} />
+          <Route path="/roadmap" element={<ErrorBoundary><Roadmap /></ErrorBoundary>} />
+          <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+          <Route path="/settings/:tab" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
           <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />
         </Route>
         </Routes>
-      </ErrorBoundary>
       <Toaster richColors closeButton position="top-right" />
       </BrowserRouter>
     </ThemeProvider>

@@ -129,7 +129,7 @@ function relTime(iso: string): string {
 /** Resolve the current step name from workflow definition */
 function resolveStepName(stepId: string | null, workflow: Workflow): string {
   if (!stepId) return '—';
-  const step = workflow.steps.find((s) => s.id === stepId);
+  const step = workflow.steps?.find((s) => s.id === stepId);
   return step?.name ?? stepId;
 }
 
@@ -143,7 +143,7 @@ function StepProgress({
   currentStepId: string | null;
   status: string;
 }) {
-  const steps = workflow.steps;
+  const steps = workflow.steps ?? [];
   if (steps.length === 0) return null;
 
   // Find current step index
@@ -213,8 +213,10 @@ export default function CasesPanel({
   const loadCases = useCallback(async (cancelled = false) => {
     try {
       const d = await apiClient.get<{ cases: ServerCase[] }>('/api/cases');
-      if (!cancelled) setCases(d.cases.filter((c) => c.workflowId === workflow.id));
-    } catch { /* ignore polling errors */ }
+      if (!cancelled) setCases((d.cases ?? []).filter((c) => c.workflowId === workflow.id));
+    } catch (err) {
+      console.warn('[CasesPanel] loadCases failed:', err);
+    }
   }, [workflow.id]);
 
   // Load cases once on mount (no polling — polling causes Radix Portal/DOM crashes)
@@ -282,13 +284,14 @@ export default function CasesPanel({
         title: newTitle.trim(),
         payload: {},
       });
+      // PLANET-1260: Optimistic update — immediately prepend to local state
+      setCases(prev => [c, ...(prev ?? [])]);
       setNewTitle('');
-
-      await loadCases();
       navigate(`/workflows/${workflow.id}/cases/${c.id}`);
+      // Background sync to pick up any server-side defaults
+      loadCases().catch(() => {});
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-
+      console.error('[CasesPanel] createCase failed:', e);
     } finally {
       setCreating(false);
     }

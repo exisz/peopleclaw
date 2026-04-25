@@ -152,7 +152,7 @@ function StepNode({ data, selected }: NodeProps) {
         </p>
       )}
 
-      {step.tools && step.tools.length > 0 && (
+      {step.tools && Array.isArray(step.tools) && step.tools.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {step.tools.slice(0, 3).map((t) => (
             <span

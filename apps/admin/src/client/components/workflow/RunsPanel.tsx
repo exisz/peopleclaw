@@ -64,7 +64,7 @@ export default function RunsPanel({ workflowId, liveRun }: { workflowId: string;
     const tick = async () => {
       try {
         const { cases } = await apiClient.get<{ cases: ServerCase[] }>('/api/cases');
-        const wfCases = cases.filter((c) => c.workflowId === workflowId);
+        const wfCases = (cases ?? []).filter((c) => c.workflowId === workflowId);
         // For each case, fetch detail to get steps (limit to top 20 cases to avoid load)
         const limited = wfCases.slice(0, 20);
         const details = await Promise.all(
@@ -80,7 +80,7 @@ export default function RunsPanel({ workflowId, liveRun }: { workflowId: string;
         const flat: { caseTitle: string; step: ServerCaseStep }[] = [];
         for (const d of details) {
           if (!d?.steps) continue;
-          for (const s of d.steps) flat.push({ caseTitle: d.title, step: s });
+          for (const s of d.steps) flat.push({ caseTitle: d.title ?? '', step: s });
         }
         flat.sort((a, b) => Date.parse(b.step.createdAt) - Date.parse(a.step.createdAt));
         if (!cancelled) setRows(flat);

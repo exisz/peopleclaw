@@ -12,6 +12,7 @@ import PropertiesPanel from './PropertiesPanel';
 import CasesPanel from './CasesPanel';
 import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, ExternalLink, Save } from 'lucide-react';
@@ -102,7 +103,7 @@ function EditorInner({
   const navigate = useNavigate();
   const rf = useReactFlow();
 
-  const [steps, setSteps] = useState<WorkflowStep[]>(() => autoLayout(workflow.steps));
+  const [steps, setSteps] = useState<WorkflowStep[]>(() => autoLayout(workflow.steps ?? []));
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [helpOpen, setHelpOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'properties' | 'cases' | 'runs'>('properties');
@@ -158,7 +159,7 @@ function EditorInner({
           // (b) also cover any step id already tracked in prev.stepStatuses (SSE events)
           // This handles stale-closure mismatches between prop and editor state.
           const allIds = new Set<string>([
-            ...workflow.steps.map(s => s.id),
+            (workflow.steps ?? []).map(s => s.id),
             ...Object.keys(prev.stepStatuses),
           ]);
           const finalStatuses = Object.fromEntries(
@@ -195,7 +196,7 @@ function EditorInner({
           if (prev.status !== 'running') return prev;
           // PLANET-1122: same all-ids strategy as run:complete
           const allIds = new Set<string>([
-            ...workflow.steps.map(s => s.id),
+            (workflow.steps ?? []).map(s => s.id),
             ...Object.keys(prev.stepStatuses),
           ]);
           const finalStatuses = Object.fromEntries(
@@ -292,7 +293,7 @@ function EditorInner({
 
   // When workflow id changes, reset
   useEffect(() => {
-    const next = autoLayout(workflow.steps);
+    const next = autoLayout(workflow.steps ?? []);
     setSteps(next);
     setSelectedIds([]);
     undo.reset(next);
@@ -602,7 +603,7 @@ function EditorInner({
 
     if (runState.status !== 'idle') {
       // Pre-fill all workflow steps as pending (grey border, no pulse)
-      for (const s of workflow.steps) {
+      for (const s of (workflow.steps ?? [])) {
         out[s.id] = 'pending';
       }
       // Overlay runState — the single source of truth during/after a run
@@ -633,7 +634,7 @@ function EditorInner({
     setRunState(prev => {
       let changed = false;
       const next = { ...prev.stepStatuses };
-      for (const s of workflow.steps) {
+      for (const s of (workflow.steps ?? [])) {
         if (!(s.id in next) || next[s.id] === 'running' || next[s.id] === 'pending') {
           next[s.id] = prev.status === 'error' ? 'failed' : 'done';
           changed = true;
@@ -737,7 +738,9 @@ function EditorInner({
               <h3 className="text-sm font-semibold px-1">案例</h3>
             </div>
             <div className="flex-1 overflow-hidden flex flex-col">
-              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
+              <ErrorBoundary inline>
+                <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
+              </ErrorBoundary>
             </div>
           </div>
         </Panel>

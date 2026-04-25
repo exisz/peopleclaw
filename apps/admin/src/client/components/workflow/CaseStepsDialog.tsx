@@ -82,6 +82,7 @@ export default function CaseStepsDialog({
   caseTitle,
   steps,
 }: CaseStepsDialogProps) {
+  const safeSteps = steps ?? [];
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
@@ -89,14 +90,14 @@ export default function CaseStepsDialog({
           <DialogTitle className="text-sm">📜 运行记录 — {caseTitle}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 pr-2 -mr-2">
-          {steps.length === 0 ? (
+          {safeSteps.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">暂无运行记录</p>
           ) : (
             <div className="relative py-2">
               {/* Timeline line */}
               <div className="absolute left-[11px] top-4 bottom-4 w-0.5 bg-border" />
 
-              {steps.map((step, i) => {
+              {safeSteps.map((step, i) => {
                 const color = STATUS_COLOR[step.status] ?? 'bg-gray-400';
                 const dur = durationStr(step.startedAt ?? step.createdAt, step.completedAt);
 

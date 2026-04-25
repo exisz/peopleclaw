@@ -47,10 +47,15 @@ export default function CasePayloadDialog({
   useEffect(() => {
     if (!open) { setInitialized(false); setSaved(false); setErrorMsg(null); return; }
     if (initialized) return;
+    const safePayload = payload && typeof payload === 'object' ? payload : {};
     const flat: Record<string, string> = {};
-    for (const [k, v] of Object.entries(payload)) {
+    for (const [k, v] of Object.entries(safePayload)) {
       if (k.startsWith('_')) continue;
-      flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
+      try {
+        flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
+      } catch {
+        flat[k] = String(v ?? '');
+      }
     }
     setFields(flat);
     setInitialized(true);
