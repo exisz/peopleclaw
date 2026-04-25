@@ -205,29 +205,11 @@ export default function CasePayloadDialog({
                             if (!file) return;
                             setUploadingField(key);
                             try {
-                              // Compress image client-side: max 800px, JPEG 0.7 quality
-                              const compressed = await new Promise<string>((resolve, reject) => {
-                                const img = new Image();
-                                img.onload = () => {
-                                  const MAX = 800;
-                                  let w = img.width, h = img.height;
-                                  if (w > MAX || h > MAX) {
-                                    const ratio = Math.min(MAX / w, MAX / h);
-                                    w = Math.round(w * ratio);
-                                    h = Math.round(h * ratio);
-                                  }
-                                  const canvas = document.createElement('canvas');
-                                  canvas.width = w;
-                                  canvas.height = h;
-                                  const ctx = canvas.getContext('2d')!;
-                                  ctx.drawImage(img, 0, 0, w, h);
-                                  resolve(canvas.toDataURL('image/jpeg', 0.7));
-                                  URL.revokeObjectURL(img.src);
-                                };
-                                img.onerror = () => reject(new Error('图片加载失败'));
-                                img.src = URL.createObjectURL(file);
-                              });
-                              updateField(key, compressed);
+                              // Upload via multipart — server stores image, returns URL
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const data = await apiClient.postForm<{ url: string }>('/api/upload-image', formData);
+                              updateField(key, data.url);
                             } catch (err) {
                               setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
                             } finally {
