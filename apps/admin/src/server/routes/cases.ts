@@ -89,6 +89,22 @@ casesRouter.delete('/cases/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// PATCH /api/cases/:id/payload — update case payload fields
+casesRouter.patch('/cases/:id/payload', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const { fields } = req.body ?? {};
+  if (!fields || typeof fields !== 'object') { res.status(400).json({ error: 'fields object required' }); return; }
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  const merged = { ...JSON.parse(c.payload || '{}'), ...fields };
+  const updated = await prisma.case.update({
+    where: { id: req.params.id },
+    data: { payload: JSON.stringify(merged) },
+  });
+  res.json({ case: updated });
+});
+
 // POST /api/cases/:id/advance
 casesRouter.post('/cases/:id/advance', async (req, res) => {
   const r = req as unknown as TenantedRequest;

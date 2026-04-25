@@ -14,7 +14,7 @@ import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, PlayCircle, ExternalLink } from 'lucide-react';
+import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, ExternalLink } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDebouncedSave, useUndoStack, loadLayout, saveLayout } from './editorHooks';
 import type { StepTemplate } from './Sidebar';
@@ -692,20 +692,6 @@ function EditorInner({
           </Button>
           <SaveIndicator state={saveState} />
           <Button
-            size="sm"
-            variant="default"
-            className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-            onClick={() => void handleRun()}
-            disabled={runState.status === 'running' || steps.length === 0}
-            data-testid="run-workflow-button"
-            title="运行工作流"
-          >
-            {runState.status === 'running'
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <PlayCircle className="h-3.5 w-3.5" />}
-            <span>{runState.status === 'running' ? '运行中…' : '▶ 运行'}</span>
-          </Button>
-          <Button
             size="icon"
             variant="ghost"
             className="h-7 w-7"
@@ -755,7 +741,7 @@ function EditorInner({
               />
             </TabsContent>
             <TabsContent value="cases" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
+              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} onRun={() => void handleRun()} runStatus={runState.status} />
             </TabsContent>
             <TabsContent value="runs" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
               <RunsPanel workflowId={workflow.id} liveRun={runState} />

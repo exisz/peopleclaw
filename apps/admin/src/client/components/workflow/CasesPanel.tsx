@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -7,6 +7,21 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +34,23 @@ import {
 } from '../ui/alert-dialog';
 import { apiClient } from '../../lib/api';
 import { cn } from '../../lib/utils';
-import { Plus, Trash2, CheckCircle, Upload, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  CheckCircle,
+  Upload,
+  MoreHorizontal,
+  ClipboardList,
+  ScrollText,
+  Play,
+  PlayCircle,
+  Loader2,
+} from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
+import CasePayloadDialog from './CasePayloadDialog';
+import CaseStepsDialog from './CaseStepsDialog';
+
+/* ────────────── Types ────────────── */
 
 interface ServerCase {
   id: string;
@@ -34,11 +64,25 @@ interface ServerCase {
   updatedAt: string;
 }
 
+interface CaseStepRecord {
+  id: string;
+  stepId: string;
+  stepType?: string;
+  kind?: string;
+  status: string;
+  error?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  createdAt?: string;
+}
+
+/* ────────────── Constants ────────────── */
+
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'running', label: 'Running' },
-  { key: 'waiting_human', label: 'Waiting Human' },
-  { key: 'awaiting_fix', label: 'Awaiting Fix' },
+  { key: 'waiting_human', label: 'Waiting' },
+  { key: 'awaiting_fix', label: 'Fix' },
   { key: 'done', label: 'Done' },
   { key: 'failed', label: 'Failed' },
 ] as const;
@@ -53,211 +97,95 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   cancelled: 'outline',
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  running: '运行中',
+  waiting_human: '等待人工',
+  awaiting_fix: '待修复',
+  done: '完成',
+  failed: '失败',
+  cancelled: '已取消',
+};
+
+/* ────────────── Helpers ────────────── */
+
 function relTime(iso: string): string {
   const d = Date.parse(iso);
   if (Number.isNaN(d)) return iso;
   const diff = Date.now() - d;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins}分钟前`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return `${hrs}小时前`;
   const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  return `${days}天前`;
 }
 
-interface BatchGroup {
-  batchId: string;
-  cases: ServerCase[];
-  done: number;
-  total: number;
-  hasErrors: boolean;
+/** Resolve the current step name from workflow definition */
+function resolveStepName(stepId: string | null, workflow: Workflow): string {
+  if (!stepId) return '—';
+  const step = workflow.steps.find((s) => s.id === stepId);
+  return step?.name ?? stepId;
 }
 
-function BatchGroupRow({
-  group,
+/** Build a mini progress indicator: which steps are done/current/pending */
+function StepProgress({
   workflow,
-  selectedCaseId,
-  completing,
-  onComplete,
-  onDelete,
+  currentStepId,
+  status,
 }: {
-  group: BatchGroup;
   workflow: Workflow;
-  selectedCaseId?: string | null;
-  completing: string | null;
-  onComplete: (c: ServerCase) => void;
-  onDelete: (c: ServerCase) => void;
+  currentStepId: string | null;
+  status: string;
 }) {
-  const navigate = useNavigate();
-  const [expanded, setExpanded] = useState(false);
+  const steps = workflow.steps;
+  if (steps.length === 0) return null;
+
+  // Find current step index
+  const currentIdx = currentStepId ? steps.findIndex((s) => s.id === currentStepId) : -1;
+  const isDone = status === 'done';
+  const isFailed = status === 'failed';
 
   return (
-    <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/30">
-      {/* Batch header row */}
-      <button
-        type="button"
-        className="w-full text-left p-3 flex items-center gap-2 hover:bg-blue-50/60 dark:hover:bg-blue-950/60 transition-colors rounded-t-lg"
-        onClick={() => setExpanded((v) => !v)}
-        data-testid={`batch-row-${group.batchId}`}
-      >
-        {expanded ? <ChevronDown className="h-3.5 w-3.5 text-blue-600 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-blue-800 dark:text-blue-200 truncate">
-              📦 批次导入 · {group.total} 行
-            </span>
-            <Badge
-              variant="outline"
-              className={cn(
-                'text-[9px] shrink-0',
-                group.done === group.total
-                  ? 'border-green-500 text-green-700 dark:text-green-400'
-                  : group.hasErrors
-                  ? 'border-amber-500 text-amber-700 dark:text-amber-400'
-                  : 'border-blue-500 text-blue-700 dark:text-blue-400',
-              )}
-            >
-              {group.done}/{group.total} 完成
-            </Badge>
-          </div>
-          <p className="text-[10px] font-mono text-blue-600/70 dark:text-blue-400/70 truncate mt-0.5">
-            {group.batchId}
-          </p>
-        </div>
-        {group.hasErrors && (
-          <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label="有行待修复" />
-        )}
-      </button>
-
-      {/* Expanded sub-cases */}
-      {expanded && (
-        <div className="border-t border-blue-200/50 dark:border-blue-800/50 p-2 space-y-1.5">
-          {group.cases.map((c) => (
-            <CaseCard
-              key={c.id}
-              c={c}
-              workflow={workflow}
-              selectedCaseId={selectedCaseId}
-              completing={completing}
-              onComplete={onComplete}
-              onDelete={onDelete}
-              indent
-            />
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-0.5" title={`${isDone ? steps.length : Math.max(0, currentIdx + 1)}/${steps.length} steps`}>
+      {steps.map((s, i) => {
+        let color: string;
+        if (isDone) {
+          color = 'bg-green-500';
+        } else if (isFailed && i === currentIdx) {
+          color = 'bg-red-500';
+        } else if (i < currentIdx) {
+          color = 'bg-green-500';
+        } else if (i === currentIdx) {
+          color = 'bg-blue-500 animate-pulse';
+        } else {
+          color = 'bg-gray-300 dark:bg-gray-600';
+        }
+        return (
+          <div
+            key={s.id}
+            className={cn('h-1.5 rounded-full', color)}
+            style={{ width: `${Math.max(4, Math.min(16, 80 / steps.length))}px` }}
+            title={s.name}
+          />
+        );
+      })}
     </div>
   );
 }
 
-function CaseCard({
-  c,
-  workflow,
-  selectedCaseId,
-  completing,
-  onComplete,
-  onDelete,
-  indent = false,
-}: {
-  c: ServerCase;
-  workflow: Workflow;
-  selectedCaseId?: string | null;
-  completing: string | null;
-  onComplete: (c: ServerCase) => void;
-  onDelete: (c: ServerCase) => void;
-  indent?: boolean;
-}) {
-  const { t } = useTranslation('workflow');
-  const navigate = useNavigate();
-
-  let stepCount = 0;
-  let errorInfo: { column?: string; reason?: string } | null = null;
-  let productPublicUrl: string | null = null;
-  try {
-    const p = JSON.parse(c.payload || '{}');
-    stepCount = Array.isArray(p.stepResults) ? p.stepResults.length : 0;
-    if (p._error) errorInfo = p._error as { column?: string; reason?: string };
-    // PLANET-1200: product URL written back by publish_shopify handler
-    if (p.productPublicUrl) productPublicUrl = p.productPublicUrl as string;
-  } catch { /* */ }
-
-  return (
-    <div className={cn(
-      'rounded-lg border transition-all',
-      indent ? 'ml-2' : '',
-      selectedCaseId === c.id ? 'border-primary ring-2 ring-primary/30' : 'border-border bg-card',
-    )}>
-      <button
-        type="button"
-        data-testid={`case-card-${c.id}`}
-        onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
-        className="w-full text-left p-3 hover:bg-accent/30 rounded-t-lg transition-colors"
-      >
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h4 className="text-xs font-semibold truncate">{c.title}</h4>
-          <Badge variant={STATUS_VARIANT[c.status] ?? 'default'} className="text-[9px] uppercase shrink-0">
-            {c.status === 'awaiting_fix' ? '待修复' : c.status}
-          </Badge>
-        </div>
-        {errorInfo && (
-          <p className="text-[10px] text-red-600 dark:text-red-400 truncate">
-            {errorInfo.column}: {errorInfo.reason}
-          </p>
-        )}
-        <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mt-0.5">
-          <span>{relTime(c.updatedAt)}</span>
-          <span>{stepCount} steps</span>
-        </div>
-      </button>
-      <div className="flex items-center justify-end gap-1 px-2 py-1 border-t border-border/40">
-        {/* PLANET-1200: "查看商品" button for done cases with Shopify URL */}
-        {c.status === 'done' && productPublicUrl && (
-          <a
-            href={productPublicUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="h-6 text-[10px] px-2 inline-flex items-center gap-1 rounded text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950 border border-green-300 dark:border-green-700"
-            data-testid={`case-shopify-url-${c.id}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            🛍️ 查看商品
-          </a>
-        )}
-        {c.status === 'waiting_human' && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 text-[10px] text-green-600 hover:text-green-700 px-2"
-            disabled={completing === c.id}
-            onClick={(e) => { e.stopPropagation(); onComplete(c); }}
-            data-testid={`case-complete-${c.id}`}
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            {t('case:actions.complete', { defaultValue: '完成' })}
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 text-[10px] text-destructive hover:text-destructive px-2"
-          onClick={(e) => { e.stopPropagation(); onDelete(c); }}
-          data-testid={`case-delete-${c.id}`}
-        >
-          <Trash2 className="h-3 w-3 mr-1" />
-          {t('common:buttons.delete', { defaultValue: 'Delete' })}
-        </Button>
-      </div>
-    </div>
-  );
-}
+/* ────────────── Main Component ────────────── */
 
 export default function CasesPanel({
   workflow,
   selectedCaseId,
+  onRun,
+  runStatus,
 }: {
   workflow: Workflow;
   selectedCaseId?: string | null;
+  onRun?: () => void;
+  runStatus?: 'idle' | 'running' | 'done' | 'error';
 }) {
   const { t } = useTranslation('workflow');
   const navigate = useNavigate();
@@ -270,12 +198,17 @@ export default function CasesPanel({
   const [completing, setCompleting] = useState<string | null>(null);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
 
-  const loadCases = async (cancelled = false) => {
+  // Dialog states
+  const [payloadCase, setPayloadCase] = useState<ServerCase | null>(null);
+  const [stepsCase, setStepsCase] = useState<{ c: ServerCase; steps: CaseStepRecord[] } | null>(null);
+  const [loadingSteps, setLoadingSteps] = useState<string | null>(null);
+
+  const loadCases = useCallback(async (cancelled = false) => {
     try {
       const d = await apiClient.get<{ cases: ServerCase[] }>('/api/cases');
       if (!cancelled) setCases(d.cases.filter((c) => c.workflowId === workflow.id));
     } catch { /* ignore polling errors */ }
-  };
+  }, [workflow.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,48 +222,15 @@ export default function CasesPanel({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workflow.id]);
+  }, [loadCases]);
 
-  // Separate batch cases from standalone cases
-  const { standaloneFiltered, batchGroups } = useMemo(() => {
-    if (!cases) return { standaloneFiltered: null, batchGroups: [] };
-
-    const filtered = filter === 'all' ? cases : cases.filter((c) => c.status === filter);
-
-    const batchMap = new Map<string, ServerCase[]>();
-    const standalone: ServerCase[] = [];
-
-    for (const c of filtered) {
-      if (c.batchId) {
-        const arr = batchMap.get(c.batchId) ?? [];
-        arr.push(c);
-        batchMap.set(c.batchId, arr);
-      } else {
-        standalone.push(c);
-      }
-    }
-
-    // Build batch groups — sorted by most-recent updatedAt
-    const groups: BatchGroup[] = [];
-    for (const [batchId, bCases] of batchMap.entries()) {
-      const allCases = cases.filter((c) => c.batchId === batchId);
-      groups.push({
-        batchId,
-        cases: bCases,
-        done: allCases.filter((c) => c.status === 'done').length,
-        total: allCases.length,
-        hasErrors: allCases.some((c) => c.status === 'awaiting_fix'),
-      });
-    }
-    groups.sort((a, b) => {
-      const aTime = Math.max(...a.cases.map((c) => Date.parse(c.updatedAt)));
-      const bTime = Math.max(...b.cases.map((c) => Date.parse(c.updatedAt)));
-      return bTime - aTime;
-    });
-
-    return { standaloneFiltered: standalone, batchGroups: groups };
+  const filtered = useMemo(() => {
+    if (!cases) return null;
+    const list = filter === 'all' ? cases : cases.filter((c) => c.status === filter);
+    return list;
   }, [cases, filter]);
+
+  /* ── Actions ── */
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -352,7 +252,9 @@ export default function CasesPanel({
   const handleComplete = async (c: ServerCase) => {
     setCompleting(c.id);
     try {
-      const { case: detail } = await apiClient.get<{ case: ServerCase & { steps?: Array<{ id: string; stepId: string; status: string }> } }>(`/api/cases/${c.id}`);
+      const { case: detail } = await apiClient.get<{
+        case: ServerCase & { steps?: Array<{ id: string; stepId: string; status: string }> };
+      }>(`/api/cases/${c.id}`);
       const waitingStep = detail.steps?.find((s) => s.status === 'waiting_human');
       if (!waitingStep) {
         toast.error(t('cases.noWaitingStep', { defaultValue: 'No waiting step found' }));
@@ -393,41 +295,79 @@ export default function CasesPanel({
     }
   };
 
-  const hasAny = (standaloneFiltered?.length ?? 0) + batchGroups.length > 0;
+  const openStepsDialog = async (c: ServerCase) => {
+    setLoadingSteps(c.id);
+    try {
+      const { case: detail } = await apiClient.get<{
+        case: { steps?: CaseStepRecord[] };
+      }>(`/api/cases/${c.id}`);
+      setStepsCase({ c, steps: detail.steps ?? [] });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error('加载运行记录失败', { description: msg });
+    } finally {
+      setLoadingSteps(null);
+    }
+  };
+
+  const isRunning = runStatus === 'running';
 
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-4 py-3 border-b space-y-2">
-          <div className="flex gap-2">
+        {/* ── Header: create + import + run + filters ── */}
+        <div className="px-3 py-2.5 border-b space-y-2">
+          {/* Row 1: New case input + Run button */}
+          <div className="flex gap-1.5">
             <Input
-              placeholder={t('cases.newCasePlaceholder', { defaultValue: 'New case title' })}
+              placeholder={t('cases.newCasePlaceholder', { defaultValue: '案例标题' })}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void createCase(); }}
-              className="h-8 text-xs"
+              className="h-7 text-xs flex-1"
               data-testid="cases-new-title"
             />
             <Button
               size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs shrink-0"
               onClick={createCase}
               disabled={creating || !newTitle.trim()}
               data-testid="cases-new-submit"
             >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              {t('cases.new', { defaultValue: 'New case' })}
+              <Plus className="h-3 w-3 mr-0.5" />
+              新建
             </Button>
+            {onRun && (
+              <Button
+                size="sm"
+                className="h-7 px-2.5 text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                onClick={onRun}
+                disabled={isRunning || workflow.steps.length === 0}
+                data-testid="run-workflow-button"
+                title="运行工作流"
+              >
+                {isRunning
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <PlayCircle className="h-3 w-3" />}
+                <span>{isRunning ? '运行中…' : '▶ 运行'}</span>
+              </Button>
+            )}
           </div>
+
+          {/* Row 2: Batch import */}
           <Button
             size="sm"
             variant="outline"
-            className="w-full h-7 text-xs gap-1.5 border-dashed"
+            className="w-full h-6 text-[10px] gap-1.5 border-dashed"
             onClick={() => setBatchDialogOpen(true)}
             data-testid="cases-batch-import-btn"
           >
             <Upload className="h-3 w-3" />
             批量导入 Excel / CSV
           </Button>
+
+          {/* Row 3: Filters */}
           <div className="flex flex-wrap gap-1">
             {FILTERS.map((f) => (
               <button
@@ -448,47 +388,131 @@ export default function CasesPanel({
           </div>
         </div>
 
+        {/* ── Table ── */}
         <ScrollArea className="flex-1">
-          <div className="p-3 space-y-2">
-            {!standaloneFiltered ? (
-              <p className="text-xs text-muted-foreground p-2">Loading…</p>
-            ) : !hasAny ? (
-              <p className="text-xs text-muted-foreground p-2 text-center">
-                {t('cases.empty', { defaultValue: 'No cases for this filter.' })}
-              </p>
-            ) : (
-              <>
-                {/* Batch group rows (collapsed by default, 1 row per batch) */}
-                {batchGroups.map((group) => (
-                  <BatchGroupRow
-                    key={group.batchId}
-                    group={group}
-                    workflow={workflow}
-                    selectedCaseId={selectedCaseId}
-                    completing={completing}
-                    onComplete={handleComplete}
-                    onDelete={(c) => setDeleteTarget(c)}
-                  />
-                ))}
+          {!filtered ? (
+            <p className="text-xs text-muted-foreground p-4 text-center">Loading…</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-4 text-center">
+              {t('cases.empty', { defaultValue: 'No cases for this filter.' })}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="text-[10px]">
+                  <TableHead className="h-7 px-2">案例名称</TableHead>
+                  <TableHead className="h-7 px-2 w-[72px]">状态</TableHead>
+                  <TableHead className="h-7 px-2 w-[90px]">当前步骤</TableHead>
+                  <TableHead className="h-7 px-2 w-[70px]">创建时间</TableHead>
+                  <TableHead className="h-7 px-2 w-[36px]">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c) => {
+                  const payload = (() => {
+                    try { return JSON.parse(c.payload || '{}') as Record<string, unknown>; }
+                    catch { return {} as Record<string, unknown>; }
+                  })();
+                  const isSelected = selectedCaseId === c.id;
+                  const isCompleting = completing === c.id;
+                  const isLoadingThisSteps = loadingSteps === c.id;
 
-                {/* Standalone (non-batch) cases */}
-                {standaloneFiltered.map((c) => (
-                  <CaseCard
-                    key={c.id}
-                    c={c}
-                    workflow={workflow}
-                    selectedCaseId={selectedCaseId}
-                    completing={completing}
-                    onComplete={handleComplete}
-                    onDelete={(c) => setDeleteTarget(c)}
-                  />
-                ))}
-              </>
-            )}
-          </div>
+                  return (
+                    <TableRow
+                      key={c.id}
+                      className={cn(
+                        'cursor-pointer text-[11px] hover:bg-accent/40 transition-colors',
+                        isSelected && 'bg-primary/5 border-l-2 border-l-primary',
+                      )}
+                      onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
+                      data-testid={`case-row-${c.id}`}
+                    >
+                      {/* 案例名称 + progress */}
+                      <TableCell className="px-2 py-1.5 max-w-[160px]">
+                        <div className="truncate font-medium text-xs">{c.title}</div>
+                        <StepProgress workflow={workflow} currentStepId={c.currentStepId} status={c.status} />
+                      </TableCell>
+
+                      {/* 状态 */}
+                      <TableCell className="px-2 py-1.5">
+                        <Badge
+                          variant={STATUS_VARIANT[c.status] ?? 'default'}
+                          className="text-[9px] uppercase"
+                        >
+                          {STATUS_LABEL[c.status] ?? c.status}
+                        </Badge>
+                      </TableCell>
+
+                      {/* 当前步骤 */}
+                      <TableCell className="px-2 py-1.5 text-muted-foreground truncate max-w-[90px]">
+                        {resolveStepName(c.currentStepId, workflow)}
+                      </TableCell>
+
+                      {/* 创建时间 */}
+                      <TableCell className="px-2 py-1.5 text-muted-foreground whitespace-nowrap">
+                        {relTime(c.createdAt)}
+                      </TableCell>
+
+                      {/* 操作 dropdown */}
+                      <TableCell className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              data-testid={`case-actions-${c.id}`}
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              className="text-xs gap-2"
+                              onClick={() => setPayloadCase(c)}
+                            >
+                              <ClipboardList className="h-3.5 w-3.5" />
+                              📋 属性
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-xs gap-2"
+                              disabled={isLoadingThisSteps}
+                              onClick={() => void openStepsDialog(c)}
+                            >
+                              <ScrollText className="h-3.5 w-3.5" />
+                              📜 运行记录
+                            </DropdownMenuItem>
+                            {c.status === 'waiting_human' && (
+                              <DropdownMenuItem
+                                className="text-xs gap-2 text-green-600"
+                                disabled={isCompleting}
+                                onClick={() => void handleComplete(c)}
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                ▶️ 继续执行
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-xs gap-2 text-destructive focus:text-destructive"
+                              onClick={() => setDeleteTarget(c)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              🗑️ 删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </ScrollArea>
       </div>
 
+      {/* ── Delete confirmation ── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -513,6 +537,32 @@ export default function CasesPanel({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ── Payload dialog ── */}
+      {payloadCase && (
+        <CasePayloadDialog
+          open
+          onClose={() => setPayloadCase(null)}
+          caseId={payloadCase.id}
+          caseTitle={payloadCase.title}
+          payload={(() => {
+            try { return JSON.parse(payloadCase.payload || '{}'); }
+            catch { return {}; }
+          })()}
+          onSaved={() => void loadCases()}
+        />
+      )}
+
+      {/* ── Steps dialog ── */}
+      {stepsCase && (
+        <CaseStepsDialog
+          open
+          onClose={() => setStepsCase(null)}
+          caseTitle={stepsCase.c.title}
+          steps={stepsCase.steps}
+        />
+      )}
+
+      {/* ── Batch import ── */}
       <BatchImportDialog
         open={batchDialogOpen}
         onClose={() => setBatchDialogOpen(false)}
