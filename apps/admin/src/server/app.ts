@@ -28,7 +28,7 @@ export function createApp(): Express {
   // PLANET-1045: Logto → Resend email bridge (no auth middleware, uses own secret check)
   app.use('/api', logtoEmailWebhookRouter);
 
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '5mb' }));
   app.use('/api', healthRouter);
   app.use('/api', meRouter);
   app.use('/api', workflowsRouter);

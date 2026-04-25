@@ -13,7 +13,12 @@ export function setCurrentTenantSlug(slug: string | null): void {
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = await logtoClient.getAccessToken(API_RESOURCE);
+  let token: string | undefined;
+  try {
+    token = await logtoClient.getAccessToken(API_RESOURCE);
+  } catch {
+    // Token refresh failed — proceed without token; server will return 401
+  }
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const slug = getCurrentTenantSlug();
