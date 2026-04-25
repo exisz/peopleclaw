@@ -719,9 +719,14 @@ export default function CasesPanel({
         <CasePayloadDialog
           open
           onClose={() => {
+            // Use requestAnimationFrame chain to ensure Dialog portal fully unmounts
+            // before triggering any parent state change / re-render
             setPayloadCase(null);
-            // Delay reload until dialog portal is fully unmounted
-            setTimeout(() => void loadCases(), 300);
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                void loadCases();
+              });
+            });
           }}
           caseId={payloadCase.id}
           caseTitle={payloadCase.title}

@@ -90,8 +90,8 @@ export default function CasePayloadDialog({
       }
       await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
       setSaved(true);
-      // Auto-close after brief delay to avoid DOM crash
-      setTimeout(() => onClose(), 400);
+      toast.success('属性已保存');
+      // Don't auto-close — let user close manually to avoid DOM crash
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('保存失败', { description: msg });
@@ -111,8 +111,11 @@ export default function CasePayloadDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }} modal>
+      <DialogContent
+        className="max-w-lg max-h-[85vh] flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-sm">📋 属性 — {caseTitle}</DialogTitle>
         </DialogHeader>
