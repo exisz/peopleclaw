@@ -153,16 +153,16 @@ export function CaseRow({
 
   const menuItems: MenuItem[] = [
     {
-      label: '📋 属性',
+      label: '属性',
       onClick: () => onOpenPayload(c),
     },
     {
-      label: '📜 运行记录',
+      label: '运行记录',
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
     },
     {
-      label: '✏️ 重命名',
+      label: '重命名',
       onClick: () => {
         const newName = window.prompt('新名称', c.title);
         if (newName && newName.trim() && newName.trim() !== c.title) {
@@ -175,7 +175,7 @@ export function CaseRow({
   // Add "inspect problem steps" for failed or waiting_human with missing fields
   if (c.status === 'failed' || (c.status === 'waiting_human' && missingFields && missingFields.length > 0)) {
     menuItems.push({
-      label: '🔍 检查问题步骤',
+      label: '检查问题步骤',
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
     });
@@ -184,14 +184,14 @@ export function CaseRow({
   if (c.status === 'waiting_human') {
     const hasMissing = missingFields && missingFields.length > 0;
     menuItems.push({
-      label: hasMissing ? '⚠️ 请先填写必填字段' : '▶️ 继续执行',
+      label: hasMissing ? '请先填写必填字段' : '继续执行',
       disabled: isCompleting || !!hasMissing,
       onClick: () => onComplete(c),
     });
   }
 
   menuItems.push({
-    label: '🗑️ 删除',
+    label: '删除',
     variant: 'destructive',
     onClick: () => onDelete(c),
   });
