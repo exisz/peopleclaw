@@ -204,6 +204,9 @@ export default function CasesPanel({
   const [deleting, setDeleting] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   // Dialog states
   const [payloadCase, setPayloadCase] = useState<ServerCase | null>(null);
@@ -349,6 +352,45 @@ export default function CasesPanel({
     }
   };
 
+  // Batch continue: advance all selected waiting_review cases
+  async function handleBatchContinue() {
+    if (!cases) return;
+    const targets = cases.filter(c => selectedIds.has(c.id) && c.status === 'waiting_review');
+    if (!targets.length) { toast.error('没有可继续的案例（仅待审核状态可继续）'); return; }
+    let ok = 0;
+    for (const c of targets) {
+      try {
+        await apiClient.post(`/api/cases/${c.id}/continue`);
+        ok++;
+      } catch (e) {
+        console.warn(`batch continue ${c.id} failed:`, e);
+      }
+    }
+    toast.success(`已批量继续 ${ok} 个案例`);
+    setSelectedIds(new Set());
+    await loadCases();
+  }
+
+  // Batch delete: delete all selected cases
+  async function handleBatchDelete() {
+    setBatchDeleting(true);
+    let ok = 0;
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      try {
+        await apiClient.delete(`/api/cases/${id}`);
+        ok++;
+      } catch (e) {
+        console.warn(`batch delete ${id} failed:`, e);
+      }
+    }
+    toast.success(`已批量删除 ${ok} 个案例`);
+    setSelectedIds(new Set());
+    setBatchDeleteOpen(false);
+    setBatchDeleting(false);
+    await loadCases();
+  }
+
   const isRunning = runStatus === 'running';
 
   return (
@@ -412,7 +454,7 @@ export default function CasesPanel({
               <button
                 key={f.key}
                 type="button"
-                onClick={() => setFilter(f.key)}
+                onClick={() => { setFilter(f.key); setSelectedIds(new Set()); }}
                 data-testid={`cases-filter-${f.key}`}
                 className={cn(
                   'px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider border',
@@ -427,6 +469,24 @@ export default function CasesPanel({
           </div>
         </div>
 
+        {/* ── Batch action bar ── */}
+        {filtered && selectedIds.size > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border-b text-xs">
+            <span className="font-medium">已选 {selectedIds.size} 个案例</span>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => void handleBatchContinue()}>
+              ▶️ 批量继续
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 text-xs text-destructive" onClick={() => setBatchDeleteOpen(true)}>
+              🗑️ 批量删除
+            </Button>
+            <div className="ml-auto">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setSelectedIds(new Set())}>
+                取消选择
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* ── Table ── */}
         <ScrollArea className="flex-1">
           {!filtered ? (
@@ -439,6 +499,17 @@ export default function CasesPanel({
             <Table>
               <TableHeader>
                 <TableRow className="text-[10px]">
+                  <TableHead className="h-7 w-8 px-2">
+                    <input
+                      type="checkbox"
+                      className="cursor-pointer"
+                      checked={filtered!.length > 0 && selectedIds.size === filtered!.length}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedIds(new Set(filtered!.map(c => c.id)));
+                        else setSelectedIds(new Set());
+                      }}
+                    />
+                  </TableHead>
                   <TableHead className="h-7 px-2">案例名称</TableHead>
                   <TableHead className="h-7 px-2 w-[72px]">状态</TableHead>
                   <TableHead className="h-7 px-2 w-[90px]">当前步骤</TableHead>
@@ -464,10 +535,27 @@ export default function CasesPanel({
                       className={cn(
                         'cursor-pointer text-[11px] hover:bg-accent/40 transition-colors',
                         isSelected && 'bg-primary/5 border-l-2 border-l-primary',
+                        selectedIds.has(c.id) && 'bg-primary/5',
                       )}
                       onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
                       data-testid={`case-row-${c.id}`}
                     >
+                      {/* checkbox */}
+                      <TableCell className="w-8 px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="cursor-pointer"
+                          checked={selectedIds.has(c.id)}
+                          onChange={(e) => {
+                            setSelectedIds(prev => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(c.id);
+                              else next.delete(c.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      </TableCell>
                       {/* 案例名称 + progress */}
                       <TableCell className="px-2 py-1.5 max-w-[160px]">
                         <div className="truncate font-medium text-xs">{c.title}</div>
@@ -630,6 +718,28 @@ export default function CasesPanel({
           steps={stepsCase.steps}
         />
       )}
+
+      {/* ── Batch delete confirmation ── */}
+      <AlertDialog open={batchDeleteOpen} onOpenChange={(v) => { if (!v) setBatchDeleteOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>批量删除案例？</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除选中的 {selectedIds.size} 个案例吗？此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={batchDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {batchDeleting ? '删除中…' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Batch import ── */}
       <BatchImportDialog
