@@ -27,6 +27,17 @@ export default function AppTopBar() {
   return (
     <>
       <div className="flex items-center gap-1 px-4 py-2 border-b bg-background shrink-0" data-testid="app-topbar">
+        {/* Brand logo + name */}
+        <div className="flex items-center gap-2 mr-3 shrink-0">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold text-primary-foreground bg-gradient-to-br from-primary to-accent shadow">
+            P
+          </div>
+          <div className="leading-none">
+            <span className="text-sm font-bold tracking-tight">PeopleClaw</span>
+            <span className="block text-[8px] font-mono text-muted-foreground tracking-widest uppercase">工作流程引擎</span>
+          </div>
+        </div>
+        <div className="mx-1 h-5 border-l border-border" />
         <Button
           size="sm"
           variant="ghost"

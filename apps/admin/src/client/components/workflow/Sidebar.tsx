@@ -177,21 +177,6 @@ export default function Sidebar({
 
   return (
     <aside className="w-72 flex-shrink-0 flex flex-col overflow-hidden border-r border-border bg-card">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-primary-foreground bg-gradient-to-br from-primary to-accent shadow">
-            P
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight">PeopleClaw</h1>
-            <p className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-              Workflow Engine
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="px-3 pt-3 grid grid-cols-2 gap-1">
         <Button
