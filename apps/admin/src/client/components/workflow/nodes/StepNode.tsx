@@ -71,7 +71,7 @@ function StepNode({ data, selected }: NodeProps) {
       data-status={status ?? ''}
       data-disabled={disabled ? 'true' : 'false'}
       className={cn(
-        'relative w-[220px] min-h-[110px] rounded-xl border-2 bg-card text-card-foreground p-3 shadow-md transition-all overflow-hidden',
+        'relative w-[260px] min-h-[130px] rounded-xl border-2 bg-card text-card-foreground p-4 shadow-md transition-all overflow-hidden',
         cfg.tint,
         statusBorder ?? 'border-border',
         selected && `ring-2 ${cfg.ring} shadow-xl scale-[1.02]`,
@@ -129,11 +129,11 @@ function StepNode({ data, selected }: NodeProps) {
       )}
 
       <div className="flex items-center justify-between mb-1.5 pt-1">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground border-l-2 border-current pl-1.5 flex items-center gap-1">
+        <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground border-l-2 border-current pl-1.5 flex items-center gap-1">
           {Icon ? <Icon className="h-3 w-3" /> : <span>{cfg.badge}</span>}
           {cfg.label}
         </span>
-        <div className="flex items-center gap-1.5 text-[9px] font-mono text-muted-foreground pr-6">
+        <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground pr-6">
           {disabled && <Ban className="h-3 w-3" />}
           {stepIndex !== undefined && totalSteps !== undefined && (
             <span>
@@ -143,7 +143,7 @@ function StepNode({ data, selected }: NodeProps) {
         </div>
       </div>
 
-      <h3 className="text-sm font-semibold leading-snug mb-1 pr-6">{step.name}</h3>
+      <h3 className="text-base font-semibold leading-snug mb-1 pr-6">{step.name}</h3>
 
       {step.assignee && (
         <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
