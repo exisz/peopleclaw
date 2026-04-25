@@ -1,32 +1,9 @@
-export type StepType = 'human' | 'agent' | 'subflow' | 'trigger' | 'condition' | 'input' | 'notification';
+// Re-export all types from dedicated modules
+export type { StepType, WorkflowStep, Workflow } from './workflow';
+export type { CaseRecord, CaseStatus, CaseStepRecord, CasePayload } from './case';
+export { TERMINAL_STATUSES, ACTIVE_STATUSES, parseCasePayload } from './case';
 
-export interface WorkflowStep {
-  id: string;
-  name: string;
-  type: StepType;
-  assignee: string;
-  description: string;
-  estimatedTime?: string;
-  tools?: string[];
-  subflow?: Workflow;
-  // Editor extensions (P3.12)
-  position?: { x: number; y: number };
-  iconName?: string;
-  templateId?: string;
-  fromTemplate?: boolean;
-  disabled?: boolean;
-}
-
-export interface Workflow {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  steps: WorkflowStep[];
-  category: string;
-  isSystem?: boolean; // PLANET-1210: true = system template (locked)
-}
-
+// Legacy Case type (used by older components — prefer CaseRecord for new code)
 export interface Case {
   id: string;
   workflowId: string;

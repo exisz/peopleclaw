@@ -9,10 +9,9 @@ import { toast } from 'sonner';
 import type { Workflow, WorkflowStep } from '../../types';
 import Canvas, { autoLayout } from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
-import CasesPanel from './CasesPanel';
+import CasesPanel from './cases';
 import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
-import { ErrorBoundary } from '../ErrorBoundary';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, ExternalLink, Save } from 'lucide-react';
@@ -159,7 +158,7 @@ function EditorInner({
           // (b) also cover any step id already tracked in prev.stepStatuses (SSE events)
           // This handles stale-closure mismatches between prop and editor state.
           const allIds = new Set<string>([
-            (workflow.steps ?? []).map(s => s.id),
+            ...(workflow.steps ?? []).map(s => s.id),
             ...Object.keys(prev.stepStatuses),
           ]);
           const finalStatuses = Object.fromEntries(
@@ -196,7 +195,7 @@ function EditorInner({
           if (prev.status !== 'running') return prev;
           // PLANET-1122: same all-ids strategy as run:complete
           const allIds = new Set<string>([
-            (workflow.steps ?? []).map(s => s.id),
+            ...(workflow.steps ?? []).map(s => s.id),
             ...Object.keys(prev.stepStatuses),
           ]);
           const finalStatuses = Object.fromEntries(
@@ -738,9 +737,7 @@ function EditorInner({
               <h3 className="text-sm font-semibold px-1">案例</h3>
             </div>
             <div className="flex-1 overflow-hidden flex flex-col">
-              <ErrorBoundary inline>
-                <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
-              </ErrorBoundary>
+              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
             </div>
           </div>
         </Panel>
