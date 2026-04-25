@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+// NOTE: do NOT use toast (sonner) here — its Portal conflicts with table polling re-render
+// causing React insertBefore crash. Use inline status instead.
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -39,11 +40,12 @@ export default function CasePayloadDialog({
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [newFieldName, setNewFieldName] = useState('');
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (!open) { setInitialized(false); setSaved(false); return; }
+    if (!open) { setInitialized(false); setSaved(false); setErrorMsg(null); return; }
     if (initialized) return;
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(payload)) {
@@ -61,6 +63,7 @@ export default function CasePayloadDialog({
 
   const handleSave = async () => {
     setSaving(true);
+    setErrorMsg(null);
     try {
       const parsed: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(fields)) {
@@ -72,10 +75,10 @@ export default function CasePayloadDialog({
       }
       await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
       setSaved(true);
-      toast.success('属性已保存');
+      // success shown via inline `saved` state
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error('保存失败', { description: msg });
+      setErrorMsg(`保存失败: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -181,6 +184,7 @@ export default function CasePayloadDialog({
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t">
           {saved && <span className="text-xs text-emerald-600 font-medium mr-auto">✅ 已保存</span>}
+          {errorMsg && <span className="text-xs text-red-600 font-medium mr-auto">❌ {errorMsg}</span>}
           <Button variant="outline" size="sm" onClick={onClose}>
             关闭
           </Button>
