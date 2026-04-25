@@ -17,6 +17,7 @@ interface CaseFiltersProps {
   runningSelected: boolean;
   onRunSelected: () => void;
   stepsCount: number;
+  hasSelection: boolean;
 }
 
 export function CaseFilters({
@@ -30,6 +31,7 @@ export function CaseFilters({
   runningSelected,
   onRunSelected,
   stepsCount,
+  hasSelection,
 }: CaseFiltersProps) {
   const { t } = useTranslation('workflow');
 
@@ -60,9 +62,9 @@ export function CaseFilters({
           size="sm"
           className="h-7 px-2.5 text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
           onClick={onRunSelected}
-          disabled={runningSelected || stepsCount === 0}
+          disabled={runningSelected || stepsCount === 0 || !hasSelection}
           data-testid="run-workflow-button"
-          title="运行选中的案例"
+          title={hasSelection ? '运行选中的案例' : '请先勾选一个案例'}
         >
           {runningSelected ? (
             <Loader2 className="h-3 w-3 animate-spin" />

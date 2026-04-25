@@ -192,15 +192,9 @@ export function useCases(workflowId: string): UseCasesReturn {
 
   const runSelected = useCallback(async () => {
     if (!cases) return;
-    // Find a case to run: prefer selected, then first non-terminal
-    const nonTerminal = ['running', 'waiting_human', 'waiting_subflow', 'awaiting_fix'];
-    const target =
-      cases.find((c) => selectedIds.has(c.id) && nonTerminal.includes(c.status)) ??
-      cases.find((c) => nonTerminal.includes(c.status));
-    if (!target) {
-      console.warn('[useCases] no runnable case found');
-      return;
-    }
+    // Only run explicitly selected cases — never auto-find
+    const target = cases.find((c) => selectedIds.has(c.id));
+    if (!target) return;
     setRunningSelected(true);
     try {
       const resp = await apiClient.post<{ case: CaseRecord }>(`/api/cases/${target.id}/continue`);
