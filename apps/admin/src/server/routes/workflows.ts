@@ -93,6 +93,27 @@ workflowsRouter.put('/workflows/:id', requireAuth, requireTenant, async (req, re
   res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
 });
 
+// PLANET-1257: Partial update (rename / re-categorise without sending full definition)
+workflowsRouter.patch('/workflows/:id', requireAuth, requireTenant, async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const { name, category } = req.body ?? {};
+  if (!name && category === undefined) { res.status(400).json({ error: 'at least name or category required' }); return; }
+  const prisma = getPrisma();
+  const existing = await prisma.workflow.findUnique({ where: { id: req.params.id } });
+  if (!existing) { res.status(404).json({ error: 'not found' }); return; }
+  if (existing.tenantId && existing.tenantId !== r.tenant.id) {
+    res.status(403).json({ error: 'workflow belongs to another tenant' });
+    return;
+  }
+  const data: Record<string, unknown> = { tenantId: existing.tenantId ?? r.tenant.id };
+  if (name) data.name = name;
+  if (category !== undefined) data.category = category;
+  // If renaming a system template, it becomes a custom workflow
+  if (existing.isSystem) data.isSystem = false;
+  const w = await prisma.workflow.update({ where: { id: req.params.id }, data });
+  res.json({ workflow: { ...w, definition: safeParse(w.definition) } });
+});
+
 // PLANET-1210: Three-tier workflow delete
 // A. is_system=true  → 403 (never deletable)
 // B. has cases, force=true  → cascade delete cases, then workflow (transaction)

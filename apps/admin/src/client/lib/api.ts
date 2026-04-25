@@ -66,6 +66,12 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
+  patch: <T>(path: string, body?: unknown) =>
+    apiJSON<T>(path, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
   delete: <T>(path: string) =>
     apiJSON<T>(path, { method: 'DELETE' }),
   /** Returns raw Response for streaming (SSE). Does NOT throw on non-2xx — caller handles. */

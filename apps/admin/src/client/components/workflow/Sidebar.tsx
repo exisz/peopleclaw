@@ -34,7 +34,7 @@ import { BuildBadge } from '../BuildBadge';
 import { useI18nField } from '../../i18n/useI18nField';
 import { apiClient, ApiError } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Trash2, Lock } from 'lucide-react';
+import { MoreHorizontal, Trash2, Lock, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface StepTemplate {
@@ -57,12 +57,14 @@ export default function Sidebar({
   onSelect,
   onAddStepTemplate,
   onDeleteWorkflow,
+  onRenameWorkflow,
 }: {
   workflows: Workflow[];
   selected: Workflow | null;
   onSelect: (w: Workflow) => void;
   onAddStepTemplate?: (template: StepTemplate) => void;
   onDeleteWorkflow?: (id: string) => void;
+  onRenameWorkflow?: (id: string, newName: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'workflows' | 'library'>('workflows');
@@ -70,8 +72,37 @@ export default function Sidebar({
   const [deleting, setDeleting] = useState(false);
   // PLANET-1210: force-delete confirmation (Tier B: self-built + has cases)
   const [forceDeleteTarget, setForceDeleteTarget] = useState<{ workflow: Workflow; casesCount: number } | null>(null);
+  // PLANET-1257: inline rename state
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const { t } = useTranslation('workflow');
   const navigate = useNavigate();
+
+  function startRename(w: Workflow) {
+    setRenamingId(w.id);
+    setRenameValue(w.name);
+  }
+
+  async function commitRename(w: Workflow) {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === w.name) {
+      setRenamingId(null);
+      return;
+    }
+    try {
+      await apiClient.patch(`/api/workflows/${w.id}`, { name: trimmed });
+      toast.success('已重命名', { description: trimmed });
+      onRenameWorkflow?.(w.id, trimmed);
+    } catch (e) {
+      toast.error('重命名失败', { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setRenamingId(null);
+    }
+  }
+
+  function cancelRename() {
+    setRenamingId(null);
+  }
 
   async function doDelete(workflow: Workflow, force = false) {
     setDeleting(true);
@@ -211,6 +242,23 @@ export default function Sidebar({
                   </p>
                   {g.items.map(w => (
                     <div key={w.id} className="flex items-center group">
+                      {renamingId === w.id ? (
+                        <div className="flex-1 flex items-center gap-1 px-2 py-1">
+                          <span className="text-lg leading-none">{w.icon}</span>
+                          <Input
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') commitRename(w);
+                              if (e.key === 'Escape') cancelRename();
+                            }}
+                            onBlur={() => commitRename(w)}
+                            className="h-7 flex-1 text-sm"
+                            autoFocus
+                            data-testid={`sidebar-rename-input-${w.id}`}
+                          />
+                        </div>
+                      ) : (
                       <Button
                         variant={selected?.id === w.id ? 'secondary' : 'ghost'}
                         size="sm"
@@ -228,6 +276,7 @@ export default function Sidebar({
                           {w.steps.length}
                         </span>
                       </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -258,6 +307,13 @@ export default function Sidebar({
                                 </Tooltip>
                               </TooltipProvider>
                               <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); startRename(w); }}
+                                data-testid={`sidebar-workflow-rename-${w.id}`}
+                              >
+                                <Pencil className="h-3.5 w-3.5 mr-2" />
+                                重命名
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 onClick={(e) => { e.stopPropagation(); handleClone(w); }}
                                 data-testid={`sidebar-workflow-clone-${w.id}`}
                               >
@@ -265,6 +321,14 @@ export default function Sidebar({
                               </DropdownMenuItem>
                             </>
                           ) : (
+                            <>
+                            <DropdownMenuItem
+                              onClick={(e) => { e.stopPropagation(); startRename(w); }}
+                              data-testid={`sidebar-workflow-rename-${w.id}`}
+                            >
+                              <Pencil className="h-3.5 w-3.5 mr-2" />
+                              重命名
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}
@@ -273,6 +337,7 @@ export default function Sidebar({
                               <Trash2 className="h-3.5 w-3.5 mr-2" />
                               删除
                             </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>

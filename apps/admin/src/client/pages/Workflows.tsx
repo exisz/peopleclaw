@@ -335,6 +335,12 @@ export default function Workflows() {
             else navigate('/workflows');
           }
         }}
+        onRenameWorkflow={(id, newName) => {
+          setWorkflows((prev) => prev.map((w) => w.id === id ? { ...w, name: newName, isSystem: false } : w));
+          if (selectedWorkflow?.id === id) {
+            setSelectedWorkflow((prev) => prev ? { ...prev, name: newName, isSystem: false } : prev);
+          }
+        }}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Workflow toolbar */}
