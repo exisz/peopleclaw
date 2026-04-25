@@ -36,6 +36,7 @@ const STATUS_COLOR: Record<string, string> = {
   failed: 'bg-red-500',
   error: 'bg-red-500',
   waiting_human: 'bg-amber-500',
+  waiting_review: 'bg-amber-500',
   pending: 'bg-gray-400',
 };
 
@@ -48,6 +49,7 @@ const STATUS_BADGE: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
   failed: 'destructive',
   error: 'destructive',
   waiting_human: 'secondary',
+  waiting_review: 'secondary',
   pending: 'secondary',
 };
 

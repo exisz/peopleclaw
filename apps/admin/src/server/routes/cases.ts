@@ -2,7 +2,8 @@ import { Router, type Response } from 'express';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
-import { advanceCase, submitHumanStep } from '../engine/executor.js';
+import { advanceCase, submitHumanStep, parseDef, resolveHandlerKey } from '../engine/executor.js';
+import { handlers } from '../engine/handlers/index.js';
 import { InsufficientCreditsError } from '../lib/credit-check.js';
 
 export const casesRouter = Router();
@@ -127,6 +128,90 @@ casesRouter.post('/cases/:id/advance', async (req, res) => {
       include: { steps: { orderBy: { createdAt: 'asc' } } },
     });
     res.json({ case: fresh, result });
+  } catch (e) {
+    if (e instanceof InsufficientCreditsError) {
+      res.status(402).json({ error: e.message, code: 'insufficient_credits' });
+      return;
+    }
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+  }
+});
+
+// PLANET-1260: POST /api/cases/:id/continue — advance from waiting_review to next step
+casesRouter.post('/cases/:id/continue', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  if (c.status !== 'waiting_review') {
+    res.status(400).json({ error: `Case is not in waiting_review status (current: ${c.status})` });
+    return;
+  }
+  try {
+    // Set to running, then advance (which will run next step and pause again)
+    await prisma.case.update({ where: { id: c.id }, data: { status: 'running' } });
+    const result = await advanceCase(c.id);
+    const fresh = await prisma.case.findUnique({
+      where: { id: c.id },
+      include: { steps: { orderBy: { createdAt: 'asc' } } },
+    });
+    res.json({ case: fresh, result });
+  } catch (e) {
+    if (e instanceof InsufficientCreditsError) {
+      res.status(402).json({ error: e.message, code: 'insufficient_credits' });
+      return;
+    }
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+  }
+});
+
+// PLANET-1260: POST /api/cases/:id/run-ai — re-run AI handler for current step without advancing
+casesRouter.post('/cases/:id/run-ai', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id }, include: { workflow: true } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  if (c.status !== 'waiting_review') {
+    res.status(400).json({ error: `Case is not in waiting_review status (current: ${c.status})` });
+    return;
+  }
+  if (!c.currentStepId) {
+    res.status(400).json({ error: 'No current step' });
+    return;
+  }
+
+  try {
+    const def = parseDef(c.workflow.definition);
+    const node = def.nodes.find((n) => n.id === c.currentStepId);
+    if (!node) {
+      res.status(400).json({ error: `Step node not found: ${c.currentStepId}` });
+      return;
+    }
+
+    const handlerKey = resolveHandlerKey(node);
+    const handler = handlers[handlerKey];
+    if (!handler) {
+      res.status(400).json({ error: `No handler for ${handlerKey}` });
+      return;
+    }
+
+    const payload = JSON.parse(c.payload || '{}');
+    const ctx = {
+      userId: c.ownerId,
+      tenantId: c.tenantId ?? '',
+      caseId: c.id,
+      workflowId: c.workflowId,
+      stepConfig: node.config ?? {},
+    };
+
+    const result = await handler({ payload }, ctx);
+    // Merge output into payload but don't advance
+    const newPayload = { ...payload, ...(result.output || {}) };
+    const updated = await prisma.case.update({
+      where: { id: c.id },
+      data: { payload: JSON.stringify(newPayload) },
+    });
+    res.json({ case: updated, handlerResult: result });
   } catch (e) {
     if (e instanceof InsufficientCreditsError) {
       res.status(402).json({ error: e.message, code: 'insufficient_credits' });

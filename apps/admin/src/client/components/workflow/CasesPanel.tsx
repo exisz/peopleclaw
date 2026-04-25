@@ -45,6 +45,9 @@ import {
   Play,
   PlayCircle,
   Loader2,
+  Bot,
+  Pencil,
+  FastForward,
 } from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
 import CasePayloadDialog from './CasePayloadDialog';
@@ -81,6 +84,7 @@ interface CaseStepRecord {
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'running', label: 'Running' },
+  { key: 'waiting_review', label: 'Review' },
   { key: 'waiting_human', label: 'Waiting' },
   { key: 'awaiting_fix', label: 'Fix' },
   { key: 'done', label: 'Done' },
@@ -90,6 +94,7 @@ type FilterKey = (typeof FILTERS)[number]['key'];
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   running: 'default',
+  waiting_review: 'secondary',
   waiting_human: 'secondary',
   awaiting_fix: 'destructive',
   done: 'outline',
@@ -99,6 +104,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 
 const STATUS_LABEL: Record<string, string> = {
   running: '运行中',
+  waiting_review: '待审核',
   waiting_human: '等待人工',
   awaiting_fix: '待修复',
   done: '完成',
@@ -145,6 +151,7 @@ function StepProgress({
   const currentIdx = currentStepId ? steps.findIndex((s) => s.id === currentStepId) : -1;
   const isDone = status === 'done';
   const isFailed = status === 'failed';
+  const isReview = status === 'waiting_review';
 
   return (
     <div className="flex items-center gap-0.5" title={`${isDone ? steps.length : Math.max(0, currentIdx + 1)}/${steps.length} steps`}>
@@ -157,7 +164,7 @@ function StepProgress({
         } else if (i < currentIdx) {
           color = 'bg-green-500';
         } else if (i === currentIdx) {
-          color = 'bg-blue-500 animate-pulse';
+          color = isReview ? 'bg-amber-500' : 'bg-blue-500 animate-pulse';
         } else {
           color = 'bg-gray-300 dark:bg-gray-600';
         }
@@ -202,6 +209,8 @@ export default function CasesPanel({
   const [payloadCase, setPayloadCase] = useState<ServerCase | null>(null);
   const [stepsCase, setStepsCase] = useState<{ c: ServerCase; steps: CaseStepRecord[] } | null>(null);
   const [loadingSteps, setLoadingSteps] = useState<string | null>(null);
+  const [continuing, setContinuing] = useState<string | null>(null);
+  const [runningAi, setRunningAi] = useState<string | null>(null);
 
   const loadCases = useCallback(async (cancelled = false) => {
     try {
@@ -307,6 +316,36 @@ export default function CasesPanel({
       toast.error('加载运行记录失败', { description: msg });
     } finally {
       setLoadingSteps(null);
+    }
+  };
+
+  // PLANET-1260: Continue to next step
+  const handleContinue = async (c: ServerCase) => {
+    setContinuing(c.id);
+    try {
+      await apiClient.post(`/api/cases/${c.id}/continue`);
+      toast.success('已继续到下一步');
+      await loadCases();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error('继续失败', { description: msg });
+    } finally {
+      setContinuing(null);
+    }
+  };
+
+  // PLANET-1260: Re-run AI for current step
+  const handleRunAi = async (c: ServerCase) => {
+    setRunningAi(c.id);
+    try {
+      await apiClient.post(`/api/cases/${c.id}/run-ai`);
+      toast.success('AI 已重新生成');
+      await loadCases();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error('AI 生成失败', { description: msg });
+    } finally {
+      setRunningAi(null);
     }
   };
 
@@ -416,6 +455,8 @@ export default function CasesPanel({
                   const isSelected = selectedCaseId === c.id;
                   const isCompleting = completing === c.id;
                   const isLoadingThisSteps = loadingSteps === c.id;
+                  const isContinuing = continuing === c.id;
+                  const isRunningThisAi = runningAi === c.id;
 
                   return (
                     <TableRow
@@ -482,6 +523,34 @@ export default function CasesPanel({
                               <ScrollText className="h-3.5 w-3.5" />
                               📜 运行记录
                             </DropdownMenuItem>
+                            {c.status === 'waiting_review' && (
+                              <>
+                                <DropdownMenuItem
+                                  className="text-xs gap-2 text-blue-600"
+                                  disabled={isRunningThisAi}
+                                  onClick={() => void handleRunAi(c)}
+                                >
+                                  <Bot className="h-3.5 w-3.5" />
+                                  🤖 AI 生成
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-xs gap-2"
+                                  onClick={() => setPayloadCase(c)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  ✏️ 手动编辑
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-xs gap-2 text-green-600"
+                                  disabled={isContinuing}
+                                  onClick={() => void handleContinue(c)}
+                                >
+                                  <FastForward className="h-3.5 w-3.5" />
+                                  ▶️ 继续下一步
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             {c.status === 'waiting_human' && (
                               <DropdownMenuItem
                                 className="text-xs gap-2 text-green-600"
