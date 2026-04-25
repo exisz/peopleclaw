@@ -103,6 +103,7 @@ workflowRunRouter.post(
       stock: 0,
       image_url: '',
       description: '',
+      category: '',
     };
     const initPayload: Record<string, unknown> = { ...defaultPayload, ...(req.body?.payload ?? {}) };
     const runId = nanoid(12);

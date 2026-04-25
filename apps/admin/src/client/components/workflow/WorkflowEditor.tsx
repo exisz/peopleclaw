@@ -14,7 +14,7 @@ import RunsPanel from './RunsPanel';
 import ShortcutHelp from './ShortcutHelp';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, ExternalLink } from 'lucide-react';
+import { Check, Loader2, CircleDot, HelpCircle, Undo2, Redo2, ExternalLink, Save } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDebouncedSave, useUndoStack, loadLayout, saveLayout } from './editorHooks';
 import type { StepTemplate } from './Sidebar';
@@ -692,6 +692,16 @@ function EditorInner({
           </Button>
           <SaveIndicator state={saveState} />
           <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1"
+            onClick={() => flush()}
+            disabled={saveState === 'saved'}
+          >
+            <Save className="h-3 w-3" />
+            保存
+          </Button>
+          <Button
             size="icon"
             variant="ghost"
             className="h-7 w-7"
@@ -727,7 +737,7 @@ function EditorInner({
               <h3 className="text-sm font-semibold px-1">案例</h3>
             </div>
             <div className="flex-1 overflow-hidden flex flex-col">
-              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} onRun={() => void handleRun()} runStatus={runState.status} />
+              <CasesPanel workflow={workflow} selectedCaseId={selectedCaseId} />
             </div>
           </div>
         </Panel>

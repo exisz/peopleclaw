@@ -15,7 +15,7 @@ import { apiClient } from '../../lib/api';
 import { Save, Loader2, Image as ImageIcon } from 'lucide-react';
 
 /** Fields we highlight at the top when present */
-const KEY_FIELDS = ['product_name', 'price', 'stock', 'image_url', 'description'];
+const KEY_FIELDS = ['product_name', 'price', 'stock', 'image_url', 'description', 'category'];
 
 interface CasePayloadDialogProps {
   open: boolean;
@@ -50,6 +50,7 @@ export default function CasePayloadDialog({
 }: CasePayloadDialogProps) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
 
   // Only initialize fields when dialog first opens (not on every payload change)
@@ -68,6 +69,9 @@ export default function CasePayloadDialog({
     setInitialized(true);
   }, [open, payload, initialized]);
 
+  // Reset saved state when dialog opens
+  useEffect(() => { if (open) setSaved(false); }, [open]);
+
   const updateField = useCallback((key: string, val: string) => {
     setFields((prev) => ({ ...prev, [key]: val }));
   }, []);
@@ -85,8 +89,9 @@ export default function CasePayloadDialog({
         }
       }
       await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
-      toast.success('属性已保存');
-      onClose();
+      setSaved(true);
+      // Auto-close after brief delay to avoid DOM crash
+      setTimeout(() => onClose(), 400);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error('保存失败', { description: msg });
@@ -189,10 +194,14 @@ export default function CasePayloadDialog({
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
             取消
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            保存
-          </Button>
+          {saved ? (
+            <span className="text-xs text-emerald-600 font-medium px-2 py-1">✅ 已保存</span>
+          ) : (
+            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              保存
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

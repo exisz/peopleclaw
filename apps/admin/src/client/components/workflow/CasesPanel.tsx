@@ -43,7 +43,6 @@ import {
   ClipboardList,
   ScrollText,
   Play,
-  PlayCircle,
   Loader2,
   Bot,
   Pencil,
@@ -186,13 +185,9 @@ function StepProgress({
 export default function CasesPanel({
   workflow,
   selectedCaseId,
-  onRun,
-  runStatus,
 }: {
   workflow: Workflow;
   selectedCaseId?: string | null;
-  onRun?: () => void;
-  runStatus?: 'idle' | 'running' | 'done' | 'error';
 }) {
   const { t } = useTranslation('workflow');
   const navigate = useNavigate();
@@ -391,7 +386,27 @@ export default function CasesPanel({
     await loadCases();
   }
 
-  const isRunning = runStatus === 'running';
+  // PLANET-1260: Run selected waiting_review case
+  const [runningSelected, setRunningSelected] = useState(false);
+  const handleRunSelected = async () => {
+    if (!cases) return;
+    const target = cases.find(c => selectedIds.has(c.id) && c.status === 'waiting_review')
+      ?? cases.find(c => c.status === 'waiting_review');
+    if (!target) {
+      toast.error('没有可运行的案例', { description: '请先创建案例并填写属性' });
+      return;
+    }
+    setRunningSelected(true);
+    try {
+      await apiClient.post(`/api/cases/${target.id}/continue`);
+      toast.success('已继续执行');
+      await loadCases();
+    } catch (e) {
+      toast.error('执行失败', { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setRunningSelected(false);
+    }
+  };
 
   return (
     <>
@@ -419,21 +434,19 @@ export default function CasesPanel({
               <Plus className="h-3 w-3 mr-0.5" />
               新建
             </Button>
-            {onRun && (
-              <Button
-                size="sm"
-                className="h-7 px-2.5 text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                onClick={onRun}
-                disabled={isRunning || workflow.steps.length === 0}
-                data-testid="run-workflow-button"
-                title="新建案例并运行工作流"
-              >
-                {isRunning
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <Plus className="h-3 w-3" />}
-                <span>{isRunning ? '运行中…' : '＋ 新建并运行'}</span>
-              </Button>
-            )}
+            <Button
+              size="sm"
+              className="h-7 px-2.5 text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+              onClick={() => void handleRunSelected()}
+              disabled={runningSelected || workflow.steps.length === 0}
+              data-testid="run-workflow-button"
+              title="运行选中的待审核案例"
+            >
+              {runningSelected
+                ? <Loader2 className="h-3 w-3 animate-spin" />
+                : <Play className="h-3 w-3" />}
+              <span>{runningSelected ? '运行中…' : '▶ 运行'}</span>
+            </Button>
           </div>
 
           {/* Row 2: Batch import */}
@@ -582,38 +595,13 @@ export default function CasesPanel({
                         {relTime(c.createdAt)}
                       </TableCell>
 
-                      {/* 操作: per-row play button + dropdown */}
+                      {/* 操作: dropdown menu only */}
                       <TableCell className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-0.5">
-                        {/* Per-row play/continue button */}
-                        {c.status === 'waiting_review' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            onClick={(e) => { e.stopPropagation(); void handleContinue(c); }}
-                            disabled={continuing === c.id}
-                            title="继续下一步"
-                          >
-                            {continuing === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-                          </Button>
-                        )}
                         {c.status === 'running' && (
                           <div className="h-6 w-6 flex items-center justify-center">
                             <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                           </div>
-                        )}
-                        {c.status === 'waiting_human' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            onClick={(e) => { e.stopPropagation(); void handleComplete(c); }}
-                            disabled={completing === c.id}
-                            title="继续执行"
-                          >
-                            {completing === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-                          </Button>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -730,7 +718,11 @@ export default function CasesPanel({
       {payloadCase && (
         <CasePayloadDialog
           open
-          onClose={() => { setPayloadCase(null); setTimeout(() => void loadCases(), 150); }}
+          onClose={() => {
+            setPayloadCase(null);
+            // Delay reload until dialog portal is fully unmounted
+            setTimeout(() => void loadCases(), 300);
+          }}
           caseId={payloadCase.id}
           caseTitle={payloadCase.title}
           payload={(() => {

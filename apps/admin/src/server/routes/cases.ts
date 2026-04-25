@@ -36,6 +36,7 @@ casesRouter.post('/cases', async (req, res: Response) => {
         stock: 0,
         image_url: '',
         description: '',
+        category: '',
         ...(payload ?? {}),
       }),
       status: 'running',
