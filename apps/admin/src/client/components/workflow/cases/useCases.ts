@@ -160,7 +160,7 @@ export function useCases(workflowId: string): UseCasesReturn {
 
   const batchContinue = useCallback(async () => {
     if (!cases) return;
-    const targets = cases.filter((c) => selectedIds.has(c.id) && c.status === 'waiting_review');
+    const targets = cases.filter((c) => selectedIds.has(c.id) && c.status === 'running');
     if (!targets.length) return;
     for (const c of targets) {
       try {
@@ -193,8 +193,8 @@ export function useCases(workflowId: string): UseCasesReturn {
   const runSelected = useCallback(async () => {
     if (!cases) return;
     const target =
-      cases.find((c) => selectedIds.has(c.id) && c.status === 'waiting_review') ??
-      cases.find((c) => c.status === 'waiting_review');
+      cases.find((c) => selectedIds.has(c.id) && c.status === 'running') ??
+      cases.find((c) => c.status === 'running');
     if (!target) return;
     setRunningSelected(true);
     try {

@@ -62,7 +62,7 @@ export function CaseFilters({
           onClick={onRunSelected}
           disabled={runningSelected || stepsCount === 0}
           data-testid="run-workflow-button"
-          title="运行选中的待审核案例"
+          title="运行选中的案例"
         >
           {runningSelected ? (
             <Loader2 className="h-3 w-3 animate-spin" />

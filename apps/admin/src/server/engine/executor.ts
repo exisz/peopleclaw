@@ -117,10 +117,6 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     }
   }
 
-  // PLANET-1260: If case is in waiting_review, we need to advance to the NEXT node
-  // (called from /continue endpoint after user reviewed the current step).
-  const resumingFromReview = c.status === 'waiting_review';
-
   const def = parseDef(c.workflow.definition);
 
   // Guard: if definition has no nodes or no entry node, fail the case immediately
@@ -140,9 +136,6 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
   let nodeId: string | null;
   if (!c.currentStepId) {
     nodeId = firstNodeId(def);
-  } else if (resumingFromReview) {
-    // PLANET-1260: Continue from review — advance to next node
-    nodeId = nextNodeId(def, c.currentStepId);
   } else {
     nodeId = nextNodeId(def, c.currentStepId);
   }
@@ -267,12 +260,8 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
         return { status: 'failed', lastStepId };
       }
 
-      // PLANET-1260: Pause after each auto step for human review
-      await prisma.case.update({
-        where: { id: caseId },
-        data: { status: 'waiting_review', currentStepId: node.id, payload: JSON.stringify(newPayload) },
-      });
-      return { status: 'waiting_review', lastStepId: node.id };
+      // S5: auto step done — continue loop to next node (no pause)
+      nodeId = nextNodeId(def, node.id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await prisma.caseStep.update({

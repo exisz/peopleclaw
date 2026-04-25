@@ -52,7 +52,7 @@ function StepProgress({
   const currentIdx = currentStepId ? steps.findIndex((s) => s.id === currentStepId) : -1;
   const isDone = status === 'done';
   const isFailed = status === 'failed';
-  const isReview = status === 'waiting_review';
+  
 
   return (
     <div
@@ -64,7 +64,7 @@ function StepProgress({
         if (isDone) color = 'bg-green-500';
         else if (isFailed && i === currentIdx) color = 'bg-red-500';
         else if (i < currentIdx) color = 'bg-green-500';
-        else if (i === currentIdx) color = isReview ? 'bg-amber-500' : 'bg-blue-500 animate-pulse';
+        else if (i === currentIdx) color = 'bg-blue-500 animate-pulse';
         else color = 'bg-gray-300 dark:bg-gray-600';
         return (
           <div
@@ -162,16 +162,7 @@ export function CaseRow({
     },
   ];
 
-  if (c.status === 'waiting_review') {
-    menuItems.push(
-      {
-        label: '🤖 AI 生成',
-        icon: <Bot className="h-3.5 w-3.5" />,
-        disabled: isRunningThisAi,
-        onClick: () => onRunAi(c),
-      },
-    );
-  }
+
 
   if (c.status === 'waiting_human') {
     const hasMissing = missingFields && missingFields.length > 0;

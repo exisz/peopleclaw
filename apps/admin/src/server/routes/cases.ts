@@ -138,18 +138,18 @@ casesRouter.post('/cases/:id/advance', async (req, res) => {
   }
 });
 
-// PLANET-1260: POST /api/cases/:id/continue — advance from waiting_review to next step
+// POST /api/cases/:id/continue — advance case to next step
 casesRouter.post('/cases/:id/continue', async (req, res) => {
   const r = req as unknown as TenantedRequest;
   const prisma = getPrisma();
   const c = await prisma.case.findUnique({ where: { id: req.params.id } });
   if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
-  if (c.status !== 'waiting_review') {
-    res.status(400).json({ error: `Case is not in waiting_review status (current: ${c.status})` });
+  if (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled') {
+    res.status(400).json({ error: `Case is in terminal status (${c.status})` });
     return;
   }
   try {
-    // Set to running, then advance (which will run next step and pause again)
+    // Set to running, then advance
     await prisma.case.update({ where: { id: c.id }, data: { status: 'running' } });
     const result = await advanceCase(c.id);
     const fresh = await prisma.case.findUnique({
@@ -172,8 +172,8 @@ casesRouter.post('/cases/:id/run-ai', async (req, res) => {
   const prisma = getPrisma();
   const c = await prisma.case.findUnique({ where: { id: req.params.id }, include: { workflow: true } });
   if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
-  if (c.status !== 'waiting_review') {
-    res.status(400).json({ error: `Case is not in waiting_review status (current: ${c.status})` });
+  if (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled') {
+    res.status(400).json({ error: `Case is in terminal status (${c.status})` });
     return;
   }
   if (!c.currentStepId) {
