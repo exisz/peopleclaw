@@ -217,18 +217,9 @@ export default function CasesPanel({
     } catch { /* ignore polling errors */ }
   }, [workflow.id]);
 
+  // Load cases once on mount (no polling — polling causes Radix Portal/DOM crashes)
   useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const tick = async () => {
-      await loadCases(cancelled);
-      if (!cancelled) timer = setTimeout(tick, 5000);
-    };
-    tick();
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
+    loadCases();
   }, [loadCases]);
 
   const filtered = useMemo(() => {
