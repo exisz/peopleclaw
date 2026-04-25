@@ -181,19 +181,29 @@ export default function CasePayloadDialog({
                   />
                 ) : (
                   <div className="space-y-1.5">
+                    <Input
+                      type="text"
+                      className="h-8 text-xs"
+                      value={val}
+                      placeholder={(key === 'image_url' || isImageUrl(key, val)) ? '粘贴图片链接' : ''}
+                      onChange={(e) => updateField(key, e.target.value)}
+                    />
+                    {(key === 'image_url' || isImageUrl(key, val)) && val && (
+                      <div className="rounded border bg-muted/30 p-2">
+                        <img
+                          src={val}
+                          alt={key}
+                          className="max-h-24 rounded object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
                     {(key === 'image_url' || isImageUrl(key, val)) && (
                       <ImageUploader
-                        value={val}
+                        value=""
                         onChange={(url) => updateField(key, url)}
                       />
                     )}
-                    <Input
-                      type={isNum ? 'number' : 'text'}
-                      className="h-8 text-xs"
-                      value={val}
-                      placeholder={(key === 'image_url' || isImageUrl(key, val)) ? '或粘贴图片 URL' : ''}
-                      onChange={(e) => updateField(key, e.target.value)}
-                    />
                   </div>
                 )}
               </div>
