@@ -12,7 +12,7 @@ casesRouter.use(requireAuth, requireTenant);
 // POST /api/cases — create + kick off
 casesRouter.post('/cases', async (req, res: Response) => {
   const r = req as unknown as TenantedRequest;
-  const { workflowId, title, payload } = req.body ?? {};
+  const { workflowId, title, payload, stepModeOverrides } = req.body ?? {};
   if (!workflowId || !title) {
     res.status(400).json({ error: 'workflowId and title required' });
     return;
@@ -31,6 +31,8 @@ casesRouter.post('/cases', async (req, res: Response) => {
       title,
       payload: JSON.stringify(payload ?? {}),
       status: 'running',
+      // PLANET-1251: accept optional step mode overrides on create
+      stepModeOverrides: stepModeOverrides ? JSON.stringify(stepModeOverrides) : '{}',
     },
   });
 
@@ -87,6 +89,45 @@ casesRouter.delete('/cases/:id', async (req, res) => {
   await prisma.caseStep.deleteMany({ where: { caseId: c.id } });
   await prisma.case.delete({ where: { id: c.id } });
   res.json({ ok: true });
+});
+
+// PLANET-1251: PATCH /api/cases/:id/step-modes — update step mode overrides
+casesRouter.patch('/cases/:id/step-modes', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const { overrides } = req.body ?? {};
+  if (!overrides || typeof overrides !== 'object') {
+    res.status(400).json({ error: 'overrides object required' });
+    return;
+  }
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id }, include: { workflow: true } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+
+  // Validate keys are valid step IDs in the workflow definition
+  let def: { nodes: Array<{ id: string }> } = { nodes: [] };
+  try {
+    def = JSON.parse(c.workflow.definition);
+  } catch {}
+  const validIds = new Set(def.nodes.map((n) => n.id));
+  const invalidKeys = Object.keys(overrides).filter((k) => !validIds.has(k));
+  if (invalidKeys.length) {
+    res.status(400).json({ error: `Invalid step IDs: ${invalidKeys.join(', ')}` });
+    return;
+  }
+
+  // Validate values
+  for (const [k, v] of Object.entries(overrides)) {
+    if (v !== 'auto' && v !== 'human') {
+      res.status(400).json({ error: `Invalid mode for ${k}: must be 'auto' or 'human'` });
+      return;
+    }
+  }
+
+  const updated = await prisma.case.update({
+    where: { id: req.params.id },
+    data: { stepModeOverrides: JSON.stringify(overrides) },
+  });
+  res.json({ case: updated });
 });
 
 // POST /api/cases/:id/advance

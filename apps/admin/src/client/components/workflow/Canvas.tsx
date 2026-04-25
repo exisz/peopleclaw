@@ -52,6 +52,7 @@ export interface CanvasProps {
   selectedIds: string[];
   caseStatuses?: Record<string, string>;
   caseErrors?: Record<string, string>;
+  modeOverrides?: Record<string, 'auto' | 'human'>; // PLANET-1251
   runningPath?: Set<string>; // node ids on running case path
   onSelectionChange: (ids: string[]) => void;
   onPositionsChange: (updates: Array<{ id: string; position: { x: number; y: number } }>) => void;
@@ -73,6 +74,7 @@ export default function Canvas({
   selectedIds,
   caseStatuses = {},
   caseErrors = {},
+  modeOverrides = {},
   runningPath,
   onSelectionChange,
   onPositionsChange,
@@ -100,9 +102,10 @@ export default function Canvas({
           stepIndex: i,
           totalSteps: steps.length,
           onErrorClick,
+          modeOverride: modeOverrides[s.id], // PLANET-1251
         } as StepNodeData as unknown as Record<string, unknown>,
       })),
-    [steps, selectedIds, caseStatuses, caseErrors, onErrorClick],
+    [steps, selectedIds, caseStatuses, caseErrors, modeOverrides, onErrorClick],
   );
 
   const layoutedEdges: Edge[] = useMemo(() => {

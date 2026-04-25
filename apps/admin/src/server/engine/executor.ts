@@ -96,6 +96,9 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     nodeId = nextNodeId(def, c.currentStepId);
   }
 
+  // PLANET-1251: Parse step mode overrides from case
+  const modeOverrides: Record<string, string> = JSON.parse(c.stepModeOverrides || '{}');
+
   // Execute auto steps in a loop until we hit human step or end
   let lastStepId: string | null = c.currentStepId;
   while (nodeId) {
@@ -105,6 +108,9 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       return { status: 'failed', lastStepId };
     }
 
+    // PLANET-1251: resolve effective kind from override or node default
+    const effectiveKind: 'auto' | 'human' = (modeOverrides[node.id] as 'auto' | 'human') || node.kind;
+
     const ctx: HandlerContext = {
       userId: c.ownerId,
       tenantId: c.tenantId ?? '',
@@ -113,7 +119,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       stepConfig: node.config ?? {},
     };
 
-    if (node.kind === 'human') {
+    if (effectiveKind === 'human') {
       // Create waiting_human step record
       await prisma.caseStep.create({
         data: {
@@ -136,6 +142,30 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     // Auto step — dispatch by canonical handler id with legacy `type` fallback
     const handlerKey = resolveHandlerKey(node);
     const handler = handlers[handlerKey];
+
+    // PLANET-1251: If overridden to auto but no handler exists, fall back to human (don't crash)
+    if (!handler) {
+      if (modeOverrides[node.id] === 'auto') {
+        // Overridden to auto but no handler — fall back to human
+        await prisma.caseStep.create({
+          data: {
+            caseId: c.id,
+            stepId: node.id,
+            stepType: node.type,
+            kind: 'human',
+            status: 'waiting_human',
+            startedAt: new Date(),
+            input: JSON.stringify({ payload: JSON.parse(c.payload) }),
+          },
+        });
+        await prisma.case.update({
+          where: { id: caseId },
+          data: { status: 'waiting_human', currentStepId: node.id },
+        });
+        return { status: 'waiting_human', lastStepId: node.id };
+      }
+    }
+
     const stepRow = await prisma.caseStep.create({
       data: {
         caseId: c.id,

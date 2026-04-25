@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, Copy, ExternalLink, Upload, Workflow } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Upload, Workflow, Bot, Hand } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
@@ -34,10 +34,123 @@ interface CaseRow {
   batchId?: string | null;
   currentStepId: string | null;
   payload: string;
+  stepModeOverrides?: string; // PLANET-1251
   createdAt: string;
   updatedAt: string;
   steps?: CaseStep[];
-  workflow?: { name: string };
+  workflow?: { name: string; definition?: string };
+}
+
+// PLANET-1251: workflow definition node shape (from engine)
+interface DefNode {
+  id: string;
+  type: string;
+  kind: 'auto' | 'human';
+  handler?: string;
+  config?: Record<string, unknown>;
+}
+
+// PLANET-1251: Step Mode Override toggle component
+function StepModeOverrides({
+  caseId,
+  nodes,
+  overrides,
+  onUpdate,
+}: {
+  caseId: string;
+  nodes: DefNode[];
+  overrides: Record<string, 'auto' | 'human'>;
+  onUpdate: (overrides: Record<string, 'auto' | 'human'>) => void;
+}) {
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const toggle = async (nodeId: string, currentMode: 'auto' | 'human') => {
+    const newMode = currentMode === 'auto' ? 'human' : 'auto';
+    const next = { ...overrides };
+    // Find the node's default kind
+    const node = nodes.find((n) => n.id === nodeId);
+    if (node && newMode === node.kind) {
+      // Toggling back to default — remove the override
+      delete next[nodeId];
+    } else {
+      next[nodeId] = newMode;
+    }
+    setSaving(nodeId);
+    try {
+      await apiClient.patch(`/api/cases/${caseId}/step-modes`, { overrides: next });
+      onUpdate(next);
+      toast.success('步骤模式已更新');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error('更新失败', { description: msg });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">步骤执行模式</CardTitle>
+        <CardDescription>切换各步骤的执行方式 (AI自动 / 人工)</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {nodes.map((node) => {
+          const effectiveMode = overrides[node.id] || node.kind;
+          const isOverridden = !!overrides[node.id];
+          const isAuto = effectiveMode === 'auto';
+          return (
+            <div
+              key={node.id}
+              className="flex items-center justify-between rounded-md border p-2.5 gap-3"
+              data-testid={`step-mode-${node.id}`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium truncate">{node.id}</span>
+                  <Badge variant="outline" className="text-[9px] shrink-0">
+                    {node.type}
+                  </Badge>
+                  {isOverridden && (
+                    <Badge variant="secondary" className="text-[9px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                      已切换
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  默认: {node.kind === 'auto' ? '🤖 AI' : '✋ 人工'}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant={isAuto ? 'default' : 'outline'}
+                  className="h-7 text-xs gap-1 px-2"
+                  disabled={saving === node.id}
+                  onClick={() => !isAuto && toggle(node.id, effectiveMode)}
+                  data-testid={`step-mode-auto-${node.id}`}
+                >
+                  <Bot className="h-3 w-3" />
+                  AI
+                </Button>
+                <Button
+                  size="sm"
+                  variant={!isAuto ? 'default' : 'outline'}
+                  className="h-7 text-xs gap-1 px-2"
+                  disabled={saving === node.id}
+                  onClick={() => isAuto && toggle(node.id, effectiveMode)}
+                  data-testid={`step-mode-human-${node.id}`}
+                >
+                  <Hand className="h-3 w-3" />
+                  人工
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
 }
 
 function ShopifyPublicUrlCard({ output }: { output: string }) {
@@ -91,11 +204,17 @@ function CaseDetail({ id }: { id: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [modeOverrides, setModeOverrides] = useState<Record<string, 'auto' | 'human'>>({});
 
   const load = useCallback(async () => {
     try {
       const d = await apiClient.get<{ case: CaseRow }>(`/api/cases/${id}`);
       setC(d.case);
+      // PLANET-1251: parse step mode overrides
+      try {
+        const ov = JSON.parse(d.case.stepModeOverrides || '{}');
+        setModeOverrides(ov);
+      } catch { setModeOverrides({}); }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErr(msg);
@@ -169,6 +288,26 @@ function CaseDetail({ id }: { id: string }) {
           </div>
         </CardHeader>
       </Card>
+
+      {/* PLANET-1251: Step Mode Overrides */}
+      {(() => {
+        let defNodes: DefNode[] = [];
+        try {
+          if (c.workflow?.definition) {
+            const def = JSON.parse(c.workflow.definition);
+            if (Array.isArray(def.nodes)) defNodes = def.nodes;
+          }
+        } catch {}
+        if (defNodes.length === 0) return null;
+        return (
+          <StepModeOverrides
+            caseId={c.id}
+            nodes={defNodes}
+            overrides={modeOverrides}
+            onUpdate={setModeOverrides}
+          />
+        );
+      })()}
 
       {waitingStep && (
         <Card className="border-yellow-500/40">

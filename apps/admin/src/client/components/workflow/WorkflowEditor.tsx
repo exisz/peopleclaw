@@ -65,6 +65,7 @@ interface CaseDetail {
   id: string;
   status: string;
   currentStepId: string | null;
+  stepModeOverrides?: string; // PLANET-1251
   steps?: Array<{ id: string; stepId: string; status: string; error: string | null }>;
 }
 
@@ -626,6 +627,16 @@ function EditorInner({
     return out;
   }, [caseDetail]);
 
+  // PLANET-1251: derive step mode overrides from case detail
+  const caseModeOverrides: Record<string, 'auto' | 'human'> = useMemo(() => {
+    if (!caseDetail?.stepModeOverrides) return {};
+    try {
+      return JSON.parse(caseDetail.stepModeOverrides);
+    } catch {
+      return {};
+    }
+  }, [caseDetail]);
+
   // PLANET-1127: when run finishes, lock all un-resolved steps immediately.
   // Catches any node that never received step:done (network drop / parse failure).
   useEffect(() => {
@@ -725,6 +736,7 @@ function EditorInner({
             selectedIds={selectedIds}
             caseStatuses={caseStatuses}
             caseErrors={caseErrors}
+            modeOverrides={caseModeOverrides}
             runningPath={runningPath}
             onSelectionChange={setSelectedIds}
             onPositionsChange={handlePositionsChange}
