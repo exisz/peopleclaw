@@ -426,12 +426,12 @@ export default function CasesPanel({
                 onClick={onRun}
                 disabled={isRunning || workflow.steps.length === 0}
                 data-testid="run-workflow-button"
-                title="运行工作流"
+                title="新建案例并运行工作流"
               >
                 {isRunning
                   ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <PlayCircle className="h-3 w-3" />}
-                <span>{isRunning ? '运行中…' : '▶ 运行'}</span>
+                  : <Plus className="h-3 w-3" />}
+                <span>{isRunning ? '运行中…' : '＋ 新建并运行'}</span>
               </Button>
             )}
           </div>
@@ -582,8 +582,39 @@ export default function CasesPanel({
                         {relTime(c.createdAt)}
                       </TableCell>
 
-                      {/* 操作 dropdown */}
+                      {/* 操作: per-row play button + dropdown */}
                       <TableCell className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-0.5">
+                        {/* Per-row play/continue button */}
+                        {c.status === 'waiting_review' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            onClick={(e) => { e.stopPropagation(); void handleContinue(c); }}
+                            disabled={continuing === c.id}
+                            title="继续下一步"
+                          >
+                            {continuing === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+                          </Button>
+                        )}
+                        {c.status === 'running' && (
+                          <div className="h-6 w-6 flex items-center justify-center">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                          </div>
+                        )}
+                        {c.status === 'waiting_human' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            onClick={(e) => { e.stopPropagation(); void handleComplete(c); }}
+                            disabled={completing === c.id}
+                            title="继续执行"
+                          >
+                            {completing === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -659,6 +690,7 @@ export default function CasesPanel({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

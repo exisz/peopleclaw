@@ -96,8 +96,15 @@ workflowRunRouter.post(
       return;
     }
 
-    // Initial payload — may be provided in request body
-    const initPayload: Record<string, unknown> = req.body?.payload ?? {};
+    // Initial payload — pre-populate same defaults as POST /api/cases, then overlay request body
+    const defaultPayload: Record<string, unknown> = {
+      product_name: '',
+      price: 0,
+      stock: 0,
+      image_url: '',
+      description: '',
+    };
+    const initPayload: Record<string, unknown> = { ...defaultPayload, ...(req.body?.payload ?? {}) };
     const runId = nanoid(12);
 
     // Set up SSE
