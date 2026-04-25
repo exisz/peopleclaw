@@ -52,8 +52,12 @@ export default function CasePayloadDialog({
   const [saving, setSaving] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
 
+  // Only initialize fields when dialog first opens (not on every payload change)
+  const [initialized, setInitialized] = useState(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setInitialized(false); return; }
+    if (initialized) return;
     // Flatten payload to string key-values for editing
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(payload)) {
@@ -61,7 +65,8 @@ export default function CasePayloadDialog({
       flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
     }
     setFields(flat);
-  }, [open, payload]);
+    setInitialized(true);
+  }, [open, payload, initialized]);
 
   const updateField = useCallback((key: string, val: string) => {
     setFields((prev) => ({ ...prev, [key]: val }));
