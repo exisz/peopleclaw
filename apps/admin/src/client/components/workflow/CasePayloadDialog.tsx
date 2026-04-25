@@ -25,6 +25,7 @@ function isImageUrl(key: string, val: unknown): boolean {
 interface CasePayloadDialogProps {
   open: boolean;
   onClose: () => void;
+  onSaved?: (newPayloadJson: string) => void;
   caseId: string;
   caseTitle: string;
   payload: Record<string, unknown>;
@@ -33,6 +34,7 @@ interface CasePayloadDialogProps {
 export default function CasePayloadDialog({
   open,
   onClose,
+  onSaved,
   caseId,
   caseTitle,
   payload,
@@ -80,7 +82,7 @@ export default function CasePayloadDialog({
       }
       await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
       setSaved(true);
-      // success shown via inline `saved` state
+      onSaved?.(JSON.stringify(parsed));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErrorMsg(`保存失败: ${msg}`);

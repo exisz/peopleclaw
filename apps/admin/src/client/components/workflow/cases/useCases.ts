@@ -28,6 +28,8 @@ export interface UseCasesReturn {
   runSelected: () => Promise<void>;
   runningSelected: boolean;
   loadCases: () => Promise<void>;
+  /** Update a case's payload in local state without re-fetching */
+  patchCasePayload: (caseId: string, newPayload: string) => void;
 }
 
 export function useCases(workflowId: string): UseCasesReturn {
@@ -231,5 +233,8 @@ export function useCases(workflowId: string): UseCasesReturn {
     runSelected,
     runningSelected,
     loadCases,
+    patchCasePayload: useCallback((caseId: string, newPayload: string) => {
+      setCases(prev => prev ? prev.map(c => c.id === caseId ? { ...c, payload: newPayload } : c) : prev);
+    }, []),
   };
 }

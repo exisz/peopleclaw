@@ -122,9 +122,9 @@ export default function CasesPanel({
       {payloadCase && (
         <CasePayloadDialog
           open
-          onClose={() => {
-            setPayloadCase(null);
-            void hook.loadCases();
+          onClose={() => setPayloadCase(null)}
+          onSaved={(newPayload) => {
+            hook.patchCasePayload(payloadCase.id, newPayload);
           }}
           caseId={payloadCase.id}
           caseTitle={payloadCase.title}
