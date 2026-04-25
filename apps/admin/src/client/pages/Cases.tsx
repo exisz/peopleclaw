@@ -4,10 +4,10 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, Copy, ExternalLink, Upload, Workflow, Bot, Hand, RotateCcw, RefreshCw, Save } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Upload, Workflow } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import CreditsBadge from '../components/CreditsBadge';
 import { LanguageToggle } from '../components/language-toggle';
@@ -34,237 +34,10 @@ interface CaseRow {
   batchId?: string | null;
   currentStepId: string | null;
   payload: string;
-  stepModeOverrides?: string; // PLANET-1251
   createdAt: string;
   updatedAt: string;
   steps?: CaseStep[];
-  workflow?: { name: string; definition?: string };
-}
-
-// Helper: extract DefNode[] from workflow definition (handles nodes[], steps[], or both)
-function extractDefNodes(definition?: string): DefNode[] {
-  if (!definition) return [];
-  try {
-    const def = JSON.parse(definition);
-    // If nodes[] has full info (type + kind), use them
-    if (Array.isArray(def.nodes) && def.nodes.length) {
-      const first = def.nodes[0];
-      if (first.type && first.kind) return def.nodes;
-      // nodes are position-only — merge with steps
-      if (Array.isArray(def.steps) && def.steps.length) {
-        const stepMap = new Map(def.steps.map((s: Record<string, unknown>) => [s.id, s]));
-        return def.nodes.map((n: Record<string, unknown>) => {
-          const step = stepMap.get(n.id as string) as Record<string, unknown> | undefined;
-          return {
-            id: n.id as string,
-            type: (n.type as string) || (step?.type as string) || (step?.assignee as string) || 'unknown',
-            kind: (n.kind as 'auto' | 'human') || (step?.kind as 'auto' | 'human') || 'auto',
-            handler: (n.handler as string) || (step?.handler as string) || (step?.assignee as string) || undefined,
-            config: (n.config as Record<string, unknown>) || (step?.config as Record<string, unknown>) || undefined,
-          };
-        });
-      }
-      return def.nodes;
-    }
-    // No nodes — derive from steps
-    if (Array.isArray(def.steps) && def.steps.length) {
-      return def.steps.map((s: Record<string, unknown>) => ({
-        id: s.id as string,
-        type: (s.type as string) || (s.assignee as string) || 'unknown',
-        kind: (s.kind as 'auto' | 'human') || 'auto',
-        handler: (s.handler as string) || (s.assignee as string) || undefined,
-        config: (s.config as Record<string, unknown>) || undefined,
-      }));
-    }
-  } catch {}
-  return [];
-}
-
-// PLANET-1251: workflow definition node shape (from engine)
-interface DefNode {
-  id: string;
-  type: string;
-  kind: 'auto' | 'human';
-  handler?: string;
-  config?: Record<string, unknown>;
-}
-
-// PLANET-1251: Step Mode Override toggle component
-function StepModeOverrides({
-  caseId,
-  nodes,
-  overrides,
-  onUpdate,
-}: {
-  caseId: string;
-  nodes: DefNode[];
-  overrides: Record<string, 'auto' | 'human'>;
-  onUpdate: (overrides: Record<string, 'auto' | 'human'>) => void;
-}) {
-  const [saving, setSaving] = useState<string | null>(null);
-
-  const toggle = async (nodeId: string, currentMode: 'auto' | 'human') => {
-    const newMode = currentMode === 'auto' ? 'human' : 'auto';
-    const next = { ...overrides };
-    // Find the node's default kind
-    const node = nodes.find((n) => n.id === nodeId);
-    if (node && newMode === node.kind) {
-      // Toggling back to default — remove the override
-      delete next[nodeId];
-    } else {
-      next[nodeId] = newMode;
-    }
-    setSaving(nodeId);
-    try {
-      await apiClient.patch(`/api/cases/${caseId}/step-modes`, { overrides: next });
-      onUpdate(next);
-      toast.success('步骤模式已更新');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error('更新失败', { description: msg });
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">步骤执行模式</CardTitle>
-        <CardDescription>切换各步骤的执行方式 (AI自动 / 人工)</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {nodes.map((node) => {
-          const effectiveMode = overrides[node.id] || node.kind;
-          const isOverridden = !!overrides[node.id];
-          const isAuto = effectiveMode === 'auto';
-          return (
-            <div
-              key={node.id}
-              className="flex items-center justify-between rounded-md border p-2.5 gap-3"
-              data-testid={`step-mode-${node.id}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate">{node.id}</span>
-                  <Badge variant="outline" className="text-[9px] shrink-0">
-                    {node.type}
-                  </Badge>
-                  {isOverridden && (
-                    <Badge variant="secondary" className="text-[9px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                      已切换
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  默认: {node.kind === 'auto' ? '🤖 AI' : '✋ 人工'}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant={isAuto ? 'default' : 'outline'}
-                  className="h-7 text-xs gap-1 px-2"
-                  disabled={saving === node.id}
-                  onClick={() => !isAuto && toggle(node.id, effectiveMode)}
-                  data-testid={`step-mode-auto-${node.id}`}
-                >
-                  <Bot className="h-3 w-3" />
-                  AI
-                </Button>
-                <Button
-                  size="sm"
-                  variant={!isAuto ? 'default' : 'outline'}
-                  className="h-7 text-xs gap-1 px-2"
-                  disabled={saving === node.id}
-                  onClick={() => isAuto && toggle(node.id, effectiveMode)}
-                  data-testid={`step-mode-human-${node.id}`}
-                >
-                  <Hand className="h-3 w-3" />
-                  人工
-                </Button>
-              </div>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
-}
-
-// PLANET-1253: Editable case payload card
-function PayloadEditor({ caseId, payload, onUpdate }: { caseId: string; payload: string; onUpdate: () => void }) {
-  const [fields, setFields] = useState<Record<string, unknown>>({});
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    try { setFields(JSON.parse(payload || '{}')); } catch { setFields({}); }
-  }, [payload]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await apiClient.patch(`/api/cases/${caseId}/payload`, { fields });
-      toast.success('案例数据已保存');
-      onUpdate();
-    } catch (e) {
-      toast.error('保存失败', { description: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateField = (key: string, value: unknown) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const highlight = ['product_name', 'title', 'price', 'stock', 'image_url', 'description'];
-  const sortedKeys = Object.keys(fields).sort((a, b) => {
-    const aH = highlight.includes(a) ? 0 : 1;
-    const bH = highlight.includes(b) ? 0 : 1;
-    return aH - bH || a.localeCompare(b);
-  });
-
-  // Skip internal/complex fields
-  const editableKeys = sortedKeys.filter((k) => !k.startsWith('_') && typeof fields[k] !== 'object');
-
-  if (editableKeys.length === 0) return null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">编辑案例数据</CardTitle>
-        <CardDescription>修改案例的字段数据，保存后可用于后续步骤</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {editableKeys.map((key) => {
-          const val = fields[key];
-          const isImage = key === 'image_url' || (typeof val === 'string' && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)/i.test(val));
-          const isNumber = typeof val === 'number';
-          return (
-            <div key={key} className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">{key}</label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type={isNumber ? 'number' : 'text'}
-                  value={String(val ?? '')}
-                  onChange={(e) => updateField(key, isNumber ? Number(e.target.value) || 0 : e.target.value)}
-                  className="h-8 text-sm"
-                />
-                {isImage && typeof val === 'string' && val && (
-                  <img src={val} alt={key} className="h-8 w-8 rounded border object-cover shrink-0" />
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
-          <Save className="h-3.5 w-3.5" />
-          {saving ? '保存中...' : '保存'}
-        </Button>
-      </CardContent>
-    </Card>
-  );
+  workflow?: { name: string };
 }
 
 function ShopifyPublicUrlCard({ output }: { output: string }) {
@@ -318,17 +91,11 @@ function CaseDetail({ id }: { id: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [modeOverrides, setModeOverrides] = useState<Record<string, 'auto' | 'human'>>({});
 
   const load = useCallback(async () => {
     try {
       const d = await apiClient.get<{ case: CaseRow }>(`/api/cases/${id}`);
       setC(d.case);
-      // PLANET-1251: parse step mode overrides
-      try {
-        const ov = JSON.parse(d.case.stepModeOverrides || '{}');
-        setModeOverrides(ov);
-      } catch { setModeOverrides({}); }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErr(msg);
@@ -403,88 +170,6 @@ function CaseDetail({ id }: { id: string }) {
         </CardHeader>
       </Card>
 
-      {/* PLANET-1251: Step Mode Overrides */}
-      {(() => {
-        const defNodes = extractDefNodes(c.workflow?.definition);
-        if (defNodes.length === 0) return null;
-        return (
-          <StepModeOverrides
-            caseId={c.id}
-            nodes={defNodes}
-            overrides={modeOverrides}
-            onUpdate={setModeOverrides}
-          />
-        );
-      })()}
-
-      {/* PLANET-1253: Payload Editor */}
-      <PayloadEditor caseId={c.id} payload={c.payload} onUpdate={load} />
-
-      {/* PLANET-1254: Retreat + PLANET-1255: Retry action bar */}
-      {(() => {
-        const defNodes = extractDefNodes(c.workflow?.definition);
-        const def = c.workflow?.definition ? (() => { try { return JSON.parse(c.workflow.definition!); } catch { return null; } })() : null;
-        const isAtFirst = !def?.edges?.some((e: { target: string }) => e.target === c.currentStepId);
-        const canRetreat = !isAtFirst && ['waiting_human', 'failed', 'done'].includes(c.status);
-        const canRetry = c.status === 'failed';
-        const failedStep = c.steps?.find((s) => s.status === 'failed');
-
-        if (!canRetreat && !canRetry) return null;
-
-        return (
-          <Card>
-            <CardContent className="pt-4 space-y-3">
-              {failedStep?.error && (
-                <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 p-3 rounded-md">
-                  <span className="font-medium">错误信息：</span> {failedStep.error}
-                </div>
-              )}
-              <div className="flex gap-2">
-                {canRetreat && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={c.status === 'running'}
-                    onClick={async () => {
-                      try {
-                        await apiClient.post(`/api/cases/${c.id}/retreat`);
-                        toast.success('已回退一步');
-                        await load();
-                      } catch (e) {
-                        toast.error('回退失败', { description: e instanceof Error ? e.message : String(e) });
-                      }
-                    }}
-                    data-testid="case-retreat-btn"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                    ⬅️ 回退一步
-                  </Button>
-                )}
-                {canRetry && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={async () => {
-                      try {
-                        await apiClient.post(`/api/cases/${c.id}/retry`);
-                        toast.success('正在重试...');
-                        await load();
-                      } catch (e) {
-                        toast.error('重试失败', { description: e instanceof Error ? e.message : String(e) });
-                      }
-                    }}
-                    data-testid="case-retry-btn"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    🔄 重试
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
-
       {waitingStep && (
         <Card className="border-yellow-500/40">
           <CardHeader>
@@ -492,7 +177,7 @@ function CaseDetail({ id }: { id: string }) {
             <CardDescription>Step id: {waitingStep.stepId}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Input
+            <Textarea
               placeholder="Optional comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}

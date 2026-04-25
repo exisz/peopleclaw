@@ -41,40 +41,8 @@ export interface HandlerResult {
 function parseDef(def: string): WorkflowDefinition {
   try {
     const v = JSON.parse(def);
-    if (!v?.edges) throw new Error('invalid');
-
-    let nodes = v.nodes as WorkflowDefinition['nodes'] | undefined;
-    const steps = v.steps as Array<Record<string, unknown>> | undefined;
-
-    if ((!nodes || !nodes.length) && steps?.length) {
-      // No nodes at all — derive from steps (some definitions only have steps[])
-      nodes = steps.map((s) => ({
-        id: s.id as string,
-        type: (s.type as string) || (s.assignee as string) || 'unknown',
-        kind: (s.kind as 'auto' | 'human') || 'auto',
-        handler: (s.handler as string) || (s.assignee as string) || undefined,
-        config: (s.config as Record<string, unknown>) || undefined,
-      }));
-    } else if (nodes?.length && steps?.length) {
-      // Both exist — nodes might be position-only (DEFAULT_WORKFLOW pattern)
-      // Merge step info into nodes when nodes lack kind/type
-      const stepMap = new Map(steps.map((s) => [s.id as string, s]));
-      nodes = nodes.map((n) => {
-        if (n.type && n.kind) return n; // already has full info
-        const step = stepMap.get(n.id);
-        if (!step) return n;
-        return {
-          ...n,
-          type: n.type || (step.type as string) || (step.assignee as string) || 'unknown',
-          kind: n.kind || (step.kind as 'auto' | 'human') || 'auto',
-          handler: n.handler || (step.handler as string) || (step.assignee as string) || undefined,
-          config: n.config || (step.config as Record<string, unknown>) || undefined,
-        };
-      });
-    }
-
-    if (!nodes?.length) throw new Error('invalid');
-    return { nodes, edges: v.edges };
+    if (!v?.nodes || !v?.edges) throw new Error('invalid');
+    return v as WorkflowDefinition;
   } catch {
     return { nodes: [], edges: [] };
   }
@@ -128,9 +96,6 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     nodeId = nextNodeId(def, c.currentStepId);
   }
 
-  // PLANET-1251: Parse step mode overrides from case
-  const modeOverrides: Record<string, string> = JSON.parse(c.stepModeOverrides || '{}');
-
   // Execute auto steps in a loop until we hit human step or end
   let lastStepId: string | null = c.currentStepId;
   while (nodeId) {
@@ -140,9 +105,6 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       return { status: 'failed', lastStepId };
     }
 
-    // PLANET-1251: resolve effective kind from override or node default
-    const effectiveKind: 'auto' | 'human' = (modeOverrides[node.id] as 'auto' | 'human') || node.kind;
-
     const ctx: HandlerContext = {
       userId: c.ownerId,
       tenantId: c.tenantId ?? '',
@@ -151,7 +113,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       stepConfig: node.config ?? {},
     };
 
-    if (effectiveKind === 'human') {
+    if (node.kind === 'human') {
       // Create waiting_human step record
       await prisma.caseStep.create({
         data: {
@@ -174,30 +136,6 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     // Auto step — dispatch by canonical handler id with legacy `type` fallback
     const handlerKey = resolveHandlerKey(node);
     const handler = handlers[handlerKey];
-
-    // PLANET-1251: If overridden to auto but no handler exists, fall back to human (don't crash)
-    if (!handler) {
-      if (modeOverrides[node.id] === 'auto') {
-        // Overridden to auto but no handler — fall back to human
-        await prisma.caseStep.create({
-          data: {
-            caseId: c.id,
-            stepId: node.id,
-            stepType: node.type,
-            kind: 'human',
-            status: 'waiting_human',
-            startedAt: new Date(),
-            input: JSON.stringify({ payload: JSON.parse(c.payload) }),
-          },
-        });
-        await prisma.case.update({
-          where: { id: caseId },
-          data: { status: 'waiting_human', currentStepId: node.id },
-        });
-        return { status: 'waiting_human', lastStepId: node.id };
-      }
-    }
-
     const stepRow = await prisma.caseStep.create({
       data: {
         caseId: c.id,

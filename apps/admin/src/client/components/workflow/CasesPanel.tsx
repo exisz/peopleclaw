@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -7,7 +7,6 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +19,7 @@ import {
 } from '../ui/alert-dialog';
 import { apiClient } from '../../lib/api';
 import { cn } from '../../lib/utils';
-import { Plus, Trash2, CheckCircle, Upload, ChevronDown, ChevronRight, AlertCircle, RotateCcw, RefreshCw, Save } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Upload, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
 
 interface ServerCase {
@@ -33,176 +32,6 @@ interface ServerCase {
   batchId?: string | null;
   createdAt: string;
   updatedAt: string;
-}
-
-interface DetailCase extends ServerCase {
-  steps?: Array<{ id: string; stepId: string; status: string; error: string | null }>;
-  workflow?: { name: string; definition?: string };
-  stepModeOverrides?: string;
-}
-
-// PLANET-1253/1254/1255: Selected case action panel shown in the cases sidebar
-function SelectedCaseActions({ caseId, onUpdate }: { caseId: string; onUpdate: () => void }) {
-  const navigate = useNavigate();
-  const [detail, setDetail] = useState<DetailCase | null>(null);
-  const [payloadFields, setPayloadFields] = useState<Record<string, unknown>>({});
-  const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      const d = await apiClient.get<{ case: DetailCase }>(`/api/cases/${caseId}`);
-      setDetail(d.case);
-      try { setPayloadFields(JSON.parse(d.case.payload || '{}')); } catch { setPayloadFields({}); }
-    } catch { /* */ }
-  }, [caseId]);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Auto-poll while running
-  useEffect(() => {
-    if (!detail || detail.status !== 'running') return;
-    const t = setInterval(load, 3000);
-    return () => clearInterval(t);
-  }, [detail, load]);
-
-  if (!detail) return null;
-
-  const handleSavePayload = async () => {
-    setSaving(true);
-    try {
-      await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: payloadFields });
-      toast.success('\u6848\u4f8b\u6570\u636e\u5df2\u4fdd\u5b58');
-      onUpdate();
-      await load();
-    } catch (e) {
-      toast.error('\u4fdd\u5b58\u5931\u8d25', { description: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const highlight = ['product_name', 'title', 'price', 'stock', 'image_url', 'description'];
-  const editableKeys = Object.keys(payloadFields)
-    .filter((k) => !k.startsWith('_') && typeof payloadFields[k] !== 'object')
-    .sort((a, b) => {
-      const aH = highlight.includes(a) ? 0 : 1;
-      const bH = highlight.includes(b) ? 0 : 1;
-      return aH - bH || a.localeCompare(b);
-    });
-
-  // Retreat/Retry logic
-  let def: { edges?: Array<{ source: string; target: string }> } | null = null;
-  try { if (detail.workflow?.definition) def = JSON.parse(detail.workflow.definition); } catch {}
-  const isAtFirst = !def?.edges?.some((e) => e.target === detail.currentStepId);
-  const canRetreat = !isAtFirst && ['waiting_human', 'failed', 'done'].includes(detail.status);
-  const canRetry = detail.status === 'failed';
-  const failedStep = detail.steps?.find((s) => s.status === 'failed');
-
-  return (
-    <div className="px-3 py-2 border-b space-y-3">
-      <a
-        href={`/cases/${caseId}`}
-        onClick={(e) => { e.preventDefault(); navigate(`/cases/${caseId}`); }}
-        className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
-      >
-        查看完整详情 →
-      </a>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold truncate">{detail.title}</span>
-        <Badge variant={STATUS_VARIANT[detail.status] ?? 'default'} className="text-[9px] uppercase shrink-0">
-          {detail.status}
-        </Badge>
-      </div>
-
-      {/* Error message for failed cases */}
-      {failedStep?.error && (
-        <div className="text-[10px] text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 p-2 rounded">
-          <span className="font-medium">\u9519\u8bef:</span> {failedStep.error}
-        </div>
-      )}
-
-      {/* Retreat + Retry */}
-      {(canRetreat || canRetry) && (
-        <div className="flex gap-1.5">
-          {canRetreat && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1"
-              disabled={detail.status === 'running'}
-              onClick={async () => {
-                try {
-                  await apiClient.post(`/api/cases/${caseId}/retreat`);
-                  toast.success('\u5df2\u56de\u9000\u4e00\u6b65');
-                  onUpdate();
-                  await load();
-                } catch (e) {
-                  toast.error('\u56de\u9000\u5931\u8d25', { description: e instanceof Error ? e.message : String(e) });
-                }
-              }}
-              data-testid="case-retreat-btn"
-            >
-              <RotateCcw className="h-3 w-3" />
-              \u56de\u9000
-            </Button>
-          )}
-          {canRetry && (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-7 text-xs gap-1"
-              onClick={async () => {
-                try {
-                  await apiClient.post(`/api/cases/${caseId}/retry`);
-                  toast.success('\u6b63\u5728\u91cd\u8bd5...');
-                  onUpdate();
-                  await load();
-                } catch (e) {
-                  toast.error('\u91cd\u8bd5\u5931\u8d25', { description: e instanceof Error ? e.message : String(e) });
-                }
-              }}
-              data-testid="case-retry-btn"
-            >
-              <RefreshCw className="h-3 w-3" />
-              \u91cd\u8bd5
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Payload editor */}
-      {editableKeys.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-medium text-muted-foreground">\u7f16\u8f91\u6848\u4f8b\u6570\u636e</p>
-          {editableKeys.slice(0, 8).map((key) => {
-            const val = payloadFields[key];
-            const isImage = key === 'image_url' || (typeof val === 'string' && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)/i.test(val));
-            const isNumber = typeof val === 'number';
-            return (
-              <div key={key} className="space-y-0.5">
-                <label className="text-[9px] text-muted-foreground">{key}</label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type={isNumber ? 'number' : 'text'}
-                    value={String(val ?? '')}
-                    onChange={(e) => setPayloadFields((prev) => ({ ...prev, [key]: isNumber ? Number(e.target.value) || 0 : e.target.value }))}
-                    className="h-6 text-[10px]"
-                  />
-                  {isImage && typeof val === 'string' && val && (
-                    <img src={val} alt={key} className="h-6 w-6 rounded border object-cover shrink-0" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1" onClick={handleSavePayload} disabled={saving}>
-            <Save className="h-3 w-3" />
-            {saving ? '\u4fdd\u5b58\u4e2d...' : '\u4fdd\u5b58'}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 const FILTERS = [
@@ -362,7 +191,7 @@ function CaseCard({
       <button
         type="button"
         data-testid={`case-card-${c.id}`}
-        onClick={() => navigate(`/cases/${c.id}`)}
+        onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
         className="w-full text-left p-3 hover:bg-accent/30 rounded-t-lg transition-colors"
       >
         <div className="flex items-start justify-between gap-2 mb-1">
@@ -555,7 +384,7 @@ export default function CasesPanel({
       });
       setNewTitle('');
       toast.success(t('cases.created', { defaultValue: 'Case created' }));
-      navigate(`/cases/${c.id}`);
+      navigate(`/workflows/${workflow.id}/cases/${c.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(t('cases.createFailed', { defaultValue: 'Create failed' }), { description: msg });
@@ -569,10 +398,6 @@ export default function CasesPanel({
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        {/* PLANET-1253/1254/1255: selected case action panel */}
-        {selectedCaseId && (
-          <SelectedCaseActions caseId={selectedCaseId} onUpdate={() => void loadCases()} />
-        )}
         <div className="px-4 py-3 border-b space-y-2">
           <div className="flex gap-2">
             <Input

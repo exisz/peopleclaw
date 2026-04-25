@@ -43,7 +43,6 @@ export type StepNodeData = {
   stepIndex?: number;
   totalSteps?: number;
   onErrorClick?: (msg: string) => void;
-  modeOverride?: 'auto' | 'human'; // PLANET-1251: per-case mode override
 };
 
 function StepNode({ data, selected }: NodeProps) {
@@ -56,7 +55,6 @@ function StepNode({ data, selected }: NodeProps) {
     stepIndex,
     totalSteps,
     onErrorClick,
-    modeOverride,
   } = data as unknown as StepNodeData;
   const cfg = typeConfig[step.type] || typeConfig.human;
 
@@ -169,20 +167,6 @@ function StepNode({ data, selected }: NodeProps) {
               +{step.tools.length - 3}
             </span>
           )}
-        </div>
-      )}
-
-      {/* PLANET-1251: mode override indicator */}
-      {modeOverride && (
-        <div className="mt-2 flex items-center gap-1">
-          <span className={cn(
-            'text-[9px] font-mono px-1.5 py-0.5 rounded border',
-            modeOverride === 'auto'
-              ? 'border-cyan-400 bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-700'
-              : 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700',
-          )}>
-            {modeOverride === 'auto' ? '\uD83E\uDD16 AI' : '\u270B \u4EBA\u5DE5'} (\u5DF2\u5207\u6362)
-          </span>
         </div>
       )}
     </div>
