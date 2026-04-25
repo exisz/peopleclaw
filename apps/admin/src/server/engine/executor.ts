@@ -41,8 +41,36 @@ export interface HandlerResult {
 function parseDef(def: string): WorkflowDefinition {
   try {
     const v = JSON.parse(def);
-    if (!v?.nodes || !v?.edges) throw new Error('invalid');
-    return v as WorkflowDefinition;
+    if (!v?.edges) throw new Error('invalid');
+    // Merge steps[] info into nodes[] when nodes lack type/kind (common in DEFAULT_WORKFLOW format)
+    let nodes: WorkflowDefinition['nodes'] = v.nodes ?? [];
+    if (Array.isArray(v.steps) && v.steps.length) {
+      if (!nodes.length) {
+        // No nodes array — derive from steps
+        nodes = v.steps.map((s: Record<string, unknown>) => ({
+          id: s.id as string,
+          type: (s.type as string) || (s.assignee as string) || 'unknown',
+          kind: (s.kind as 'auto' | 'human') || ((s.type as string)?.startsWith('human') ? 'human' : 'auto'),
+          handler: (s.handler as string) || (s.assignee as string) || undefined,
+          config: (s.config as Record<string, unknown>) || {},
+        }));
+      } else {
+        // Nodes exist but may lack type/kind — merge from steps
+        const stepMap = new Map(v.steps.map((s: Record<string, unknown>) => [s.id, s]));
+        nodes = nodes.map((n: Record<string, unknown>) => {
+          if (n.type && n.kind) return n as WorkflowDefinition['nodes'][number];
+          const step = stepMap.get(n.id as string) as Record<string, unknown> | undefined;
+          return {
+            id: n.id as string,
+            type: (n.type as string) || (step?.type as string) || (step?.assignee as string) || 'unknown',
+            kind: (n.kind as 'auto' | 'human') || (step?.kind as 'auto' | 'human') || ((step?.type as string)?.startsWith('human') ? 'human' : 'auto'),
+            handler: (n.handler as string) || (step?.handler as string) || (step?.assignee as string) || undefined,
+            config: (n.config as Record<string, unknown>) || (step?.config as Record<string, unknown>) || {},
+          };
+        });
+      }
+    }
+    return { nodes, edges: v.edges } as WorkflowDefinition;
   } catch {
     return { nodes: [], edges: [] };
   }
