@@ -12,6 +12,7 @@ import { stepTemplatesRouter } from './routes/step-templates.js';
 import { templatesRouter } from './routes/templates.js';
 import { internalRouter } from './routes/internal.js';
 import { batchImportRouter } from './routes/batchImport.js';
+import { uploadRouter } from './routes/upload.js';
 import { roadmapRouter } from './routes/roadmap.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
@@ -41,6 +42,7 @@ export function createApp(): Express {
     app.use('/api', testRouter);
   }
   app.use('/api', roadmapRouter);
+  app.use('/api', uploadRouter);
   app.use('/api', casesRouter);
   app.use('/api', batchImportRouter);
   app.use('/api', (_req, res) => {

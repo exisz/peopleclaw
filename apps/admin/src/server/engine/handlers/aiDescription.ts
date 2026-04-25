@@ -3,6 +3,14 @@ import { CREDIT_COSTS } from '../../lib/credits.js';
 import { checkAndDeductCredit } from '../../lib/credit-check.js';
 
 export const aiDescriptionHandler: Handler = async (input, ctx) => {
+  const { payload } = input;
+
+  // PLANET-1260: skip if human already provided a description (> 10 chars, not placeholder)
+  const existingDesc = (payload.description as string) || '';
+  if (existingDesc.trim().length > 10) {
+    return { output: { description: existingDesc.trim(), skipped: true } };
+  }
+
   // Deduct credit first (throws InsufficientCreditsError → caught by executor)
   const remaining = await checkAndDeductCredit(
     ctx.tenantId,
@@ -14,8 +22,6 @@ export const aiDescriptionHandler: Handler = async (input, ctx) => {
 
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY missing — refusing to mock in production');
-
-  const { payload } = input;
 
   // Whitelist short text fields only — avoid feeding base64 image data URIs etc.
   // into the LLM prompt (PLANET-1116: prior version JSON.stringify'd whole payload

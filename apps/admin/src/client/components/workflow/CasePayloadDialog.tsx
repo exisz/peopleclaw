@@ -55,6 +55,7 @@ export default function CasePayloadDialog({
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [newFieldName, setNewFieldName] = useState('');
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -171,12 +172,51 @@ export default function CasePayloadDialog({
                     onChange={(e) => updateField(key, e.target.value)}
                   />
                 ) : (
-                  <Input
-                    type={isNum ? 'number' : 'text'}
-                    className="h-8 text-xs"
-                    value={val}
-                    onChange={(e) => updateField(key, e.target.value)}
-                  />
+                  <div className="flex gap-1.5 items-center">
+                    <Input
+                      type={isNum ? 'number' : 'text'}
+                      className="h-8 text-xs flex-1"
+                      value={val}
+                      onChange={(e) => updateField(key, e.target.value)}
+                    />
+                    {(key === 'image_url' || isImageUrl(key, val)) && (
+                      <label className="inline-flex items-center gap-1 px-2 h-8 rounded-md border border-input bg-background text-xs cursor-pointer hover:bg-accent shrink-0">
+                        {uploadingField === key ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          '📷'
+                        )}
+                        <span>上传</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          disabled={uploadingField === key}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploadingField(key);
+                            try {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const resp = await fetch('/api/upload-image', {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
+                              const data = await resp.json() as { url: string };
+                              updateField(key, data.url);
+                            } catch (err) {
+                              setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
+                            } finally {
+                              setUploadingField(null);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 )}
               </div>
             );

@@ -36,6 +36,13 @@ function promptHash(prompt: string): string {
 
 export const aiImageGenerateHandler: Handler = async (input, ctx) => {
   const { payload } = input;
+
+  // PLANET-1260: skip if human already provided an image URL
+  const existingImage = (payload.imageUrl as string) || (payload.image_url as string) || '';
+  if (existingImage.trim().length > 0 && /^https?:\/\//.test(existingImage.trim())) {
+    return { output: { imageUrl: existingImage.trim(), skipped: true } };
+  }
+
   const prompt = (payload.prompt as string) || 'A beautiful product photo';
   const aspectRatio = (payload.aspectRatio as string) || '1:1';
 

@@ -50,7 +50,7 @@ export const DEFAULT_WORKFLOW = {
   category: '默认流程',
   definition: {
     steps: [
-      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 0,   y: 0 }, requiredFields: ['image_url'] },
+      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 0,   y: 0 } },
       { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 175, y: 200 } },
       { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 350, y: 0 } },
       { id: 'd_skus', name: 'AI SKU与价格生成',  type: 'agent', assignee: 'ai.generate_skus',         description: '', position: { x: 525, y: 200 } },
@@ -58,7 +58,7 @@ export const DEFAULT_WORKFLOW = {
       { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 875, y: 200 } },
     ],
     nodes: [
-      { id: 'd2', position: { x: 0,   y: 0 }, requiredFields: ['image_url'] },
+      { id: 'd2', position: { x: 0,   y: 0 } },
       { id: 'd3', position: { x: 175, y: 200 } },
       { id: 'd4', position: { x: 350, y: 0 } },
       { id: 'd_skus', position: { x: 525, y: 200 } },

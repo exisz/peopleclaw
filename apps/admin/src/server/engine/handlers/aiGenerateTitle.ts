@@ -5,10 +5,17 @@
 import type { Handler } from './index.js';
 
 export const aiGenerateTitleHandler: Handler = async (input, _ctx) => {
+  const { payload } = input;
+
+  // PLANET-1260: skip if human already provided a title
+  const existingTitle = (payload.title as string) || '';
+  if (existingTitle.trim().length > 0) {
+    return { output: { title: existingTitle.trim(), skipped: true } };
+  }
+
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY missing — refusing to mock in production');
 
-  const { payload } = input;
   const features = (payload.features as string) || (payload.description as string) || '';
   const category = (payload.category as string) || (payload.product_type as string) || '';
 

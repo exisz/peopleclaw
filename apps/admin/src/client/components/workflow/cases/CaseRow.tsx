@@ -140,15 +140,16 @@ export function CaseRow({
   const isRunningThisAi = runningAi === c.id;
   const isLoadingThisSteps = loadingSteps === c.id;
 
-  // PLANET-1260: Parse payload to check for _missingFields
-  const missingFields: string[] | undefined = (() => {
+  // PLANET-1260: Parse payload to check for _missingFields and productPublicUrl
+  const parsedPayload: Record<string, unknown> = (() => {
     try {
-      const p = JSON.parse(c.payload || '{}');
-      return Array.isArray(p._missingFields) ? p._missingFields : undefined;
+      return JSON.parse(c.payload || '{}');
     } catch {
-      return undefined;
+      return {};
     }
   })();
+  const missingFields: string[] | undefined = Array.isArray(parsedPayload._missingFields) ? parsedPayload._missingFields as string[] : undefined;
+  const productPublicUrl = typeof parsedPayload.productPublicUrl === 'string' ? parsedPayload.productPublicUrl : null;
 
   const menuItems: MenuItem[] = [
     {
@@ -227,6 +228,17 @@ export function CaseRow({
       <TableCell className="px-2 py-1.5 max-w-[160px]">
         <div className="truncate font-medium text-xs">{c.title}</div>
         <StepProgress workflow={workflow} currentStepId={c.currentStepId} status={c.status} />
+        {c.status === 'done' && productPublicUrl && (
+          <a
+            href={productPublicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[9px] text-green-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            🛍️ 查看商品
+          </a>
+        )}
       </TableCell>
 
       {/* 状态 */}

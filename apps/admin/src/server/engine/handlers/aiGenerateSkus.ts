@@ -5,10 +5,21 @@
 import type { Handler } from './index.js';
 
 export const aiGenerateSkusHandler: Handler = async (input, _ctx) => {
+  const { payload } = input;
+
+  // PLANET-1260: skip if human already provided SKUs
+  if (payload.skus) {
+    if (Array.isArray(payload.skus) && payload.skus.length > 0) {
+      return { output: { skus: payload.skus, skipped: true } };
+    }
+    if (typeof payload.skus === 'string' && payload.skus.trim().length > 0) {
+      return { output: { skus: payload.skus, skipped: true } };
+    }
+  }
+
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY missing — refusing to mock in production');
 
-  const { payload } = input;
   const title = (payload.title as string) || (payload.product_name as string) || 'Product';
   const features = (payload.features as string) || '';
 
