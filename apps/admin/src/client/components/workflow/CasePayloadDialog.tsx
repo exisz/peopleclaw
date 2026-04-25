@@ -62,9 +62,17 @@ export default function CasePayloadDialog({
     if (!open) { setInitialized(false); setSaved(false); setErrorMsg(null); return; }
     if (initialized) return;
     const safePayload = payload && typeof payload === 'object' ? payload : {};
+    // Internal/AI-generated fields that should not appear in the editor
+    const HIDDEN_FIELDS = new Set([
+      'title', 'model', 'imageUrl', 'mimeType', 'prompt', 'aspectRatio',
+      'creditsRemaining', 'skus', 'skipped', 'reason', 'productId',
+      'productAdminUrl', 'productHandle', 'productPublicUrl', 'shopifyTitle',
+      'source', 'b64',
+    ]);
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(safePayload)) {
       if (k.startsWith('_')) continue;
+      if (HIDDEN_FIELDS.has(k)) continue;
       try {
         flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
       } catch {
@@ -197,10 +205,14 @@ export default function CasePayloadDialog({
                             if (!file) return;
                             setUploadingField(key);
                             try {
-                              const formData = new FormData();
-                              formData.append('file', file);
-                              const data = await apiClient.postForm<{ url: string }>('/api/upload-image', formData);
-                              updateField(key, data.url);
+                              // Client-side: convert to data URI for Shopify upload
+                              const reader = new FileReader();
+                              const dataUri = await new Promise<string>((resolve, reject) => {
+                                reader.onload = () => resolve(reader.result as string);
+                                reader.onerror = () => reject(new Error('读取文件失败'));
+                                reader.readAsDataURL(file);
+                              });
+                              updateField(key, dataUri);
                             } catch (err) {
                               setErrorMsg(`上传失败: ${err instanceof Error ? err.message : String(err)}`);
                             } finally {
