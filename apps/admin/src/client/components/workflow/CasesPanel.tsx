@@ -43,6 +43,7 @@ interface DetailCase extends ServerCase {
 
 // PLANET-1253/1254/1255: Selected case action panel shown in the cases sidebar
 function SelectedCaseActions({ caseId, onUpdate }: { caseId: string; onUpdate: () => void }) {
+  const navigate = useNavigate();
   const [detail, setDetail] = useState<DetailCase | null>(null);
   const [payloadFields, setPayloadFields] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
@@ -99,6 +100,13 @@ function SelectedCaseActions({ caseId, onUpdate }: { caseId: string; onUpdate: (
 
   return (
     <div className="px-3 py-2 border-b space-y-3">
+      <a
+        href={`/cases/${caseId}`}
+        onClick={(e) => { e.preventDefault(); navigate(`/cases/${caseId}`); }}
+        className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+      >
+        查看完整详情 →
+      </a>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold truncate">{detail.title}</span>
         <Badge variant={STATUS_VARIANT[detail.status] ?? 'default'} className="text-[9px] uppercase shrink-0">
@@ -354,7 +362,7 @@ function CaseCard({
       <button
         type="button"
         data-testid={`case-card-${c.id}`}
-        onClick={() => navigate(`/workflows/${workflow.id}/cases/${c.id}`)}
+        onClick={() => navigate(`/cases/${c.id}`)}
         className="w-full text-left p-3 hover:bg-accent/30 rounded-t-lg transition-colors"
       >
         <div className="flex items-start justify-between gap-2 mb-1">
@@ -547,7 +555,7 @@ export default function CasesPanel({
       });
       setNewTitle('');
       toast.success(t('cases.created', { defaultValue: 'Case created' }));
-      navigate(`/workflows/${workflow.id}/cases/${c.id}`);
+      navigate(`/cases/${c.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(t('cases.createFailed', { defaultValue: 'Create failed' }), { description: msg });
