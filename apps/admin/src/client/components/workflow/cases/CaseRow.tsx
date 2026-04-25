@@ -79,6 +79,21 @@ function StepProgress({
   );
 }
 
+/* ── Field Labels (Chinese) ── */
+
+const FIELD_LABELS: Record<string, string> = {
+  product_name: '商品名',
+  price: '价格',
+  stock: '库存',
+  image_url: '商品图片',
+  description: '描述',
+  category: '分类',
+};
+
+function fieldLabel(key: string): string {
+  return FIELD_LABELS[key] ?? key;
+}
+
 /* ── Props ── */
 
 interface CaseRowProps {
@@ -123,6 +138,16 @@ export function CaseRow({
   const isRunningThisAi = runningAi === c.id;
   const isLoadingThisSteps = loadingSteps === c.id;
 
+  // PLANET-1260: Parse payload to check for _missingFields
+  const missingFields: string[] | undefined = (() => {
+    try {
+      const p = JSON.parse(c.payload || '{}');
+      return Array.isArray(p._missingFields) ? p._missingFields : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+
   const menuItems: MenuItem[] = [
     {
       label: '📋 属性',
@@ -160,10 +185,11 @@ export function CaseRow({
   }
 
   if (c.status === 'waiting_human') {
+    const hasMissing = missingFields && missingFields.length > 0;
     menuItems.push({
-      label: '▶️ 继续执行',
+      label: hasMissing ? '⚠️ 请先填写必填字段' : '▶️ 继续执行',
       icon: <CheckCircle className="h-3.5 w-3.5" />,
-      disabled: isCompleting,
+      disabled: isCompleting || !!hasMissing,
       onClick: () => onComplete(c),
     });
   }
@@ -206,6 +232,11 @@ export function CaseRow({
         <Badge variant={STATUS_VARIANT[c.status] ?? 'default'} className="text-[9px] uppercase">
           {STATUS_LABEL[c.status] ?? c.status}
         </Badge>
+        {missingFields && missingFields.length > 0 && (
+          <div className="text-[9px] text-amber-600 mt-0.5 leading-tight">
+            需填写: {missingFields.map(fieldLabel).join(', ')}
+          </div>
+        )}
       </TableCell>
 
       {/* 当前步骤 */}

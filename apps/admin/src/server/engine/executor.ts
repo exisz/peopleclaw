@@ -11,6 +11,8 @@ export interface WorkflowDefinition {
     /** Canonical handler id, e.g. "shopify.list_product". Falls back to `type` for legacy nodes. */
     handler?: string;
     config?: Record<string, unknown>;
+    /** Payload fields required before this node can execute (PLANET-1260). */
+    requiredFields?: string[];
   }>;
   edges: Array<{ source: string; target: string }>;
 }
@@ -53,6 +55,7 @@ export function parseDef(def: string): WorkflowDefinition {
           kind: (s.kind as 'auto' | 'human') || ((s.type as string)?.startsWith('human') ? 'human' : 'auto'),
           handler: (s.handler as string) || (s.assignee as string) || undefined,
           config: (s.config as Record<string, unknown>) || {},
+          requiredFields: (s.requiredFields as string[]) || undefined,
         }));
       } else {
         // Nodes exist but may lack type/kind — merge from steps
@@ -66,6 +69,7 @@ export function parseDef(def: string): WorkflowDefinition {
             kind: (n.kind as 'auto' | 'human') || (step?.kind as 'auto' | 'human') || ((step?.type as string)?.startsWith('human') ? 'human' : 'auto'),
             handler: (n.handler as string) || (step?.handler as string) || (step?.assignee as string) || undefined,
             config: (n.config as Record<string, unknown>) || (step?.config as Record<string, unknown>) || {},
+            requiredFields: (n.requiredFields as string[]) || (step?.requiredFields as string[]) || undefined,
           };
         });
       }
@@ -100,6 +104,17 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
   if (!c) throw new Error(`Case not found: ${caseId}`);
   if (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled' || c.status === 'awaiting_fix') {
     return { status: c.status, lastStepId: c.currentStepId };
+  }
+
+  // PLANET-1260: Clean up requiredFields meta when resuming
+  {
+    const pl = JSON.parse(c.payload);
+    if (pl._missingFields || pl._blockedAt) {
+      delete pl._missingFields;
+      delete pl._blockedAt;
+      c.payload = JSON.stringify(pl);
+      await prisma.case.update({ where: { id: caseId }, data: { payload: c.payload } });
+    }
   }
 
   // PLANET-1260: If case is in waiting_review, we need to advance to the NEXT node
@@ -139,6 +154,38 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     if (!node) {
       await prisma.case.update({ where: { id: caseId }, data: { status: 'failed', currentStepId: nodeId } });
       return { status: 'failed', lastStepId };
+    }
+
+    // PLANET-1260: requiredFields pre-check — block if payload is missing required data
+    if (node.requiredFields?.length) {
+      const payload = JSON.parse(c.payload);
+      const missing = node.requiredFields.filter((f) => {
+        const val = payload[f];
+        return val === undefined || val === null || val === '' || val === 0;
+      });
+      if (missing.length > 0) {
+        await prisma.caseStep.create({
+          data: {
+            caseId: c.id,
+            stepId: node.id,
+            stepType: node.type,
+            kind: 'auto',
+            status: 'blocked',
+            input: JSON.stringify({ requiredFields: node.requiredFields, missingFields: missing }),
+            startedAt: new Date(),
+          },
+        });
+        const newPayload = { ...payload, _missingFields: missing, _blockedAt: node.id };
+        await prisma.case.update({
+          where: { id: caseId },
+          data: {
+            status: 'waiting_human',
+            currentStepId: node.id,
+            payload: JSON.stringify(newPayload),
+          },
+        });
+        return { status: 'waiting_human', lastStepId: node.id };
+      }
     }
 
     const ctx: HandlerContext = {
