@@ -150,6 +150,7 @@ export function CaseRow({
   })();
   const missingFields: string[] | undefined = Array.isArray(parsedPayload._missingFields) ? parsedPayload._missingFields as string[] : undefined;
   const productPublicUrl = typeof parsedPayload.productPublicUrl === 'string' ? parsedPayload.productPublicUrl : null;
+  const productAdminUrl = typeof parsedPayload.productAdminUrl === 'string' ? parsedPayload.productAdminUrl : null;
 
   const menuItems: MenuItem[] = [
     {
@@ -213,16 +214,31 @@ export function CaseRow({
       <TableCell className="px-2 py-1.5 max-w-[160px]">
         <div className="truncate font-medium text-xs">{c.title}</div>
         <StepProgress workflow={workflow} currentStepId={c.currentStepId} status={c.status} />
-        {c.status === 'done' && productPublicUrl && (
-          <a
-            href={productPublicUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[9px] text-green-600 hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            🛍️ 查看商品
-          </a>
+        {c.status === 'done' && (productAdminUrl || productPublicUrl) && (
+          <div className="flex gap-2">
+            {productAdminUrl && (
+              <a
+                href={productAdminUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[9px] text-green-600 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                🛍️ Shopify管理
+              </a>
+            )}
+            {productPublicUrl && (
+              <a
+                href={productPublicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[9px] text-blue-600 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                🔗 商品页
+              </a>
+            )}
+          </div>
         )}
       </TableCell>
 

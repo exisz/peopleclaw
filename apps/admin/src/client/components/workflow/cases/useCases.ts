@@ -217,7 +217,7 @@ export function useCases(workflowId: string): UseCasesReturn {
         setCases(prev => prev ? prev.map(c => c.id === resp.case.id ? resp.case : c) : prev);
         // Extract run result for user feedback
         const payload = (() => { try { return JSON.parse(resp.case.payload || '{}'); } catch { return {}; } })();
-        const productUrl = typeof payload.productPublicUrl === 'string' ? payload.productPublicUrl : undefined;
+        const productUrl = typeof payload.productAdminUrl === 'string' ? payload.productAdminUrl : (typeof payload.productPublicUrl === 'string' ? payload.productPublicUrl : undefined);
         if (resp.case.status === 'done') {
           setLastRunResult({ status: 'done', title: resp.case.title, productUrl });
         } else if (resp.case.status === 'failed') {
