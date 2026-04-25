@@ -10,15 +10,14 @@ import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import Workflows from './pages/Workflows';
-import Cases from './pages/Cases';
 import Credits from './pages/Credits';
 import CreditsSuccess from './pages/CreditsSuccess';
 import RunWorkflow from './pages/RunWorkflow';
 import Settings from './pages/Settings';
 import SettingsBackground from './pages/SettingsBackground';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import Templates from './pages/Templates';
 import Roadmap from './pages/Roadmap';
+import AppLayout from './components/AppLayout';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,20 +28,19 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<Home />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/callback" element={<Callback />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/workflows" element={<Workflows />} />
-        <Route path="/workflows/:id" element={<Workflows />} />
-        <Route path="/workflows/:id/cases/:caseId" element={<Workflows />} />
-        <Route path="/workflows/:id/run" element={<RunWorkflow />} />
-        <Route path="/cases" element={<Cases />} />
-        <Route path="/cases/:id" element={<Cases />} />
-        <Route path="/credits" element={<Credits />} />
-        <Route path="/credits/success" element={<CreditsSuccess />} />
-        <Route path="/templates" element={<Templates />} />
-        <Route path="/roadmap" element={<Roadmap />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/settings/:tab" element={<Settings />} />
-        <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workflows" element={<Workflows />} />
+          <Route path="/workflows/:id" element={<Workflows />} />
+          <Route path="/workflows/:id/cases/:caseId" element={<Workflows />} />
+          <Route path="/workflows/:id/run" element={<RunWorkflow />} />
+          <Route path="/credits" element={<Credits />} />
+          <Route path="/credits/success" element={<CreditsSuccess />} />
+          <Route path="/roadmap" element={<Roadmap />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/:tab" element={<Settings />} />
+          <Route path="/settings/background" element={<ErrorBoundary><SettingsBackground /></ErrorBoundary>} />
+        </Route>
         </Routes>
       </ErrorBoundary>
       <Toaster richColors closeButton position="top-right" />

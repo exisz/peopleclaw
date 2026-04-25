@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Workflow, WorkflowStep } from '../types';
 import Sidebar, { type StepTemplate } from '../components/workflow/Sidebar';
 import WorkflowEditor from '../components/workflow/WorkflowEditor';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/ui/button';
-import { LanguageToggle } from '../components/language-toggle';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
   Dialog,
@@ -20,7 +19,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Trash2, LayoutDashboard, Settings, Workflow as WorkflowIcon, BookOpen, GitBranch, LibraryBig, Briefcase, Lock } from 'lucide-react';
+import { Plus, Trash2, GitBranch, Lock, Pencil, Check, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -39,9 +38,7 @@ import {
 } from '../components/ui/alert-dialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { apiClient, ApiError } from '../lib/api';
-import UserMenu from '../components/UserMenu';
-import { ThemeToggle } from '../components/theme-toggle';
-import TenantSwitcher from '../components/TenantSwitcher';
+
 
 interface ServerWorkflow {
   id: string;
@@ -82,7 +79,6 @@ function hydrate(w: ServerWorkflow): Workflow {
 
 export default function Workflows() {
   const navigate = useNavigate();
-  const { t } = useTranslation('common');
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
 
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -98,6 +94,9 @@ export default function Workflows() {
   const [forceDeletePending, setForceDeletePending] = useState<{ workflow: Workflow; casesCount: number } | null>(null);
   // First-level confirm dialog for topbar delete
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // PLANET-1257: Rename state
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -257,9 +256,38 @@ export default function Workflows() {
     }
   }, [selectedWorkflow, deleting, workflows, navigate]);
 
+  // PLANET-1257: Rename workflow
+  const handleRename = useCallback(async () => {
+    if (!selectedWorkflow || !renameValue.trim() || renameValue.trim() === selectedWorkflow.name) {
+      setRenaming(false);
+      return;
+    }
+    try {
+      await apiClient.put(`/api/workflows/${selectedWorkflow.id}`, {
+        name: renameValue.trim(),
+        category: selectedWorkflow.category,
+        definition: {
+          description: selectedWorkflow.description,
+          icon: selectedWorkflow.icon,
+          steps: selectedWorkflow.steps,
+          nodes: selectedWorkflow.steps.map((s) => ({ id: s.id, position: s.position ?? { x: 0, y: 0 } })),
+          edges: [],
+        },
+      });
+      const updated = { ...selectedWorkflow, name: renameValue.trim() };
+      setSelectedWorkflow(updated);
+      setWorkflows((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
+      toast.success('工作流已重命名');
+    } catch (e) {
+      toast.error('重命名失败', { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setRenaming(false);
+    }
+  }, [selectedWorkflow, renameValue]);
+
   if (loading) {
     return (
-      <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <div className="flex h-full overflow-hidden bg-background text-foreground">
         <aside className="w-72 border-r p-4 space-y-3">
           <Skeleton className="h-9 w-full" />
           {Array.from({ length: 6 }).map((_, i) => (
@@ -276,7 +304,7 @@ export default function Workflows() {
 
   if (loadError) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground p-6">
+      <div className="flex h-full items-center justify-center bg-background text-foreground p-6">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Could not load workflows</CardTitle>
@@ -291,7 +319,7 @@ export default function Workflows() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-full overflow-hidden bg-background text-foreground">
       <Sidebar
         workflows={workflows}
         selected={selectedWorkflow}
@@ -309,38 +337,43 @@ export default function Workflows() {
         }}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top navigation bar */}
-        <div className="flex items-center gap-1 px-4 py-2 border-b bg-background" data-testid="app-topbar">
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/dashboard" data-testid="nav-dashboard">
-              <LayoutDashboard className="h-4 w-4" /> 我的
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/settings" data-testid="nav-settings">
-              <Settings className="h-4 w-4" /> {t('common:nav.settings', { defaultValue: 'Settings' })}
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/settings/background" data-testid="nav-background-settings">
-              <BookOpen className="h-4 w-4" /> 背景设定
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/templates" data-testid="nav-templates">
-              <LibraryBig className="h-4 w-4" /> 模板库
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost" className="text-xs gap-1.5">
-            <Link to="/cases" data-testid="nav-cases">
-              <Briefcase className="h-4 w-4" /> 案例
-            </Link>
-          </Button>
-          <div className="mx-2 h-4 border-l border-border" />
+        {/* Workflow toolbar */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b bg-background" data-testid="workflow-toolbar">
           <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)} data-testid="create-workflow-btn">
             <Plus className="h-4 w-4 mr-1" /> 新工作流
           </Button>
-          {/* PLANET-1210/PLANET-1213: Three-tier delete button — visible regardless of selection state */}
+          {/* PLANET-1257: Rename button */}
+          {selectedWorkflow && !selectedWorkflow.isSystem && (
+            renaming ? (
+              <div className="flex items-center gap-1 ml-2">
+                <Input
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenaming(false); }}
+                  className="h-7 w-48 text-sm"
+                  autoFocus
+                  data-testid="rename-workflow-input"
+                />
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleRename} data-testid="rename-workflow-confirm">
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setRenaming(false)} data-testid="rename-workflow-cancel">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs gap-1"
+                onClick={() => { setRenameValue(selectedWorkflow.name); setRenaming(true); }}
+                data-testid="rename-workflow-btn"
+              >
+                <Pencil className="h-3.5 w-3.5" /> 重命名
+              </Button>
+            )
+          )}
+          {/* PLANET-1210/PLANET-1213: Three-tier delete button */}
           {selectedWorkflow?.isSystem ? (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -405,16 +438,14 @@ export default function Workflows() {
             </TooltipProvider>
           )}
           {/* Workflow name breadcrumb */}
-          <div className="mx-2 h-4 border-l border-border" />
-          <span className="text-sm font-medium truncate max-w-[240px]" data-testid="workflow-breadcrumb-name">
-            {selectedWorkflow?.name ?? ''}
-          </span>
-          <div className="ml-auto flex items-center gap-2">
-            <TenantSwitcher />
-            <LanguageToggle />
-            <ThemeToggle />
-            <UserMenu />
-          </div>
+          {!renaming && selectedWorkflow && (
+            <>
+              <div className="mx-2 h-4 border-l border-border" />
+              <span className="text-sm font-medium truncate max-w-[240px]" data-testid="workflow-breadcrumb-name">
+                {selectedWorkflow.name}
+              </span>
+            </>
+          )}
         </div>
         <main className="flex-1 overflow-hidden bg-muted/30">
           {!selectedWorkflow ? (

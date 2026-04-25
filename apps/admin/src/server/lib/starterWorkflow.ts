@@ -23,14 +23,12 @@ export const STARTER_WORKFLOW = {
     icon: '🛍️',
     steps: [],
     nodes: [
-      { id: 's1', type: 'create_case', kind: 'auto', handler: 'create_case', config: { fields: ['title', 'features', 'vendor'] } },
       { id: 's2', type: 'human:review', kind: 'human', config: { prompt: 'Review the product input' } },
       { id: 's3', type: 'ai_description', kind: 'auto', handler: 'ai.product_description', config: {} },
       { id: 's4', type: 'human:approve_copy', kind: 'human', config: { prompt: 'Approve the AI-generated copy?' } },
       { id: 's5', type: 'shopify_upload', kind: 'auto', handler: 'shopify.list_product', config: {} },
     ],
     edges: [
-      { source: 's1', target: 's2' },
       { source: 's2', target: 's3' },
       { source: 's3', target: 's4' },
       { source: 's4', target: 's5' },
@@ -42,34 +40,32 @@ export const STARTER_WORKFLOW = {
  * PLANET-1065: Default workflow seeded for brand-new tenants.
  * Triggered by GET /api/workflows when the tenant has zero workflows.
  * Nodes laid out horizontally (200px apart).
+ *
+ * PLANET-1257: Removed create_case step (d1) — cases are created via API,
+ * not as a workflow step.
  */
 export const DEFAULT_WORKFLOW = {
   baseId: 'default-workflow',
   name: '商品工作流1',
   category: '默认流程',
   definition: {
-    // steps[] is what the canvas hydrate() reads — must be populated.
-    // nodes[] is retained for position-restore compatibility.
     steps: [
-      { id: 'd1', name: '创建 Case', type: 'create_case', kind: 'auto', handler: 'create_case', assignee: 'create_case', config: { fields: ['title', 'features', 'vendor'] }, position: { x: 0,    y: 0 } },
-      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 200,  y: 0 } },
-      { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 400,  y: 0 } },
-      { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 600,  y: 0 } },
-      { id: 'd_skus', name: 'AI SKU与价格生成',  type: 'agent', assignee: 'ai.generate_skus',         description: '', position: { x: 700,  y: 0 } },
-      { id: 'd5', name: '更新库存',             type: 'agent', assignee: 'shopify.update_inventory', description: '', position: { x: 900,  y: 0 } },
-      { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 1100, y: 0 } },
+      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 0,    y: 0 } },
+      { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 200,  y: 0 } },
+      { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 400,  y: 0 } },
+      { id: 'd_skus', name: 'AI SKU与价格生成',  type: 'agent', assignee: 'ai.generate_skus',         description: '', position: { x: 600,  y: 0 } },
+      { id: 'd5', name: '更新库存',             type: 'agent', assignee: 'shopify.update_inventory', description: '', position: { x: 800,  y: 0 } },
+      { id: 'd6', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',    description: '', position: { x: 1000, y: 0 } },
     ],
     nodes: [
-      { id: 'd1', position: { x: 0,    y: 0 } },
-      { id: 'd2', position: { x: 200,  y: 0 } },
-      { id: 'd3', position: { x: 400,  y: 0 } },
-      { id: 'd4', position: { x: 600,  y: 0 } },
-      { id: 'd_skus', position: { x: 700,  y: 0 } },
-      { id: 'd5', position: { x: 900,  y: 0 } },
-      { id: 'd6', position: { x: 1100, y: 0 } },
+      { id: 'd2', position: { x: 0,    y: 0 } },
+      { id: 'd3', position: { x: 200,  y: 0 } },
+      { id: 'd4', position: { x: 400,  y: 0 } },
+      { id: 'd_skus', position: { x: 600,  y: 0 } },
+      { id: 'd5', position: { x: 800,  y: 0 } },
+      { id: 'd6', position: { x: 1000, y: 0 } },
     ],
     edges: [
-      { source: 'd1', target: 'd2' },
       { source: 'd2', target: 'd3' },
       { source: 'd3', target: 'd4' },
       { source: 'd4', target: 'd_skus' },
@@ -79,39 +75,9 @@ export const DEFAULT_WORKFLOW = {
   },
 };
 
-/**
- * PLANET-1068: Second default workflow — Shopify order fulfilment pipeline.
- * 3 nodes laid out horizontally (200px apart).
- */
-export const DEFAULT_WORKFLOW_2 = {
-  baseId: 'default-workflow-2',
-  name: '商品工作流2',
-  category: '默认流程',
-  definition: {
-    steps: [
-      { id: 'e0', name: '创建 Case', type: 'create_case', kind: 'auto', handler: 'create_case', assignee: 'create_case', config: { fields: ['title', 'features', 'vendor'] }, position: { x: -200, y: 0 } },
-      { id: 'e1', name: '拉取订单',   type: 'agent', assignee: 'shopify.fetch_orders',       description: '', position: { x: 0,   y: 0 } },
-      { id: 'e2', name: '更新库存',   type: 'agent', assignee: 'shopify.update_inventory',   description: '', position: { x: 200, y: 0 } },
-      { id: 'e3', name: '标记已发货', type: 'agent', assignee: 'shopify.update_order_status', description: '', position: { x: 400, y: 0 } },
-    ],
-    nodes: [
-      { id: 'e0', position: { x: -200, y: 0 } },
-      { id: 'e1', position: { x: 0,   y: 0 } },
-      { id: 'e2', position: { x: 200, y: 0 } },
-      { id: 'e3', position: { x: 400, y: 0 } },
-    ],
-    edges: [
-      { source: 'e0', target: 'e1' },
-      { source: 'e1', target: 'e2' },
-      { source: 'e2', target: 'e3' },
-    ],
-  },
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function seedDefaultWorkflows(prisma: any, tenantId: string): Promise<void> {
   const id1 = `${DEFAULT_WORKFLOW.baseId}-${tenantId.slice(0, 8)}`;
-  const id2 = `${DEFAULT_WORKFLOW_2.baseId}-${tenantId.slice(0, 8)}`;
   await prisma.workflow.createMany({
     data: [
       {
@@ -120,13 +86,6 @@ export async function seedDefaultWorkflows(prisma: any, tenantId: string): Promi
         name: DEFAULT_WORKFLOW.name,
         category: DEFAULT_WORKFLOW.category,
         definition: JSON.stringify(DEFAULT_WORKFLOW.definition),
-      },
-      {
-        id: id2,
-        tenantId,
-        name: DEFAULT_WORKFLOW_2.name,
-        category: DEFAULT_WORKFLOW_2.category,
-        definition: JSON.stringify(DEFAULT_WORKFLOW_2.definition),
       },
     ],
   });
@@ -160,66 +119,12 @@ export async function provisionStarterWorkflow(prisma: any, tenantId: string): P
   });
 }
 
-/**
- * PLANET-1107 / PLANET-1206 — Shopify 直传上架工作流（表格批量导入专用）
- * create_case → publish_shopify（无 AI 步骤，禁多平台，禁 AI compose）
- * 适用场景：用户上传商品表格 → 每行 fan-out 一个 case → 直接上架 Shopify。
- */
-export const SHOPIFY_DIRECT_LISTING = {
-  baseId: 'shopify-direct-listing',
-  name: 'Shopify 商品上架（批量）',
-  category: 'E-commerce',
-  description: '商品表格批量导入专用：create_case → publish_shopify 直传，无 AI 步骤。每行出 Shopify 商品前台 URL。',
-  icon: '🚀',
-  definition: {
-    description: '商品表格批量导入专用：create_case → publish_shopify 直传，无 AI 步骤。每行出 Shopify 商品前台 URL。',
-    icon: '🚀',
-    steps: [
-      {
-        id: 'sl1',
-        name: '创建 Case',
-        type: 'create_case',
-        kind: 'auto',
-        handler: 'create_case',
-        assignee: 'create_case',
-        config: { fields: ['product_name', 'price', 'stock', 'image_url'] },
-        position: { x: 0, y: 0 },
-      },
-      {
-        id: 'sl2',
-        name: '上架到 Shopify',
-        type: 'agent',
-        kind: 'auto',
-        handler: 'publish_shopify',
-        assignee: 'publish_shopify',
-        description: '直接将商品信息推送到 Shopify，返回前台商品链接',
-        config: {},
-        position: { x: 200, y: 0 },
-      },
-    ],
-    nodes: [
-      { id: 'sl1', type: 'create_case', kind: 'auto', handler: 'create_case', config: { fields: ['product_name', 'price', 'stock', 'image_url'] }, position: { x: 0, y: 0 } },
-      { id: 'sl2', type: 'agent', kind: 'auto', handler: 'publish_shopify', config: {}, position: { x: 200, y: 0 } },
-    ],
-    edges: [
-      { source: 'sl1', target: 'sl2' },
-    ],
-  },
-};
-
 // PLANET-1103: Template library — global templates visible to all tenants.
-// Hardcoded on the server; no DB storage required.
+// PLANET-1257: Removed shopify-direct-listing and product-workflow-2 templates.
+// Only keep product-workflow-1.
 export const TEMPLATES = [
-  {
-    id: 'template-shopify-direct-listing',
-    ...SHOPIFY_DIRECT_LISTING,
-  },
   {
     id: 'template-product-workflow-1',
     ...DEFAULT_WORKFLOW,
-  },
-  {
-    id: 'template-product-workflow-2',
-    ...DEFAULT_WORKFLOW_2,
   },
 ] as const;
