@@ -18,7 +18,7 @@ interface State {
 }
 
 const MAX_AUTO_RETRIES = 3;
-const AUTO_RETRY_DELAY_MS = 500;
+const AUTO_RETRY_DELAY_MS = 0;
 
 /**
  * PLANET-1051 + PLANET-1260: ErrorBoundary with auto-recovery and scoped rendering.
@@ -82,6 +82,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      // During auto-retry, render nothing — avoid flashing error UI
+      if (this.state.retryCount <= MAX_AUTO_RETRIES) {
+        return null;
+      }
+
       if (this.props.fallback) return this.props.fallback;
 
       // Inline (scoped) error — compact, does not take over the whole page

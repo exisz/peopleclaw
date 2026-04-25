@@ -170,17 +170,6 @@ export function CaseRow({
         disabled: isRunningThisAi,
         onClick: () => onRunAi(c),
       },
-      {
-        label: '✏️ 手动编辑',
-        icon: <Pencil className="h-3.5 w-3.5" />,
-        onClick: () => onOpenPayload(c),
-      },
-      {
-        label: '▶️ 继续下一步',
-        icon: <FastForward className="h-3.5 w-3.5" />,
-        disabled: isContinuing,
-        onClick: () => onContinue(c),
-      },
     );
   }
 
