@@ -28,6 +28,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error('[ErrorBoundary] caught:', error, info.componentStack);
+    // Auto-recover from DOM insertion errors (Radix Portal conflicts)
+    if (error.message?.includes('insertBefore') || error.message?.includes('removeChild') || error.message?.includes('appendChild')) {
+      console.warn('[ErrorBoundary] DOM conflict detected, auto-recovering...');
+      setTimeout(() => this.setState({ hasError: false, error: null }), 500);
+    }
   }
 
   render() {
