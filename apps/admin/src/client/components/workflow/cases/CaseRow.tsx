@@ -154,18 +154,15 @@ export function CaseRow({
   const menuItems: MenuItem[] = [
     {
       label: '📋 属性',
-      icon: <ClipboardList className="h-3.5 w-3.5" />,
       onClick: () => onOpenPayload(c),
     },
     {
       label: '📜 运行记录',
-      icon: <ScrollText className="h-3.5 w-3.5" />,
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
     },
     {
       label: '✏️ 重命名',
-      icon: <Pencil className="h-3.5 w-3.5" />,
       onClick: () => {
         const newName = window.prompt('新名称', c.title);
         if (newName && newName.trim() && newName.trim() !== c.title) {
@@ -179,19 +176,15 @@ export function CaseRow({
   if (c.status === 'failed' || (c.status === 'waiting_human' && missingFields && missingFields.length > 0)) {
     menuItems.push({
       label: '🔍 检查问题步骤',
-      icon: <ScrollText className="h-3.5 w-3.5" />,
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
     });
   }
 
-
-
   if (c.status === 'waiting_human') {
     const hasMissing = missingFields && missingFields.length > 0;
     menuItems.push({
       label: hasMissing ? '⚠️ 请先填写必填字段' : '▶️ 继续执行',
-      icon: <CheckCircle className="h-3.5 w-3.5" />,
       disabled: isCompleting || !!hasMissing,
       onClick: () => onComplete(c),
     });
@@ -199,7 +192,6 @@ export function CaseRow({
 
   menuItems.push({
     label: '🗑️ 删除',
-    icon: <Trash2 className="h-3.5 w-3.5" />,
     variant: 'destructive',
     onClick: () => onDelete(c),
   });
