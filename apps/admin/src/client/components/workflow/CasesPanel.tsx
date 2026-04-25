@@ -284,6 +284,7 @@ export default function CasesPanel({
       });
       setNewTitle('');
       toast.success(t('cases.created', { defaultValue: 'Case created' }));
+      await loadCases();
       navigate(`/workflows/${workflow.id}/cases/${c.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
