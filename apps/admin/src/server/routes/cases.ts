@@ -29,7 +29,14 @@ casesRouter.post('/cases', async (req, res: Response) => {
       ownerId: r.user.id,
       tenantId: r.tenant.id,
       title,
-      payload: JSON.stringify(payload ?? {}),
+      payload: JSON.stringify({
+        product_name: '',
+        price: 0,
+        stock: 0,
+        image_url: '',
+        description: '',
+        ...(payload ?? {}),
+      }),
       status: 'running',
     },
   });

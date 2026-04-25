@@ -47,6 +47,7 @@ export default function CasePayloadDialog({
 }: CasePayloadDialogProps) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [newFieldName, setNewFieldName] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -106,7 +107,7 @@ export default function CasePayloadDialog({
         <ScrollArea className="flex-1 pr-2 -mr-2">
           <div className="space-y-3 py-2">
             {sortedKeys.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">无属性字段</p>
+              <p className="text-xs text-muted-foreground text-center py-4">无属性字段，可在下方添加</p>
             )}
             {sortedKeys.map((key) => {
               const val = fields[key];
@@ -149,6 +150,32 @@ export default function CasePayloadDialog({
                 </div>
               );
             })}
+            <div className="flex gap-2 pt-2 border-t">
+              <Input
+                placeholder="新字段名"
+                value={newFieldName}
+                onChange={(e) => setNewFieldName(e.target.value)}
+                className="h-7 text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newFieldName.trim()) {
+                    setFields((prev) => ({ ...prev, [newFieldName.trim()]: '' }));
+                    setNewFieldName('');
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs shrink-0"
+                disabled={!newFieldName.trim()}
+                onClick={() => {
+                  setFields((prev) => ({ ...prev, [newFieldName.trim()]: '' }));
+                  setNewFieldName('');
+                }}
+              >
+                ＋ 添加
+              </Button>
+            </div>
           </div>
         </ScrollArea>
         <DialogFooter>
