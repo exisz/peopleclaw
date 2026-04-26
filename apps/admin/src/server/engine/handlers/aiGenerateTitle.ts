@@ -7,8 +7,14 @@ import type { Handler } from './index.js';
 export const aiGenerateTitleHandler: Handler = async (input, _ctx) => {
   const { payload } = input;
 
-  // PLANET-1260 + PLANET-1316: skip if human already provided a title or product_name
-  const existingTitle = (payload.title as string) || (payload.product_name as string) || '';
+  // PLANET-1260 + PLANET-1316: skip if human already provided a product_name or title.
+  // product_name takes priority — it's the field users fill in the UI.
+  // title may contain a stale AI-generated value from a previous run.
+  const humanName = (payload.product_name as string) || '';
+  const existingTitle = (payload.title as string) || '';
+  if (humanName.trim().length > 0) {
+    return { output: { title: humanName.trim(), skipped: true } };
+  }
   if (existingTitle.trim().length > 0) {
     return { output: { title: existingTitle.trim(), skipped: true } };
   }

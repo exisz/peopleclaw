@@ -100,9 +100,11 @@ export default function CasePayloadDialog({
           parsed[k] = v;
         }
       }
-      await apiClient.patch(`/api/cases/${caseId}/payload`, { fields: parsed });
+      const resp = await apiClient.patch<{ case: { payload: string } }>(`/api/cases/${caseId}/payload`, { fields: parsed });
       setSaved(true);
-      onSaved?.(JSON.stringify(parsed));
+      // PLANET-1316: use server-merged payload (includes hidden fields) instead
+      // of just visible fields — avoids losing title/imageUrl/skus in local state.
+      onSaved?.(resp.case?.payload ?? JSON.stringify({ ...payload, ...parsed }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErrorMsg(`保存失败: ${msg}`);
