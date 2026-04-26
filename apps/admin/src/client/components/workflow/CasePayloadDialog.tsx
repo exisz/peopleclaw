@@ -9,7 +9,7 @@ import ImageUploader from '../ui/ImageUploader';
 import { Save, Loader2, X } from 'lucide-react';
 
 /** Fields we highlight at the top when present */
-const KEY_FIELDS = ['product_name', 'price', 'stock', 'image_url', 'description', 'category'];
+const KEY_FIELDS = ['product_name', 'price', 'stock', 'color', 'sku', 'image_url', 'description', 'category'];
 const NUMBER_FIELDS = ['price', 'stock'];
 
 function isNumberField(key: string, originalValue: unknown): boolean {
@@ -37,6 +37,8 @@ const FIELD_LABELS: Record<string, string> = {
   product_name: '商品名',
   price: '价格',
   stock: '库存',
+  color: '颜色分类',
+  sku: 'SKU',
   image_url: '商品图片',
   description: '描述',
   category: '分类',
@@ -55,7 +57,7 @@ export default function CasePayloadDialog({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [newFieldName, setNewFieldName] = useState('');
+
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -211,32 +213,7 @@ export default function CasePayloadDialog({
               </div>
             );
           })}
-          {/* Add field */}
-          <div className="flex gap-2 pt-2 border-t">
-            <Input
-              placeholder="新字段名"
-              value={newFieldName}
-              onChange={(e) => setNewFieldName(e.target.value)}
-              className="h-7 text-xs"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newFieldName.trim()) {
-                  setFields((prev) => ({ ...prev, [newFieldName.trim()]: '' }));
-                  setNewFieldName('');
-                }
-              }}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs shrink-0"
-              disabled={!newFieldName.trim()}
-              onClick={() => {
-                setFields((prev) => ({ ...prev, [newFieldName.trim()]: '' }));
-                setNewFieldName('');
-              }}
-            >
-              ＋ 添加
-            </Button>
+          {/* PLANET-1317: removed custom "add field" input — not needed for standard users */}
           </div>
         </div>
         {/* Footer */}

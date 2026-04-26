@@ -85,6 +85,8 @@ const FIELD_LABELS: Record<string, string> = {
   product_name: '商品名',
   price: '价格',
   stock: '库存',
+  color: '颜色分类',
+  sku: 'SKU',
   image_url: '商品图片',
   description: '描述',
   category: '分类',

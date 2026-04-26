@@ -34,6 +34,8 @@ casesRouter.post('/cases', async (req, res: Response) => {
         product_name: '',
         price: 0,
         stock: 0,
+        color: '',
+        sku: '',
         image_url: '',
         description: '',
         category: '',
