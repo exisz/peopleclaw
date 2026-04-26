@@ -27,7 +27,7 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   const creds = await resolveShopifyCreds(ctx.tenantId);
   if (!creds) return failNotConfigured();
 
-  const title = (payload.title as string) || (cfg.title as string) || 'Untitled Product';
+  const title = (payload.product_name as string) || (payload.title as string) || (cfg.title as string) || 'Untitled Product';
   const description = (payload.description as string) || (cfg.description as string) || '';
   const imageUrl = (payload.imageUrl as string) || (payload.image as string) || null;
   const vendor = (payload.vendor as string) || (cfg.vendor as string) || 'PeopleClaw';
@@ -36,16 +36,18 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
 
   // Build variants from context.skus or fallback to a single default variant
   const rawSkus = (payload.skus as SkuItem[]) || [];
+  // PLANET-1316: human-entered price overrides AI-generated SKU prices
+  const humanPrice = payload.price != null && payload.price !== '' ? String(payload.price) : null;
   const variants =
     rawSkus.length > 0
       ? rawSkus.map((s) => ({
           option1: s.title ?? s.sku ?? 'Default',
           sku: s.sku ?? '',
-          price: String(s.price ?? '0.00'),
+          price: humanPrice ?? String(s.price ?? '0.00'),
           inventory_management: 'shopify',
           inventory_quantity: s.inventory_quantity ?? 0,
         }))
-      : [{ option1: 'Default', price: String(payload.price ?? '0.00'), inventory_management: 'shopify', inventory_quantity: 10 }];
+      : [{ option1: 'Default', price: humanPrice ?? String(payload.price ?? '0.00'), inventory_management: 'shopify', inventory_quantity: 10 }];
 
   const body: Record<string, unknown> = {
     product: {

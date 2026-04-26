@@ -60,6 +60,12 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     if (variants.length > 1) options = [{ name: 'Style' }];
   }
 
+  // PLANET-1316: human-entered price overrides AI-generated SKU prices
+  if (payload.price != null && payload.price !== '' && variants) {
+    const humanPrice = String(payload.price);
+    variants = variants.map(v => ({ ...v, price: humanPrice }));
+  }
+
   // fallback: no skus — use single price field if present
   const fallbackPrice = (payload.price as string | number) ?? null;
 
@@ -67,7 +73,7 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
 
   const body = {
     product: {
-      title: (payload.title as string) || 'Untitled Product',
+      title: (payload.product_name as string) || (payload.title as string) || 'Untitled Product',
       body_html: (payload.description as string) || '',
       vendor:
         (payload.vendor as string) ||

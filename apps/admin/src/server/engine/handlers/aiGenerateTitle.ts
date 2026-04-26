@@ -7,8 +7,8 @@ import type { Handler } from './index.js';
 export const aiGenerateTitleHandler: Handler = async (input, _ctx) => {
   const { payload } = input;
 
-  // PLANET-1260: skip if human already provided a title
-  const existingTitle = (payload.title as string) || '';
+  // PLANET-1260 + PLANET-1316: skip if human already provided a title or product_name
+  const existingTitle = (payload.title as string) || (payload.product_name as string) || '';
   if (existingTitle.trim().length > 0) {
     return { output: { title: existingTitle.trim(), skipped: true } };
   }
