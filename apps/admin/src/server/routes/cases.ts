@@ -33,9 +33,7 @@ casesRouter.post('/cases', async (req, res: Response) => {
       payload: JSON.stringify({
         product_name: '',
         price: 0,
-        stock: 0,
-        color: '',
-        sku: '',
+        color_variants: [],
         image_url: '',
         description: '',
         category: '',

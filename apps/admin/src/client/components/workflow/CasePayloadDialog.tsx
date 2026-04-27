@@ -6,11 +6,18 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { apiClient } from '../../lib/api';
 import ImageUploader from '../ui/ImageUploader';
-import { Save, Loader2, X } from 'lucide-react';
+import { Save, Loader2, X, Trash2, Plus } from 'lucide-react';
 
 /** Fields we highlight at the top when present */
-const KEY_FIELDS = ['product_name', 'price', 'stock', 'color', 'sku', 'image_url', 'description', 'category'];
-const NUMBER_FIELDS = ['price', 'stock'];
+const KEY_FIELDS = ['product_name', 'price', 'color_variants', 'image_url', 'description', 'category'];
+const NUMBER_FIELDS = ['price'];
+
+// PLANET-1321: color variant type
+interface ColorVariant {
+  color: string;
+  stock: number;
+  sku: string;
+}
 
 function isNumberField(key: string, originalValue: unknown): boolean {
   return NUMBER_FIELDS.includes(key) || (typeof originalValue === 'number' && key !== 'product_name' && key !== 'description' && key !== 'image_url' && key !== 'category');
@@ -36,9 +43,7 @@ interface CasePayloadDialogProps {
 const FIELD_LABELS: Record<string, string> = {
   product_name: '商品名',
   price: '价格',
-  stock: '库存',
-  color: '颜色分类',
-  sku: 'SKU',
+  color_variants: '颜色/库存/SKU',
   image_url: '商品图片',
   description: '描述',
   category: '分类',
@@ -54,6 +59,7 @@ export default function CasePayloadDialog({
   requiredFields = [],
 }: CasePayloadDialogProps) {
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -70,11 +76,14 @@ export default function CasePayloadDialog({
       'creditsRemaining', 'skus', 'skipped', 'reason', 'productId',
       'productAdminUrl', 'productHandle', 'productPublicUrl', 'shopifyTitle',
       'source', 'b64',
+      // PLANET-1321: managed by color_variants editor
+      'color', 'sku', 'stock',
     ]);
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(safePayload)) {
       if (k.startsWith('_')) continue;
       if (HIDDEN_FIELDS.has(k)) continue;
+      if (k === 'color_variants') continue; // handled separately
       try {
         flat[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
       } catch {
@@ -82,6 +91,24 @@ export default function CasePayloadDialog({
       }
     }
     setFields(flat);
+
+    // PLANET-1321: initialize color_variants
+    let cv: ColorVariant[] = [];
+    if (Array.isArray(safePayload.color_variants) && safePayload.color_variants.length > 0) {
+      cv = (safePayload.color_variants as ColorVariant[]).map((v: any) => ({
+        color: v.color || '',
+        stock: Number(v.stock) || 0,
+        sku: v.sku || '',
+      }));
+    } else if (safePayload.color || safePayload.sku || safePayload.stock) {
+      // Auto-migrate from legacy fields
+      cv = [{
+        color: String(safePayload.color || ''),
+        stock: Number(safePayload.stock) || 0,
+        sku: String(safePayload.sku || ''),
+      }];
+    }
+    setColorVariants(cv);
     setInitialized(true);
   }, [open, payload, initialized]);
 
@@ -102,6 +129,9 @@ export default function CasePayloadDialog({
           parsed[k] = v;
         }
       }
+      // PLANET-1321: serialize color_variants + backward compat stock
+      parsed.color_variants = colorVariants;
+      parsed.stock = colorVariants.reduce((sum, cv) => sum + (cv.stock || 0), 0);
       const resp = await apiClient.patch<{ case: { payload: string } }>(`/api/cases/${caseId}/payload`, { fields: parsed });
       setSaved(true);
       // PLANET-1316: use server-merged payload (includes hidden fields) instead
@@ -115,7 +145,9 @@ export default function CasePayloadDialog({
     }
   };
 
-  const sortedKeys = Object.keys(fields).sort((a, b) => {
+  // PLANET-1321: include color_variants in sorted keys even though it's not in fields dict
+  const allKeys = [...new Set([...Object.keys(fields), 'color_variants'])];
+  const sortedKeys = allKeys.sort((a, b) => {
     const aKey = KEY_FIELDS.indexOf(a);
     const bKey = KEY_FIELDS.indexOf(b);
     if (aKey !== -1 && bKey !== -1) return aKey - bKey;
@@ -159,6 +191,80 @@ export default function CasePayloadDialog({
             const isRequired = requiredFields.includes(key);
             const isEmpty = !val || val.trim() === '' || val === '0';
             const isNum = isNumberField(key, payload[key]);
+
+            // PLANET-1321: render color_variants as structured editor
+            if (key === 'color_variants') {
+              const totalStock = colorVariants.reduce((sum, cv) => sum + (cv.stock || 0), 0);
+              return (
+                <div key={key} className="space-y-2">
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <span className="text-amber-500">★</span>
+                    颜色/库存/SKU
+                  </Label>
+                  {colorVariants.map((cv, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <Input
+                        type="text"
+                        className="h-8 text-xs flex-1"
+                        placeholder="颜色"
+                        value={cv.color}
+                        onChange={(e) => {
+                          const next = [...colorVariants];
+                          next[idx] = { ...next[idx], color: e.target.value };
+                          setColorVariants(next);
+                          setSaved(false);
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        className="h-8 text-xs w-20"
+                        placeholder="库存"
+                        value={cv.stock || ''}
+                        onChange={(e) => {
+                          const next = [...colorVariants];
+                          next[idx] = { ...next[idx], stock: Number(e.target.value) || 0 };
+                          setColorVariants(next);
+                          setSaved(false);
+                        }}
+                      />
+                      <Input
+                        type="text"
+                        className="h-8 text-xs flex-1"
+                        placeholder="SKU"
+                        value={cv.sku}
+                        onChange={(e) => {
+                          const next = [...colorVariants];
+                          next[idx] = { ...next[idx], sku: e.target.value };
+                          setColorVariants(next);
+                          setSaved(false);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          setColorVariants(colorVariants.filter((_, i) => i !== idx));
+                          setSaved(false);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    onClick={() => {
+                      setColorVariants([...colorVariants, { color: '', stock: 0, sku: '' }]);
+                      setSaved(false);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> 添加颜色
+                  </button>
+                  <div className="text-xs text-muted-foreground">总库存: {totalStock}</div>
+                </div>
+              );
+            }
 
             return (
               <div key={key} className="space-y-1">

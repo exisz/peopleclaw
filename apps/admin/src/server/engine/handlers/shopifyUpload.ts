@@ -19,6 +19,12 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     };
   }
 
+  // PLANET-1321: color_variants from attribute panel take priority
+  const colorVariants = Array.isArray(payload.color_variants)
+    ? payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>
+    : null;
+  const productName = (payload.product_name as string) || (payload.title as string) || '';
+
   // PLANET-1120 / PLANET-1121: support variants from ai.generate_skus payload.
   // Shopify REST requires `options: [{name}]` + `option1` per variant when there
   // are multiple variants — a `title` field on the variant alone yields 422
@@ -32,7 +38,19 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
   // pattern), then fall back to a generated label.
   let variants: Array<Record<string, unknown>> | undefined;
   let options: Array<{ name: string }> | undefined;
-  if (skus && skus.length > 0) {
+
+  // PLANET-1321: color_variants take priority over skus
+  if (colorVariants && colorVariants.length > 0) {
+    const humanPrice = payload.price != null && payload.price !== '' ? String(payload.price) : '0.00';
+    variants = colorVariants.map((cv) => ({
+      option1: cv.color || 'Default',
+      sku: cv.sku || '',
+      price: humanPrice,
+      inventory_quantity: cv.stock ?? 0,
+      inventory_management: 'shopify',
+    }));
+    if (variants.length > 1) options = [{ name: '颜色' }];
+  } else if (skus && skus.length > 0) {
     const seen = new Set<string>();
     variants = skus.map((s, i) => {
       let opt = (s.option1 ?? '').toString().trim();
@@ -57,7 +75,7 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
       }
       return v;
     });
-    if (variants.length > 1) options = [{ name: 'Style' }];
+    if (variants.length > 1) options = [{ name: '颜色' }];
   }
 
   // PLANET-1316: human-entered price overrides AI-generated SKU prices

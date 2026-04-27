@@ -7,6 +7,18 @@ import type { Handler } from './index.js';
 export const aiGenerateSkusHandler: Handler = async (input, _ctx) => {
   const { payload } = input;
 
+  // PLANET-1321: color_variants from attribute panel take priority — skip AI generation
+  if (Array.isArray(payload.color_variants) && payload.color_variants.length > 0) {
+    const skus = (payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>).map((cv) => ({
+      sku: cv.sku || '',
+      title: `${(payload.product_name || payload.title || 'Product') as string} - ${cv.color || 'Default'}`,
+      price: payload.price ?? '0.00',
+      inventory_quantity: cv.stock ?? 0,
+      option1: cv.color || 'Default',
+    }));
+    return { output: { skus, skipped: true } };
+  }
+
   // PLANET-1260: skip if human already provided SKUs
   if (payload.skus) {
     if (Array.isArray(payload.skus) && payload.skus.length > 0) {

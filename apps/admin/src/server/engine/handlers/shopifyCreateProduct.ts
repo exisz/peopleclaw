@@ -34,20 +34,42 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   const productType = (payload.product_type as string) || (cfg.product_type as string) || 'General';
   const status = (cfg.status as string) || 'draft';
 
-  // Build variants from context.skus or fallback to a single default variant
+  // PLANET-1321: color_variants from attribute panel take priority
+  const colorVariants = Array.isArray(payload.color_variants)
+    ? payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>
+    : null;
+
+  // Build variants from color_variants, context.skus, or fallback to a single default variant
   const rawSkus = (payload.skus as SkuItem[]) || [];
   // PLANET-1316: human-entered price overrides AI-generated SKU prices
   const humanPrice = payload.price != null && payload.price !== '' ? String(payload.price) : null;
-  const variants =
-    rawSkus.length > 0
-      ? rawSkus.map((s) => ({
-          option1: s.title ?? s.sku ?? 'Default',
-          sku: s.sku ?? '',
-          price: humanPrice ?? String(s.price ?? '0.00'),
-          inventory_management: 'shopify',
-          inventory_quantity: s.inventory_quantity ?? 0,
-        }))
-      : [{ option1: 'Default', price: humanPrice ?? String(payload.price ?? '0.00'), inventory_management: 'shopify', inventory_quantity: 10 }];
+  let variants;
+  let variantOptions: Array<{ name: string; values?: string[] }> | undefined;
+
+  if (colorVariants && colorVariants.length > 0) {
+    variants = colorVariants.map((cv) => ({
+      option1: cv.color || 'Default',
+      sku: cv.sku || '',
+      price: humanPrice ?? String(payload.price ?? '0.00'),
+      inventory_management: 'shopify',
+      inventory_quantity: cv.stock ?? 0,
+    }));
+    variantOptions = colorVariants.length > 1
+      ? [{ name: '颜色', values: colorVariants.map(cv => cv.color || 'Default') }]
+      : undefined;
+  } else if (rawSkus.length > 0) {
+    variants = rawSkus.map((s) => ({
+      option1: s.title ?? s.sku ?? 'Default',
+      sku: s.sku ?? '',
+      price: humanPrice ?? String(s.price ?? '0.00'),
+      inventory_management: 'shopify',
+      inventory_quantity: s.inventory_quantity ?? 0,
+    }));
+    variantOptions = [{ name: '颜色', values: rawSkus.map((s) => s.title ?? s.sku ?? 'Default') }];
+  } else {
+    variants = [{ option1: 'Default', price: humanPrice ?? String(payload.price ?? '0.00'), inventory_management: 'shopify', inventory_quantity: 10 }];
+    variantOptions = undefined;
+  }
 
   const body: Record<string, unknown> = {
     product: {
@@ -57,7 +79,7 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
       product_type: productType,
       status,
       variants,
-      options: rawSkus.length > 0 ? [{ name: 'Size', values: rawSkus.map((s) => s.title ?? s.sku ?? 'Default') }] : [],
+      options: variantOptions ?? [],
     },
   };
 
