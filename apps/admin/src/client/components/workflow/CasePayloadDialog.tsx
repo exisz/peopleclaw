@@ -9,14 +9,14 @@ import ImageUploader from '../ui/ImageUploader';
 import { Save, Loader2, X, Trash2, Plus } from 'lucide-react';
 
 /** Fields we highlight at the top when present */
-const KEY_FIELDS = ['product_name', 'price', 'color_variants', 'image_url', 'description', 'category'];
+const KEY_FIELDS = ['product_name', 'price', 'sku', 'color_variants', 'image_url', 'description', 'category'];
 const NUMBER_FIELDS = ['price'];
 
 // PLANET-1321: color variant type
 interface ColorVariant {
   color: string;
   stock: number;
-  sku: string;
+  price: number;
 }
 
 function isNumberField(key: string, originalValue: unknown): boolean {
@@ -42,8 +42,9 @@ interface CasePayloadDialogProps {
 
 const FIELD_LABELS: Record<string, string> = {
   product_name: '商品名',
-  price: '价格',
-  color_variants: '颜色/库存/SKU',
+  price: '基础价格',
+  sku: 'SKU (产品型号)',
+  color_variants: '颜色分类',
   image_url: '商品图片',
   description: '描述',
   category: '分类',
@@ -77,7 +78,7 @@ export default function CasePayloadDialog({
       'productAdminUrl', 'productHandle', 'productPublicUrl', 'shopifyTitle',
       'source', 'b64',
       // PLANET-1321: managed by color_variants editor
-      'color', 'sku', 'stock',
+      'color', 'stock',
     ]);
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(safePayload)) {
@@ -98,14 +99,14 @@ export default function CasePayloadDialog({
       cv = (safePayload.color_variants as ColorVariant[]).map((v: any) => ({
         color: v.color || '',
         stock: Number(v.stock) || 0,
-        sku: v.sku || '',
+        price: Number(v.price) || 0,
       }));
-    } else if (safePayload.color || safePayload.sku || safePayload.stock) {
+    } else if (safePayload.color || safePayload.stock) {
       // Auto-migrate from legacy fields
       cv = [{
         color: String(safePayload.color || ''),
         stock: Number(safePayload.stock) || 0,
-        sku: String(safePayload.sku || ''),
+        price: Number(safePayload.price) || 0,
       }];
     }
     setColorVariants(cv);
@@ -199,7 +200,7 @@ export default function CasePayloadDialog({
                 <div key={key} className="space-y-2">
                   <Label className="text-xs font-medium flex items-center gap-1.5">
                     <span className="text-amber-500">★</span>
-                    颜色/库存/SKU
+                    颜色分类
                   </Label>
                   {colorVariants.map((cv, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
@@ -228,13 +229,13 @@ export default function CasePayloadDialog({
                         }}
                       />
                       <Input
-                        type="text"
-                        className="h-8 text-xs flex-1"
-                        placeholder="SKU"
-                        value={cv.sku}
+                        type="number"
+                        className="h-8 text-xs w-20"
+                        placeholder="价格"
+                        value={cv.price || ''}
                         onChange={(e) => {
                           const next = [...colorVariants];
-                          next[idx] = { ...next[idx], sku: e.target.value };
+                          next[idx] = { ...next[idx], price: Number(e.target.value) || 0 };
                           setColorVariants(next);
                           setSaved(false);
                         }}
@@ -255,7 +256,7 @@ export default function CasePayloadDialog({
                     type="button"
                     className="flex items-center gap-1 text-xs text-primary hover:underline"
                     onClick={() => {
-                      setColorVariants([...colorVariants, { color: '', stock: 0, sku: '' }]);
+                      setColorVariants([...colorVariants, { color: '', stock: 0, price: 0 }]);
                       setSaved(false);
                     }}
                   >

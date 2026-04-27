@@ -9,10 +9,12 @@ export const aiGenerateSkusHandler: Handler = async (input, _ctx) => {
 
   // PLANET-1321: color_variants from attribute panel take priority — skip AI generation
   if (Array.isArray(payload.color_variants) && payload.color_variants.length > 0) {
-    const skus = (payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>).map((cv) => ({
-      sku: cv.sku || '',
+    const fallbackPrice = payload.price ?? '0.00';
+    const productSku = (payload.sku as string) || '';
+    const skus = (payload.color_variants as Array<{color?: string; stock?: number; price?: number}>).map((cv) => ({
+      sku: productSku,
       title: cv.color || 'Default',
-      price: payload.price ?? '0.00',
+      price: cv.price != null && cv.price !== 0 ? String(cv.price) : String(fallbackPrice),
       inventory_quantity: cv.stock ?? 0,
       option1: cv.color || 'Default',
     }));

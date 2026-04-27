@@ -36,8 +36,9 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
 
   // PLANET-1321: color_variants from attribute panel take priority
   const colorVariants = Array.isArray(payload.color_variants)
-    ? payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>
+    ? payload.color_variants as Array<{color?: string; stock?: number; price?: number}>
     : null;
+  const productSku = (payload.sku as string) || '';
 
   // Build variants from color_variants, context.skus, or fallback to a single default variant
   const rawSkus = (payload.skus as SkuItem[]) || [];
@@ -47,10 +48,11 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
   let variantOptions: Array<{ name: string; values?: string[] }> | undefined;
 
   if (colorVariants && colorVariants.length > 0) {
+    const fallbackPriceStr = humanPrice ?? String(payload.price ?? '0.00');
     variants = colorVariants.map((cv) => ({
       option1: cv.color || 'Default',
-      sku: cv.sku || '',
-      price: humanPrice ?? String(payload.price ?? '0.00'),
+      sku: productSku,
+      price: cv.price != null && cv.price !== 0 ? String(cv.price) : fallbackPriceStr,
       inventory_management: 'shopify',
       inventory_quantity: cv.stock ?? 0,
     }));
