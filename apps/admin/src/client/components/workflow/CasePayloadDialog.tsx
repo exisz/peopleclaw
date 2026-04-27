@@ -216,30 +216,36 @@ export default function CasePayloadDialog({
                           setSaved(false);
                         }}
                       />
-                      <Input
-                        type="number"
-                        className="h-8 text-xs w-20"
-                        placeholder="库存"
-                        value={cv.stock || ''}
-                        onChange={(e) => {
-                          const next = [...colorVariants];
-                          next[idx] = { ...next[idx], stock: Number(e.target.value) || 0 };
-                          setColorVariants(next);
-                          setSaved(false);
-                        }}
-                      />
-                      <Input
-                        type="number"
-                        className="h-8 text-xs w-20"
-                        placeholder="价格"
-                        value={cv.price || ''}
-                        onChange={(e) => {
-                          const next = [...colorVariants];
-                          next[idx] = { ...next[idx], price: Number(e.target.value) || 0 };
-                          setColorVariants(next);
-                          setSaved(false);
-                        }}
-                      />
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">库存</span>
+                        <Input
+                          type="number"
+                          className="h-8 text-xs w-16"
+                          placeholder="0"
+                          value={cv.stock || ''}
+                          onChange={(e) => {
+                            const next = [...colorVariants];
+                            next[idx] = { ...next[idx], stock: Number(e.target.value) || 0 };
+                            setColorVariants(next);
+                            setSaved(false);
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">价格</span>
+                        <Input
+                          type="number"
+                          className="h-8 text-xs w-16"
+                          placeholder="0"
+                          value={cv.price || ''}
+                          onChange={(e) => {
+                            const next = [...colorVariants];
+                            next[idx] = { ...next[idx], price: Number(e.target.value) || 0 };
+                            setColorVariants(next);
+                            setSaved(false);
+                          }}
+                        />
+                      </div>
                       <button
                         type="button"
                         className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
