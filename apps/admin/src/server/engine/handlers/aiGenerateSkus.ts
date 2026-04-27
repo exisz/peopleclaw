@@ -11,7 +11,7 @@ export const aiGenerateSkusHandler: Handler = async (input, _ctx) => {
   if (Array.isArray(payload.color_variants) && payload.color_variants.length > 0) {
     const skus = (payload.color_variants as Array<{color?: string; stock?: number; sku?: string}>).map((cv) => ({
       sku: cv.sku || '',
-      title: `${(payload.product_name || payload.title || 'Product') as string} - ${cv.color || 'Default'}`,
+      title: cv.color || 'Default',
       price: payload.price ?? '0.00',
       inventory_quantity: cv.stock ?? 0,
       option1: cv.color || 'Default',
