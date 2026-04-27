@@ -214,7 +214,6 @@ export default function CasePayloadDialog({
             );
           })}
           {/* PLANET-1317: removed custom "add field" input — not needed for standard users */}
-          </div>
         </div>
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t">
