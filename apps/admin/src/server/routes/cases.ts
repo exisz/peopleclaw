@@ -177,6 +177,26 @@ casesRouter.post('/cases/:id/continue', async (req, res) => {
   }
 });
 
+// PLANET-1323: POST /api/cases/:id/rerun — reset completed case for re-run
+casesRouter.post('/cases/:id/rerun', async (req, res) => {
+  const r = req as unknown as TenantedRequest;
+  const prisma = getPrisma();
+  const c = await prisma.case.findUnique({ where: { id: req.params.id } });
+  if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
+  if (c.status !== 'done' && c.status !== 'failed' && c.status !== 'cancelled') {
+    res.status(400).json({ error: `Case must be in terminal status (done/failed/cancelled), got: ${c.status}` });
+    return;
+  }
+  // Delete all existing steps (clean slate)
+  await prisma.caseStep.deleteMany({ where: { caseId: c.id } });
+  // Reset status and currentStepId, keep payload intact
+  const updated = await prisma.case.update({
+    where: { id: c.id },
+    data: { status: 'waiting_human', currentStepId: null },
+  });
+  res.json({ case: updated });
+});
+
 // PLANET-1260: POST /api/cases/:id/run-ai — re-run AI handler for current step without advancing
 casesRouter.post('/cases/:id/run-ai', async (req, res) => {
   const r = req as unknown as TenantedRequest;

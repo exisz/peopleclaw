@@ -34,6 +34,8 @@ export interface UseCasesReturn {
   patchCasePayload: (caseId: string, newPayload: string) => void;
   /** Rename a case title via PATCH /api/cases/:id */
   renameCase: (c: CaseRecord, newTitle: string) => Promise<void>;
+  /** PLANET-1323: Rerun a completed case (reset to waiting_human) */
+  rerunCase: (c: CaseRecord) => Promise<void>;
 }
 
 export function useCases(workflowId: string): UseCasesReturn {
@@ -279,5 +281,14 @@ export function useCases(workflowId: string): UseCasesReturn {
         await loadCases();
       }
     }, [loadCases]),
+    // PLANET-1323: rerun a completed case
+    rerunCase: useCallback(async (c: CaseRecord) => {
+      try {
+        const resp = await apiClient.post<{ case: CaseRecord }>(`/api/cases/${c.id}/rerun`);
+        setCases(prev => prev ? prev.map(x => x.id === c.id ? resp.case : x) : prev);
+      } catch (e) {
+        console.error('[useCases] rerunCase failed:', e);
+      }
+    }, []),
   };
 }

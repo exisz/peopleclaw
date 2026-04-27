@@ -138,6 +138,7 @@ export default function CasesPanel({
           onOpenPayload={setPayloadCase}
           onOpenSteps={(c) => void handleOpenSteps(c)}
           onRename={(c, newTitle) => void hook.renameCase(c, newTitle)}
+          onRerun={(c) => void hook.rerunCase(c)}
         />
       </div>
 

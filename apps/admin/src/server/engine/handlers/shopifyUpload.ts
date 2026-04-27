@@ -113,10 +113,18 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     },
   };
 
+  // PLANET-1323: If productId exists in payload, UPDATE instead of CREATE
+  const existingProductId = payload.productId as number | undefined;
+  const isUpdate = !!existingProductId;
+  const endpoint = isUpdate ? `products/${existingProductId}.json` : 'products.json';
+  const method = isUpdate ? 'PUT' : 'POST';
+
+  console.log('[shopify:upload]', { isUpdate, existingProductId, endpoint });
+
   let res: Response;
   try {
-    res = await shopifyFetch(creds, 'products.json', {
-      method: 'POST',
+    res = await shopifyFetch(creds, endpoint, {
+      method,
       body: JSON.stringify(body),
     });
   } catch (e) {

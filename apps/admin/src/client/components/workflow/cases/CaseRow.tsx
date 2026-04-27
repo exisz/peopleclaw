@@ -115,6 +115,7 @@ interface CaseRowProps {
   onOpenPayload: (c: CaseRecord) => void;
   onOpenSteps: (c: CaseRecord) => void;
   onRename: (c: CaseRecord, newTitle: string) => void;
+  onRerun?: (c: CaseRecord) => void;
 }
 
 export function CaseRow({
@@ -135,6 +136,7 @@ export function CaseRow({
   onOpenPayload,
   onOpenSteps,
   onRename,
+  onRerun,
 }: CaseRowProps) {
   const isCompleting = completing === c.id;
   const isContinuing = continuing === c.id;
@@ -180,6 +182,14 @@ export function CaseRow({
       label: '🔍 检查问题步骤',
       disabled: isLoadingThisSteps,
       onClick: () => onOpenSteps(c),
+    });
+  }
+
+  // PLANET-1323: Add rerun button for terminal cases
+  if (onRerun && (c.status === 'done' || c.status === 'failed' || c.status === 'cancelled')) {
+    menuItems.push({
+      label: '🔄 修改商品',
+      onClick: () => onRerun(c),
     });
   }
 
