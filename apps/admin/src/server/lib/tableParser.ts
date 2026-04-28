@@ -29,6 +29,7 @@ const SYNONYM_MAP: Record<string, string> = {
   // stock
   库存: 'stock',
   数量: 'stock',
+  总库存: 'stock',
   stock: 'stock',
   qty: 'stock',
   quantity: 'stock',
@@ -91,11 +92,13 @@ const rowSchema = z.object({
   product_name: z.string().min(1, '商品名不能为空').max(200, '商品名不得超过200字'),
   price: z
     .union([z.number(), z.string()])
-    .transform((v) => Number(v))
+    .optional()
+    .transform((v) => (v == null || v === '' ? 0 : Number(v)))
     .pipe(z.number().min(0, '价格不能为负')),
   stock: z
     .union([z.number(), z.string()])
-    .transform((v) => Number(v))
+    .optional()
+    .transform((v) => (v == null || v === '' ? 0 : Number(v)))
     .pipe(
       z
         .number()
