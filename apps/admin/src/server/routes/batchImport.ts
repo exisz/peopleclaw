@@ -163,18 +163,22 @@ batchImportRouter.post(
             ...(row.category ? { category: row.category } : {}),
             // PLANET-1345: parse color string into color_variants
             // Supports: "白色/绿色" or "白色:128/绿色:118" (color:price format)
-            ...(row.color ? {
-              color_variants: row.color
+            // Stock is evenly distributed from total row.stock
+            ...(row.color ? (() => {
+              const colors = row.color
                 .split(/[/\/,、，]+/)
                 .map(c => c.trim())
-                .filter(Boolean)
-                .map(c => {
+                .filter(Boolean);
+              const stockEach = colors.length > 0 ? Math.floor(row.stock / colors.length) : row.stock;
+              return {
+                color_variants: colors.map(c => {
                   const parts = c.split(/[:：]/);
                   const color = parts[0]?.trim() || c;
                   const price = parts[1] ? Number(parts[1].trim()) || 0 : 0;
-                  return { color, stock: 0, price };
+                  return { color, stock: stockEach, price };
                 }),
-            } : {}),
+              };
+            })() : {}),
             batch_id: batchId,
             batch_row: row.row,
           }),
