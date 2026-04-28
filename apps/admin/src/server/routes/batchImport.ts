@@ -143,49 +143,91 @@ batchImportRouter.post(
     const createdCases: Array<{ id: string; status: string; row: number }> = [];
     const caseIdsToAdvance: string[] = [];
 
-    // Fan-out: ok_rows → running cases
+    // PLANET-1345: Merge rows with same product_name into one case with color_variants
+    // If a row has color/color_price/color_stock columns, treat multi-row same-name as variants
+    interface MergedProduct {
+      product_name: string;
+      price: number;
+      stock: number;
+      image_url?: string;
+      sku?: string;
+      description?: string;
+      category?: string;
+      color_variants: Array<{ color: string; stock: number; price: number }>;
+      rows: number[];
+    }
+    const mergedMap = new Map<string, MergedProduct>();
     for (const row of ok_rows) {
+      const key = row.product_name.trim();
+      if (!mergedMap.has(key)) {
+        mergedMap.set(key, {
+          product_name: row.product_name,
+          price: row.price,
+          stock: row.stock,
+          image_url: row.image_url,
+          sku: row.sku,
+          description: row.description,
+          category: row.category,
+          color_variants: [],
+          rows: [],
+        });
+      }
+      const m = mergedMap.get(key)!;
+      m.rows.push(row.row);
+
+      // If row has a color field (single color per row), add as variant
+      if (row.color) {
+        // Single color per row (multi-row merge mode)
+        const colorName = row.color.trim();
+        if (colorName && !colorName.includes('/') && !colorName.includes(',')) {
+          m.color_variants.push({
+            color: colorName,
+            price: row.color_price ?? row.price,
+            stock: row.color_stock ?? row.stock,
+          });
+        } else {
+          // Old format: "白色/绿色" or "白色:128/绿色:118" in a single cell
+          const colors = colorName.split(/[/\/,、，]+/).map(c => c.trim()).filter(Boolean);
+          const stockEach = colors.length > 0 ? Math.floor(row.stock / colors.length) : row.stock;
+          for (const c of colors) {
+            const parts = c.split(/[:：]/);
+            const color = parts[0]?.trim() || c;
+            const price = parts[1] ? Number(parts[1].trim()) || 0 : 0;
+            const stock = parts[2] ? Number(parts[2].trim()) || 0 : stockEach;
+            m.color_variants.push({ color, stock, price });
+          }
+        }
+      }
+    }
+
+    // Fan-out: merged products → running cases
+    for (const [, m] of mergedMap) {
+      const totalStock = m.color_variants.length > 0
+        ? m.color_variants.reduce((sum, cv) => sum + cv.stock, 0)
+        : m.stock;
       const c = await prisma.case.create({
         data: {
           workflowId,
           ownerId: r.user.id,
           tenantId: r.tenant.id,
-          title: `[批次] ${row.product_name} (行${row.row})`,
+          title: `[批次] ${m.product_name} (行${m.rows.join(',')})`,
           batchId,
           status: 'running',
           payload: JSON.stringify({
-            product_name: row.product_name,
-            price: row.price,
-            stock: row.stock,
-            ...(row.image_url ? { image_url: row.image_url } : {}),
-            ...(row.sku ? { sku: row.sku } : {}),
-            ...(row.description ? { description: row.description } : {}),
-            ...(row.category ? { category: row.category } : {}),
-            // PLANET-1345: parse color string into color_variants
-            // Supports: "白色/绿色" or "白色:128/绿色:118" (color:price format)
-            // Stock is evenly distributed from total row.stock
-            ...(row.color ? (() => {
-              const colors = row.color
-                .split(/[/\/,、，]+/)
-                .map(c => c.trim())
-                .filter(Boolean);
-              const stockEach = colors.length > 0 ? Math.floor(row.stock / colors.length) : row.stock;
-              return {
-                color_variants: colors.map(c => {
-                  const parts = c.split(/[:：]/);
-                  const color = parts[0]?.trim() || c;
-                  const price = parts[1] ? Number(parts[1].trim()) || 0 : 0;
-                  const stock = parts[2] ? Number(parts[2].trim()) || 0 : stockEach;
-                  return { color, stock, price };
-                }),
-              };
-            })() : {}),
+            product_name: m.product_name,
+            price: m.price,
+            stock: totalStock,
+            ...(m.image_url ? { image_url: m.image_url } : {}),
+            ...(m.sku ? { sku: m.sku } : {}),
+            ...(m.description ? { description: m.description } : {}),
+            ...(m.category ? { category: m.category } : {}),
+            ...(m.color_variants.length > 0 ? { color_variants: m.color_variants } : {}),
             batch_id: batchId,
-            batch_row: row.row,
+            batch_rows: m.rows,
           }),
         },
       });
-      createdCases.push({ id: c.id, status: 'running', row: row.row });
+      createdCases.push({ id: c.id, status: 'running', row: m.rows[0] });
       caseIdsToAdvance.push(c.id);
     }
 

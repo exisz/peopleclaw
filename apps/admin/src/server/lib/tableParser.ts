@@ -65,6 +65,16 @@ const SYNONYM_MAP: Record<string, string> = {
   color: 'color',
   colors: 'color',
   colour: 'color',
+  // color_price (PLANET-1345)
+  颜色价格: 'color_price',
+  色价: 'color_price',
+  colorprice: 'color_price',
+  color_price: 'color_price',
+  // color_stock (PLANET-1345)
+  颜色库存: 'color_stock',
+  色库存: 'color_stock',
+  colorstock: 'color_stock',
+  color_stock: 'color_stock',
 };
 
 /** Normalise a raw column header to a lookup key */
@@ -108,6 +118,8 @@ const rowSchema = z.object({
   category: z.string().optional().transform((v) => (v === '' ? undefined : v)),
   // PLANET-1345: color column — "白色/绿色" or "白色,绿色" format
   color: z.string().optional().transform((v) => (v === '' || v == null ? undefined : v)),
+  color_price: z.union([z.number(), z.string()]).optional().transform((v) => (v == null || v === '' ? undefined : Number(v) || undefined)),
+  color_stock: z.union([z.number(), z.string()]).optional().transform((v) => (v == null || v === '' ? undefined : Number(v) || undefined)),
 });
 
 export type OkRow = {
@@ -120,6 +132,8 @@ export type OkRow = {
   description?: string;
   category?: string;
   color?: string;
+  color_price?: number;
+  color_stock?: number;
 };
 
 export type ErrorRow = {
@@ -193,6 +207,8 @@ export function parseTableBuffer(buffer: Buffer, filename: string): ParseResult 
       if (d.description) okRow.description = d.description;
       if (d.category) okRow.category = d.category;
       if (d.color) okRow.color = d.color;
+      if (d.color_price != null) okRow.color_price = d.color_price;
+      if (d.color_stock != null) okRow.color_stock = d.color_stock;
       ok_rows.push(okRow);
     } else {
       // Report the first error per row
