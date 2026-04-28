@@ -175,7 +175,8 @@ batchImportRouter.post(
                   const parts = c.split(/[:：]/);
                   const color = parts[0]?.trim() || c;
                   const price = parts[1] ? Number(parts[1].trim()) || 0 : 0;
-                  return { color, stock: stockEach, price };
+                  const stock = parts[2] ? Number(parts[2].trim()) || 0 : stockEach;
+                  return { color, stock, price };
                 }),
               };
             })() : {}),
