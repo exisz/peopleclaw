@@ -94,7 +94,19 @@ export const publishShopifyHandler: Handler = async (input, ctx) => {
         const b64 = imageUrl.split(',')[1] || '';
         imgBody = { image: { attachment: b64, filename: 'product.png' } };
       } else {
-        imgBody = { image: { src: imageUrl } };
+        // Fetch image and convert to base64 attachment (handles redirects)
+        try {
+          const imgFetch = await fetch(imageUrl, { redirect: 'follow' });
+          if (!imgFetch.ok) {
+            imgBody = { image: { src: imageUrl } };
+          } else {
+            const buf = Buffer.from(await imgFetch.arrayBuffer());
+            const ext = imageUrl.match(/\.(png|jpe?g|gif|webp)/i)?.[1] || 'png';
+            imgBody = { image: { attachment: buf.toString('base64'), filename: `product.${ext}` } };
+          }
+        } catch {
+          imgBody = { image: { src: imageUrl } };
+        }
       }
       const imgRes = await shopifyFetch(creds, `products/${productId}/images.json`, {
         method: 'POST',

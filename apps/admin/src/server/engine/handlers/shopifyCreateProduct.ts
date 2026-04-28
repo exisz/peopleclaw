@@ -134,8 +134,20 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
       console.log('[shopify:image]', { mode: 'attachment', hasAttachment, attachmentSize: b64?.length, hasSrc: false });
       imgBody = { image: { attachment: b64, filename: 'product.png' } };
     } else {
-      console.log('[shopify:image]', { mode: 'src', hasAttachment: false, attachmentSize: 0, hasSrc: true });
-      imgBody = { image: { src: imageUrl } };
+      // Fetch image and convert to base64 attachment (handles redirects)
+      console.log('[shopify:image]', { mode: 'fetch-then-attach', hasSrc: true });
+      try {
+        const imgFetch = await fetch(imageUrl, { redirect: 'follow' });
+        if (!imgFetch.ok) {
+          imgBody = { image: { src: imageUrl } };
+        } else {
+          const buf = Buffer.from(await imgFetch.arrayBuffer());
+          const ext = imageUrl.match(/\.(png|jpe?g|gif|webp)/i)?.[1] || 'png';
+          imgBody = { image: { attachment: buf.toString('base64'), filename: `product.${ext}` } };
+        }
+      } catch {
+        imgBody = { image: { src: imageUrl } };
+      }
     }
     try {
       const imgRes = await shopifyFetch(creds, `products/${productId}/images.json`, {

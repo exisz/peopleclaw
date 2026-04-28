@@ -166,8 +166,24 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
       console.log('[shopify:image]', { handler: 'list_product', mode: 'attachment', attachmentSize: b64.length, productId });
       imgBody = { image: { attachment: b64, filename: 'product.png' } };
     } else {
-      console.log('[shopify:image]', { handler: 'list_product', mode: 'src', srcPreview: imageUrl.slice(0, 80), productId });
-      imgBody = { image: { src: imageUrl } };
+      // Fetch the image and convert to base64 attachment (handles redirects, avoids Shopify 422)
+      console.log('[shopify:image]', { handler: 'list_product', mode: 'fetch-then-attach', srcPreview: imageUrl.slice(0, 80), productId });
+      try {
+        const imgFetch = await fetch(imageUrl, { redirect: 'follow' });
+        if (!imgFetch.ok) {
+          console.warn('[shopify:image] fetch failed', { status: imgFetch.status, url: imageUrl.slice(0, 80) });
+          imgBody = { image: { src: imageUrl } }; // fallback to src
+        } else {
+          const buf = Buffer.from(await imgFetch.arrayBuffer());
+          const b64 = buf.toString('base64');
+          const ext = imageUrl.match(/\.(png|jpe?g|gif|webp)/i)?.[1] || 'png';
+          console.log('[shopify:image]', { handler: 'list_product', mode: 'fetched-attachment', size: buf.length, productId });
+          imgBody = { image: { attachment: b64, filename: `product.${ext}` } };
+        }
+      } catch (fetchErr) {
+        console.warn('[shopify:image] fetch error, falling back to src', { err: fetchErr instanceof Error ? fetchErr.message : String(fetchErr) });
+        imgBody = { image: { src: imageUrl } }; // fallback to src
+      }
     }
     try {
       const imgRes = await shopifyFetch(creds, `products/${productId}/images.json`, {
