@@ -126,6 +126,13 @@ batchImportRouter.post(
     }
 
     const { ok_rows, error_rows, unmapped_columns } = parseResult;
+    console.log('[batch-import] parse result', {
+      ok: ok_rows.length,
+      errors: error_rows.length,
+      unmapped: unmapped_columns,
+      firstOk: ok_rows[0],
+      firstErr: error_rows[0],
+    });
     if (ok_rows.length === 0 && error_rows.length === 0) {
       res.status(400).json({ error: '文件无有效数据行' });
       return;

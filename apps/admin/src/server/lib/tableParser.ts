@@ -148,8 +148,8 @@ export function parseTableBuffer(buffer: Buffer, filename: string): ParseResult 
   const headerRow = rows[0] as string[];
   const dataRows = rows.slice(1).filter((r) => r.some((cell) => cell !== '' && cell != null));
 
-  // v1 hard limit: 10 rows
-  const capped = dataRows.slice(0, 10);
+  // v1 hard limit: 50 rows
+  const capped = dataRows.slice(0, 50);
 
   // Build column mapping: raw header → standard field (or null if unmapped)
   const colMap: Array<string | null> = headerRow.map((h) => {
