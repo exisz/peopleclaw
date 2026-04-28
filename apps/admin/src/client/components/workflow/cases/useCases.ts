@@ -54,8 +54,8 @@ export function useCases(workflowId: string): UseCasesReturn {
 
   const loadCases = useCallback(async () => {
     try {
-      const d = await apiClient.get<{ cases: CaseRecord[] }>('/api/cases');
-      setCases((d.cases ?? []).filter((c) => c.workflowId === workflowId));
+      const d = await apiClient.get<{ cases: CaseRecord[] }>(`/api/cases?workflowId=${encodeURIComponent(workflowId)}`);
+      setCases(d.cases ?? []);
     } catch (err) {
       console.warn('[useCases] loadCases failed:', err);
     }

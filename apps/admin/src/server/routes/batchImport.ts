@@ -154,6 +154,14 @@ batchImportRouter.post(
             ...(row.sku ? { sku: row.sku } : {}),
             ...(row.description ? { description: row.description } : {}),
             ...(row.category ? { category: row.category } : {}),
+            // PLANET-1345: parse color string into color_variants
+            ...(row.color ? {
+              color_variants: row.color
+                .split(/[/\/,、，]+/)
+                .map(c => c.trim())
+                .filter(Boolean)
+                .map(c => ({ color: c, stock: 0, price: 0 })),
+            } : {}),
             batch_id: batchId,
             batch_row: row.row,
           }),

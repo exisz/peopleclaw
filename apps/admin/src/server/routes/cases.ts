@@ -53,11 +53,12 @@ casesRouter.post('/cases', async (req, res: Response) => {
 casesRouter.get('/cases', async (req, res) => {
   const r = req as unknown as TenantedRequest;
   const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+  const workflowId = typeof req.query.workflowId === 'string' ? req.query.workflowId : undefined;
   const prisma = getPrisma();
   const cases = await prisma.case.findMany({
-    where: { tenantId: r.tenant.id, ...(status ? { status } : {}) },
+    where: { tenantId: r.tenant.id, ...(status ? { status } : {}), ...(workflowId ? { workflowId } : {}) },
     orderBy: { updatedAt: 'desc' },
-    take: 100,
+    take: 500,
     select: {
       id: true, workflowId: true, title: true, status: true, batchId: true,
       currentStepId: true, payload: true, createdAt: true, updatedAt: true,

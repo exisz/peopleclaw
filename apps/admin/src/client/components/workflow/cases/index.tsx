@@ -192,6 +192,8 @@ export default function CasesPanel({
             for (const s of workflow.steps ?? []) {
               for (const f of s.requiredFields ?? []) all.add(f);
             }
+            // PLANET-1345: color_variants is never mandatory
+            all.delete('color_variants');
             return Array.from(all);
           })()}
         />

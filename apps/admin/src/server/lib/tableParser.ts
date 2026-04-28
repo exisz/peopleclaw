@@ -53,6 +53,13 @@ const SYNONYM_MAP: Record<string, string> = {
   品类: 'category',
   类别: 'category',
   category: 'category',
+  // color_variants (PLANET-1345)
+  颜色: 'color',
+  色: 'color',
+  颜色分类: 'color',
+  color: 'color',
+  colors: 'color',
+  colour: 'color',
 };
 
 /** Normalise a raw column header to a lookup key */
@@ -90,6 +97,8 @@ const rowSchema = z.object({
   sku: z.union([z.string(), z.number()]).optional().transform((v) => (v == null || v === '' ? undefined : String(v))),
   description: z.string().optional().transform((v) => (v === '' ? undefined : v)),
   category: z.string().optional().transform((v) => (v === '' ? undefined : v)),
+  // PLANET-1345: color column — "白色/绿色" or "白色,绿色" format
+  color: z.string().optional().transform((v) => (v === '' || v == null ? undefined : v)),
 });
 
 export type OkRow = {
@@ -101,6 +110,7 @@ export type OkRow = {
   sku?: string;
   description?: string;
   category?: string;
+  color?: string;
 };
 
 export type ErrorRow = {
@@ -173,6 +183,7 @@ export function parseTableBuffer(buffer: Buffer, filename: string): ParseResult 
       if (d.sku) okRow.sku = d.sku;
       if (d.description) okRow.description = d.description;
       if (d.category) okRow.category = d.category;
+      if (d.color) okRow.color = d.color;
       ok_rows.push(okRow);
     } else {
       // Report the first error per row
