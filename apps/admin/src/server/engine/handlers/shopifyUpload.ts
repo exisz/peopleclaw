@@ -151,7 +151,7 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
 
   // PLANET-1119: upload product image after creation (shopify.list_product was
   // missing image handling — PLANET-1118 only fixed shopify.create_product).
-  const imageUrl = (payload.imageUrl as string) || (payload.image as string) || null;
+  const imageUrl = (payload.image_url as string) || (payload.imageUrl as string) || (payload.image as string) || null;
   if (imageUrl && productId) {
     let imgBody: Record<string, unknown>;
     if (imageUrl.startsWith('data:')) {

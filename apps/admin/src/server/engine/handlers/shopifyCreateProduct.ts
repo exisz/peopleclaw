@@ -29,7 +29,7 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
 
   const title = (payload.product_name as string) || (payload.title as string) || (cfg.title as string) || 'Untitled Product';
   const description = (payload.description as string) || (cfg.description as string) || '';
-  const imageUrl = (payload.imageUrl as string) || (payload.image as string) || null;
+  const imageUrl = (payload.image_url as string) || (payload.imageUrl as string) || (payload.image as string) || null;
   const vendor = (payload.vendor as string) || (cfg.vendor as string) || 'PeopleClaw';
   const productType = (payload.product_type as string) || (cfg.product_type as string) || 'General';
   const status = (cfg.status as string) || 'draft';
