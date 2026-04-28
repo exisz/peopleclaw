@@ -1,11 +1,10 @@
 /**
- * PLANET-1260 — Reusable image uploader component
+ * PLANET-1260 / PLANET-1342 — Reusable image uploader component
  *
- * Drag & drop / click to upload via UploadThing.
- * Accepts value (current URL) + onChange (new URL) props.
+ * Drag & drop / click to upload. Reads file as base64 data URL
+ * and passes it directly to onChange (no external storage needed).
  */
 import { useCallback, useRef, useState } from 'react';
-import { useUploadThing } from '../../lib/uploadthing';
 import { Loader2, Trash2, Upload } from 'lucide-react';
 
 interface ImageUploaderProps {
@@ -17,21 +16,8 @@ interface ImageUploaderProps {
 export default function ImageUploader({ value, onChange, className }: ImageUploaderProps) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const { startUpload, isUploading } = useUploadThing('imageUploader', {
-    onClientUploadComplete: (res) => {
-      if (res?.[0]) {
-        // Use serverData.url which comes from onUploadComplete
-        const url = (res[0].serverData as { url: string })?.url || res[0].ufsUrl;
-        onChange(url);
-        setError(null);
-      }
-    },
-    onUploadError: (err) => {
-      setError(err.message || '上传失败');
-    },
-  });
 
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
@@ -46,9 +32,20 @@ export default function ImageUploader({ value, onChange, className }: ImageUploa
         return;
       }
       setError(null);
-      startUpload([file]);
+      setIsUploading(true);
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        onChange(reader.result as string);
+        setIsUploading(false);
+      };
+      reader.onerror = () => {
+        setError('读取图片失败');
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
     },
-    [startUpload],
+    [onChange],
   );
 
   const handleDrop = useCallback(
