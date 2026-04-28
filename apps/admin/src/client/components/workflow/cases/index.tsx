@@ -172,8 +172,13 @@ export default function CasesPanel({
         <CasePayloadDialog
           open
           onClose={() => setPayloadCase(null)}
-          onSaved={(newPayload) => {
+          onSaved={async (newPayload) => {
             hook.patchCasePayload(payloadCase.id, newPayload);
+            // PLANET-1340: if case was terminal, backend auto-reset status — refresh list
+            const terminal = ['done', 'failed', 'cancelled'];
+            if (terminal.includes(payloadCase.status)) {
+              await hook.loadCases();
+            }
           }}
           caseId={payloadCase.id}
           caseTitle={payloadCase.title}

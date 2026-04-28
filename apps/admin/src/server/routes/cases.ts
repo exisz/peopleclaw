@@ -118,9 +118,17 @@ casesRouter.patch('/cases/:id/payload', async (req, res) => {
   const c = await prisma.case.findUnique({ where: { id: req.params.id } });
   if (!c || c.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
   const merged = { ...JSON.parse(c.payload || '{}'), ...fields };
+  const isTerminal = c.status === 'done' || c.status === 'failed' || c.status === 'cancelled';
+  if (isTerminal) {
+    // Auto-reset terminal case so user can re-run workflow immediately (PLANET-1340)
+    await prisma.caseStep.deleteMany({ where: { caseId: c.id } });
+  }
   const updated = await prisma.case.update({
     where: { id: req.params.id },
-    data: { payload: JSON.stringify(merged) },
+    data: {
+      payload: JSON.stringify(merged),
+      ...(isTerminal ? { status: 'waiting_human', currentStepId: null } : {}),
+    },
   });
   res.json({ case: updated });
 });
