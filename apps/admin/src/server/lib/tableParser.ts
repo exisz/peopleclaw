@@ -10,8 +10,11 @@ import { z } from 'zod';
 const SYNONYM_MAP: Record<string, string> = {
   // product_name
   商品名: 'product_name',
+  商品名称: 'product_name',
   品名: 'product_name',
   名称: 'product_name',
+  产品名: 'product_name',
+  产品名称: 'product_name',
   product: 'product_name',
   name: 'product_name',
   title: 'product_name',
@@ -20,6 +23,8 @@ const SYNONYM_MAP: Record<string, string> = {
   // price
   价格: 'price',
   售价: 'price',
+  单价: 'price',
+  价格元: 'price',
   price: 'price',
   // stock
   库存: 'stock',
@@ -64,7 +69,11 @@ const SYNONYM_MAP: Record<string, string> = {
 
 /** Normalise a raw column header to a lookup key */
 function normaliseHeader(h: string): string {
-  return h.trim().toLowerCase().replace(/[\s_\-]/g, '');
+  return h.trim()
+    .replace(/[\(\)（）\[\]]/g, '') // strip parentheses/brackets
+    .replace(/\s*元\s*$/g, '')            // strip trailing "元"
+    .toLowerCase()
+    .replace(/[\s_\-]/g, '');
 }
 
 // ── Row validation schema ─────────────────────────────────────────────────────
