@@ -187,7 +187,6 @@ export default function CasePayloadDialog({
           )}
           {sortedKeys.map((key) => {
             const val = fields[key];
-            const showImage = isImageUrl(key, val);
             const isKeyField = KEY_FIELDS.includes(key);
             const isRequired = requiredFields.includes(key);
             const isEmpty = !val || val.trim() === '' || val === '0';
@@ -280,47 +279,27 @@ export default function CasePayloadDialog({
                   {FIELD_LABELS[key] || key}
                   {isRequired && isEmpty && <span className="text-red-400 text-[10px] ml-1">必填</span>}
                 </Label>
-                {showImage && val && (
-                  <div className="rounded border bg-muted/30 p-2 mb-1">
-                    <img
-                      src={val}
-                      alt={key}
-                      className="max-h-32 rounded object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  </div>
-                )}
                 {key === 'description' ? (
                   <textarea
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[60px] resize-y"
                     value={val}
                     onChange={(e) => updateField(key, e.target.value)}
                   />
+                ) : (key === 'image_url' || isImageUrl(key, val)) ? (
+                  <div className="space-y-1.5">
+                    <ImageUploader
+                      value={val}
+                      onChange={(url) => updateField(key, url)}
+                    />
+                  </div>
                 ) : (
                   <div className="space-y-1.5">
                     <Input
                       type="text"
                       className="h-8 text-xs"
                       value={val}
-                      placeholder={(key === 'image_url' || isImageUrl(key, val)) ? '粘贴图片链接' : ''}
                       onChange={(e) => updateField(key, e.target.value)}
                     />
-                    {(key === 'image_url' || isImageUrl(key, val)) && val && (
-                      <div className="rounded border bg-muted/30 p-2">
-                        <img
-                          src={val}
-                          alt={key}
-                          className="max-h-24 rounded object-contain"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      </div>
-                    )}
-                    {(key === 'image_url' || isImageUrl(key, val)) && (
-                      <ImageUploader
-                        value=""
-                        onChange={(url) => updateField(key, url)}
-                      />
-                    )}
                   </div>
                 )}
               </div>

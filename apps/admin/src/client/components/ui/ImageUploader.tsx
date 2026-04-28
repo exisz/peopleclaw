@@ -74,14 +74,34 @@ export default function ImageUploader({ value, onChange, className }: ImageUploa
             (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="absolute top-1 right-1 p-1 rounded-md bg-background/80 border border-border text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
-          title="删除"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="p-1 rounded-md bg-background/80 border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+            title="替换图片"
+          >
+            <Upload className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="p-1 rounded-md bg-background/80 border border-border text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            title="删除"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            if (e.target.files?.length) handleFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
       </div>
     );
   }
