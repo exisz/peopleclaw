@@ -78,10 +78,17 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
     if (variants.length > 1) options = [{ name: '颜色' }];
   }
 
-  // PLANET-1316: human-entered price overrides AI-generated SKU prices
+  // PLANET-1316 / PLANET-1344: human-entered price is fallback only.
+  // If a variant already has its own non-zero price (from color_variants),
+  // keep it. Only apply the top-level price to variants that lack one.
   if (payload.price != null && payload.price !== '' && variants) {
     const humanPrice = String(payload.price);
-    variants = variants.map(v => ({ ...v, price: humanPrice }));
+    variants = variants.map(v => {
+      const vp = v.price as string | undefined;
+      // Keep variant price if it exists and isn't zero/empty
+      if (vp && vp !== '0' && vp !== '0.00' && vp !== '') return v;
+      return { ...v, price: humanPrice };
+    });
   }
 
   // fallback: no skus — use single price field if present
