@@ -287,6 +287,13 @@ export default function CasePayloadDialog({
                   />
                 ) : (key === 'image_url' || isImageUrl(key, val)) ? (
                   <div className="space-y-1.5">
+                    <Input
+                      type="text"
+                      className="h-8 text-xs"
+                      value={val && !val.startsWith('data:') ? val : ''}
+                      placeholder="粘贴图片链接"
+                      onChange={(e) => updateField(key, e.target.value)}
+                    />
                     <ImageUploader
                       value={val}
                       onChange={(url) => updateField(key, url)}
