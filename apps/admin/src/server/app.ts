@@ -28,6 +28,9 @@ export function createApp(): Express {
   // PLANET-1045: Logto → Resend email bridge (no auth middleware, uses own secret check)
   app.use('/api', logtoEmailWebhookRouter);
 
+  // PLANET-1342: UploadThing needs raw body stream — mount BEFORE express.json
+  app.use('/api/uploadthing', uploadThingHandler);
+
   app.use(express.json({ limit: '5mb' }));
   app.use('/api', healthRouter);
   app.use('/api', meRouter);
@@ -43,7 +46,6 @@ export function createApp(): Express {
   }
   app.use('/api', roadmapRouter);
   app.use('/api', uploadRouter);
-  app.use('/api/uploadthing', uploadThingHandler);
   app.use('/api', casesRouter);
   app.use('/api', batchImportRouter);
   app.use('/api', (_req, res) => {
