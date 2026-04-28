@@ -127,6 +127,21 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
 
   // Upload image via dedicated images endpoint (more reliable attachment support)
   if (imageUrl && productId) {
+    // Delete existing images first on update
+    if (isUpdate) {
+      try {
+        const listRes = await shopifyFetch(creds, `products/${productId}/images.json`, { method: 'GET' });
+        if (listRes.ok) {
+          const listData = (await listRes.json()) as { images?: Array<{ id: number }> };
+          for (const img of listData.images ?? []) {
+            await shopifyFetch(creds, `products/${productId}/images/${img.id}.json`, { method: 'DELETE' });
+          }
+          console.log('[shopify:image] deleted old images', { count: listData.images?.length ?? 0, productId });
+        }
+      } catch (delErr) {
+        console.warn('[shopify:image] failed to delete old images', { err: delErr instanceof Error ? delErr.message : String(delErr) });
+      }
+    }
     let imgBody: Record<string, unknown>;
     if (imageUrl.startsWith('data:')) {
       const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';

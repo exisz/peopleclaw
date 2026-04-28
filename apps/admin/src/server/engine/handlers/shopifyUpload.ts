@@ -160,6 +160,21 @@ export const shopifyUploadHandler: Handler = async (input, ctx) => {
   // missing image handling — PLANET-1118 only fixed shopify.create_product).
   const imageUrl = (payload.image_url as string) || (payload.imageUrl as string) || (payload.image as string) || null;
   if (imageUrl && productId) {
+    // Delete existing images first (so the new image becomes the primary one)
+    if (isUpdate) {
+      try {
+        const listRes = await shopifyFetch(creds, `products/${productId}/images.json`, { method: 'GET' });
+        if (listRes.ok) {
+          const listData = (await listRes.json()) as { images?: Array<{ id: number }> };
+          for (const img of listData.images ?? []) {
+            await shopifyFetch(creds, `products/${productId}/images/${img.id}.json`, { method: 'DELETE' });
+          }
+          console.log('[shopify:image] deleted old images', { count: listData.images?.length ?? 0, productId });
+        }
+      } catch (delErr) {
+        console.warn('[shopify:image] failed to delete old images', { err: delErr instanceof Error ? delErr.message : String(delErr) });
+      }
+    }
     let imgBody: Record<string, unknown>;
     if (imageUrl.startsWith('data:')) {
       const b64 = (payload.b64 as string) || imageUrl.split(',')[1] || '';
