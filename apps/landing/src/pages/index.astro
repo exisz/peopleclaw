@@ -1,167 +1,91 @@
 ---
-import '../styles/global.css';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLang, t } from '../i18n/utils';
+import { getLang, altLangPath, t } from '../i18n/utils';
+import en from '../i18n/en';
+
 const lang = getLang(Astro.url);
-const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
-const blogHref = lang === 'zh' ? '/zh/blog' : '/blog';
-const title = t(lang, 'hero.pageTitle');
+const i = en;
+const altPath = altLangPath(Astro.url, 'zh');
+const appUrl = 'https://app.peopleclaw.rollersoft.com.au';
 ---
-<BaseLayout title={title} description={t(lang, 'hero.description')}>
+<BaseLayout lang="en">
+  <!-- Navbar -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 py-4 flex items-center justify-between transition-all duration-300">
+    <span class="font-body font-bold text-lg tracking-tight">{i.nav.brand}</span>
+    <div class="flex items-center gap-6 text-sm">
+      <a href={altPath} class="font-mono text-xs opacity-60 hover:opacity-100 transition-opacity">{i.nav.langSwitch}</a>
+      <a href={appUrl} class="cta-link font-body">{i.nav.enter}</a>
+    </div>
+  </nav>
 
-  <!-- Hero Section -->
-  <section class="hero-gradient-bg min-h-[90vh] flex items-center justify-center relative">
-    <div class="max-w-5xl mx-auto px-6 text-center relative z-10">
-      <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5">
-        <span class="text-primary text-sm font-medium">AI's 4th Great Innovation</span>
-      </div>
-      <h1 class="text-5xl md:text-7xl font-black tracking-tight leading-tight mb-6">
-        {t(lang, 'hero.title')}
+  <!-- Hero -->
+  <section class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-24">
+    <div class="absolute top-1/2 right-0 -translate-y-1/2 select-none pointer-events-none">
+      <span class="font-display text-[20vw] leading-none opacity-[0.04] text-[#f5f0e8]">04</span>
+    </div>
+    <div class="relative z-10 max-w-3xl">
+      <h1 class="animate-fade-up">
+        <span class="font-display italic text-7xl md:text-8xl lg:text-9xl block leading-[0.9]">{i.hero.line1}</span>
+        <span class="font-display text-4xl md:text-5xl lg:text-6xl block mt-3 leading-tight opacity-80">{i.hero.line2}</span>
       </h1>
-      <p class="text-xl md:text-2xl text-base-content/60 max-w-3xl mx-auto mb-10 leading-relaxed">
-        {t(lang, 'hero.description')}
+      <p class="animate-fade-up delay-2 mt-8 text-lg opacity-60 max-w-xl font-body leading-relaxed">
+        {i.hero.desc}
       </p>
-      <div class="flex gap-4 justify-center flex-wrap">
-        <a href={appUrl} class="btn btn-primary btn-lg btn-glow text-base font-semibold px-8">
-          {t(lang, 'hero.launchApp')}
-        </a>
-        <a href={blogHref} class="btn btn-outline btn-lg text-base font-semibold px-8 border-base-content/20 hover:border-primary hover:bg-primary/10">
-          {t(lang, 'hero.readBlog')}
-        </a>
-      </div>
+      <a href={appUrl} class="animate-fade-up delay-3 inline-block mt-8 cta-link font-body text-lg text-[#f59e0b]">
+        {i.hero.cta}
+      </a>
     </div>
   </section>
 
-  <!-- Vision / Four Eras Section -->
-  <section class="py-32 px-6">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-20">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'vision.title')}</h2>
-        <p class="text-lg text-base-content/50">{t(lang, 'vision.subtitle')}</p>
-      </div>
-
-      <div class="grid md:grid-cols-4 gap-6">
-        <!-- Era 1 -->
-        <div class="glass-card p-6 flex flex-col">
-          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era1.label')}</div>
-          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era1.name')}</h3>
-          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era1.example')}</p>
-          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era1.desc')}</p>
+  <!-- Four Eras -->
+  <section class="px-6 md:px-12 lg:px-24 py-32">
+    <h2 class="font-display text-5xl md:text-6xl mb-20 animate-fade-up">{i.eras.title}</h2>
+    <div class="max-w-lg space-y-16">
+      {i.eras.items.map((era, idx) => (
+        <div class={`animate-fade-up delay-${idx + 2}`}>
+          <span class="font-mono text-sm text-[#f59e0b]">{era.num} —</span>
+          <h3 class="font-body font-bold text-xl mt-1">{era.name}</h3>
+          <p class="font-body opacity-50 mt-1">{era.desc}</p>
         </div>
-        <!-- Era 2 -->
-        <div class="glass-card p-6 flex flex-col">
-          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era2.label')}</div>
-          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era2.name')}</h3>
-          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era2.example')}</p>
-          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era2.desc')}</p>
-        </div>
-        <!-- Era 3 -->
-        <div class="glass-card p-6 flex flex-col">
-          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era3.label')}</div>
-          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era3.name')}</h3>
-          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era3.example')}</p>
-          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era3.desc')}</p>
-        </div>
-        <!-- Era 4 (highlighted) -->
-        <div class="glass-card era-card-active p-6 flex flex-col">
-          <div class="text-xs font-mono text-primary mb-2">{t(lang, 'vision.era4.label')}</div>
-          <h3 class="text-lg font-bold mb-1 text-primary">{t(lang, 'vision.era4.name')}</h3>
-          <p class="text-sm text-primary/60 mb-3">{t(lang, 'vision.era4.example')}</p>
-          <p class="text-sm text-base-content/70 mt-auto">{t(lang, 'vision.era4.desc')}</p>
-        </div>
-      </div>
+      ))}
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section class="py-32 px-6 relative">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-20">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'features.title')}</h2>
-        <p class="text-lg text-base-content/50">{t(lang, 'features.subtitle')}</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="glass-card p-8">
-          <div class="text-4xl mb-4">{t(lang, 'features.agentNative.icon')}</div>
-          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.agentNative.title')}</h3>
-          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.agentNative.body')}</p>
-        </div>
-        <div class="glass-card p-8">
-          <div class="text-4xl mb-4">{t(lang, 'features.aiEverywhere.icon')}</div>
-          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.aiEverywhere.title')}</h3>
-          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.aiEverywhere.body')}</p>
-        </div>
-        <div class="glass-card p-8">
-          <div class="text-4xl mb-4">{t(lang, 'features.skillNative.icon')}</div>
-          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.skillNative.title')}</h3>
-          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.skillNative.body')}</p>
-        </div>
-        <div class="glass-card p-8">
-          <div class="text-4xl mb-4">{t(lang, 'features.universal.icon')}</div>
-          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.universal.title')}</h3>
-          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.universal.body')}</p>
-        </div>
-        <div class="glass-card p-8 md:col-span-2 lg:col-span-1">
-          <div class="text-4xl mb-4">{t(lang, 'features.own.icon')}</div>
-          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.own.title')}</h3>
-          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.own.body')}</p>
-        </div>
-      </div>
+  <!-- The Gap -->
+  <section class="py-24">
+    <div class="w-full h-px bg-[#f59e0b] opacity-30"></div>
+    <div class="max-w-2xl mx-auto text-center px-6 py-20">
+      <blockquote class="font-display italic text-2xl md:text-3xl leading-relaxed opacity-90 animate-fade-up">
+        "{i.gap.quote}"
+      </blockquote>
+      <p class="font-mono text-xs mt-6 opacity-40 animate-fade-up delay-1">{i.gap.attr}</p>
     </div>
   </section>
 
-  <!-- Use Cases Section -->
-  <section class="py-32 px-6">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-20">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'useCases.title')}</h2>
-        <p class="text-lg text-base-content/50">{t(lang, 'useCases.subtitle')}</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="glass-card p-8 group">
-          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
-            {t(lang, 'useCases.ecommerce.title')}
-          </h3>
-          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.ecommerce.items')}</p>
+  <!-- Features -->
+  <section class="px-6 md:px-12 lg:px-24 py-32">
+    <h2 class="font-display text-5xl md:text-6xl mb-20 animate-fade-up">{i.features.title}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20">
+      {i.features.items.map((feat, idx) => (
+        <div class={`animate-fade-up delay-${idx + 2}`}>
+          <span class="font-mono text-xs uppercase tracking-widest text-[#f59e0b]">{feat.label}</span>
+          <h3 class="font-body font-bold text-xl mt-3">"{feat.headline}"</h3>
+          <p class="font-body opacity-50 mt-2">{feat.desc}</p>
         </div>
-        <div class="glass-card p-8 group">
-          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
-            {t(lang, 'useCases.content.title')}
-          </h3>
-          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.content.items')}</p>
-        </div>
-        <div class="glass-card p-8 group">
-          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
-            {t(lang, 'useCases.operations.title')}
-          </h3>
-          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.operations.items')}</p>
-        </div>
-        <div class="glass-card p-8 border-dashed group">
-          <h3 class="text-2xl font-bold mb-3 text-base-content/40 group-hover:text-primary transition-colors">
-            {t(lang, 'useCases.imagination.title')}
-          </h3>
-          <p class="text-base-content/30 text-sm italic">{t(lang, 'useCases.imagination.items')}</p>
-        </div>
-      </div>
+      ))}
     </div>
   </section>
 
-  <!-- CTA Section -->
-  <section class="py-32 px-6">
-    <div class="max-w-4xl mx-auto text-center">
-      <div class="glass-card p-16 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"></div>
-        <div class="relative z-10">
-          <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'cta.title')}</h2>
-          <p class="text-xl text-base-content/50 mb-10">{t(lang, 'cta.subtitle')}</p>
-          <a href={appUrl} class="btn btn-primary btn-lg btn-glow text-base font-semibold px-10">
-            {t(lang, 'cta.button')}
-          </a>
-        </div>
-      </div>
-    </div>
+  <!-- CTA -->
+  <section class="px-6 md:px-12 lg:px-24 py-32 text-center">
+    <h2 class="font-display italic text-4xl md:text-5xl animate-fade-up">{i.cta.headline}</h2>
+    <a href={appUrl} class="animate-fade-up delay-2 inline-block mt-8 cta-link font-body text-lg text-[#f59e0b]">
+      {i.cta.link}
+    </a>
   </section>
 
+  <!-- Footer -->
+  <footer class="px-6 md:px-12 lg:px-24 py-12">
+    <p class="font-mono text-xs opacity-30 text-center">{i.footer.text}</p>
+  </footer>
 </BaseLayout>

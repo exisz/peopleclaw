@@ -1,118 +1,109 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+/* ============================================
+   PeopleClaw — Editorial Brutalist Theme
+   ============================================ */
+
+@theme {
+  --color-cream: #f5f0e8;
+  --color-amber: #f59e0b;
+  --color-dark: #0a0a0a;
+  --font-display: "Instrument Serif", serif;
+  --font-mono: "Space Mono", monospace;
+  --font-body: "DM Sans", sans-serif;
+}
+
+/* DaisyUI theme override */
 @plugin "daisyui" {
-  themes: luxury --default;
+  themes: ["dark"];
 }
 
-/* Animated gradient orb */
-@keyframes gradient-shift {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  33% { transform: translate(-40%, -60%) scale(1.1); opacity: 0.8; }
-  66% { transform: translate(-60%, -40%) scale(0.9); opacity: 0.5; }
+:root {
+  --fallback-b1: #0a0a0a;
+  --fallback-bc: #f5f0e8;
 }
 
-@keyframes gradient-shift-2 {
-  0%, 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.4; }
-  50% { transform: translate(-60%, -50%) scale(0.8); opacity: 0.7; }
+[data-theme="dark"] {
+  --b1: 0 0% 4%;
+  --bc: 40 30% 94%;
+  --p: 38 92% 50%;
+  --pc: 0 0% 4%;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px oklch(0.75 0.15 55 / 0.3); }
-  50% { box-shadow: 0 0 40px oklch(0.75 0.15 55 / 0.6), 0 0 80px oklch(0.75 0.15 55 / 0.2); }
+/* Base */
+html {
+  scroll-behavior: smooth;
+  background-color: #0a0a0a;
+  color: #f5f0e8;
 }
 
-@keyframes float-up {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+body {
+  font-family: "DM Sans", sans-serif;
+  background-color: #0a0a0a;
+  color: #f5f0e8;
+  overflow-x: hidden;
 }
 
-.hero-gradient-bg {
-  position: relative;
-  overflow: hidden;
+/* Typography */
+.font-display {
+  font-family: "Instrument Serif", serif;
 }
 
-.hero-gradient-bg::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, oklch(0.75 0.15 55 / 0.3) 0%, oklch(0.6 0.2 30 / 0.1) 40%, transparent 70%);
-  border-radius: 50%;
-  animation: gradient-shift 8s ease-in-out infinite;
-  pointer-events: none;
+.font-mono {
+  font-family: "Space Mono", monospace;
 }
 
-.hero-gradient-bg::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 60%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, oklch(0.7 0.1 280 / 0.2) 0%, transparent 60%);
-  border-radius: 50%;
-  animation: gradient-shift-2 12s ease-in-out infinite;
-  pointer-events: none;
+.font-body {
+  font-family: "DM Sans", sans-serif;
 }
 
-/* Glass morphism card */
-.glass-card {
-  background: oklch(0.2 0.01 0 / 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid oklch(0.75 0.15 55 / 0.15);
-  border-radius: 1rem;
-  transition: all 0.3s ease;
-}
-
-.glass-card:hover {
-  border-color: oklch(0.75 0.15 55 / 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px oklch(0.75 0.15 55 / 0.1);
-}
-
-/* Grid dot pattern overlay */
-.dot-pattern {
-  background-image: radial-gradient(oklch(0.75 0.15 55 / 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-/* CTA glow button */
-.btn-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
-
-/* Timeline connector */
-.timeline-line {
-  position: relative;
-}
-
-.timeline-line::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, transparent, oklch(0.75 0.15 55 / 0.5), transparent);
-  transform: translateX(-50%);
-}
-
-@media (max-width: 768px) {
-  .timeline-line::before {
-    left: 1.5rem;
+/* Stagger animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Fade in animation on scroll */
-.fade-in-section {
-  animation: float-up 0.8s ease-out both;
+.animate-fade-up {
+  animation: fadeUp 0.8s ease-out forwards;
+  opacity: 0;
 }
 
-/* Era card active state (4th era highlight) */
-.era-card-active {
-  background: oklch(0.2 0.02 55 / 0.8);
-  border-color: oklch(0.75 0.15 55 / 0.5);
-  box-shadow: 0 0 30px oklch(0.75 0.15 55 / 0.15);
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+.delay-6 { animation-delay: 0.6s; }
+.delay-7 { animation-delay: 0.7s; }
+
+/* CTA link hover */
+.cta-link {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-color: #f59e0b;
+  transition: text-decoration-color 0.3s, text-underline-offset 0.3s;
+}
+
+.cta-link:hover {
+  text-underline-offset: 10px;
+  text-decoration-color: #f5f0e8;
+}
+
+/* Navbar blur on scroll — handled by class toggle */
+.nav-scrolled {
+  backdrop-filter: blur(8px);
+  background-color: rgba(10, 10, 10, 0.7);
+}
+
+/* Selection */
+::selection {
+  background-color: #f59e0b;
+  color: #0a0a0a;
 }

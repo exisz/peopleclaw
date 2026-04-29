@@ -1,124 +1,44 @@
 const en = {
   nav: {
-    blog: 'Blog',
-    launchApp: 'Launch App →',
-    home: 'Home',
+    brand: 'PeopleClaw',
+    enter: 'Enter →',
+    langSwitch: '中文',
   },
   hero: {
-    pageTitle: 'PeopleClaw — The Unified Factory of the Agentic AI Era',
-    title: 'The Unified Factory of the Agentic AI Era',
-    description:
-      'Do everything. Build workflows that think, act, and deliver — from e-commerce to content, from data to decisions.',
-    launchApp: 'Launch App →',
-    readBlog: 'Read Blog',
+    line1: 'The Factory',
+    line2: 'for the Age of Agents',
+    desc: 'PeopleClaw bridges the gap between agentic AI and everyone else. Your workflows think, act, and deliver.',
+    cta: 'Enter the factory →',
+    number: '04',
   },
-  vision: {
-    title: 'The Four Eras of AI',
-    subtitle: 'Each era unlocked a new paradigm. We\'re building the fourth.',
-    era1: {
-      label: '1st Era',
-      name: 'Conversational AI',
-      example: 'ChatGPT',
-      desc: 'Dialogue manages everything. Ask questions, get answers.',
-    },
-    era2: {
-      label: '2nd Era',
-      name: 'Tool-Calling',
-      example: 'Claude Code',
-      desc: 'Code as action. AI writes, executes, and iterates.',
-    },
-    era3: {
-      label: '3rd Era',
-      name: 'Agentic Workflow',
-      example: 'OpenClaw',
-      desc: 'Autonomous orchestration. Agents coordinate complex tasks.',
-    },
-    era4: {
-      label: '4th Era',
-      name: 'The Unified Factory',
-      example: 'PeopleClaw',
-      desc: 'Agent-native, skill-native, do-everything platform. The factory that builds itself.',
-    },
+  eras: {
+    title: 'Four eras.',
+    items: [
+      { num: '01', name: 'Dialogue (ChatGPT)', desc: 'Natural language became the universal interface.' },
+      { num: '02', name: 'Tool Use (Claude Code)', desc: 'AI learned to take action, not just talk.' },
+      { num: '03', name: 'Orchestration (OpenClaw)', desc: 'Agents learned to delegate to other agents.' },
+      { num: '04', name: 'The Factory (PeopleClaw)', desc: 'Everyone gets their own AI workforce. No code. No config. Just outcomes.' },
+    ],
+  },
+  gap: {
+    quote: 'The models are ready. The tools exist. But 99% of people still can\'t use agentic AI. The gap isn\'t capability — it\'s accessibility.',
+    attr: '— The problem we solve',
   },
   features: {
-    title: 'What Makes PeopleClaw Different',
-    subtitle: 'Not another workflow tool. A living factory.',
-    agentNative: {
-      title: 'Agent-Native Workflows',
-      icon: '🏭',
-      body: 'Not rigid flowcharts. Living, adaptive processes that evolve with your business.',
-    },
-    aiEverywhere: {
-      title: 'AI at Every Step',
-      icon: '🧠',
-      body: 'Generate, validate, transform, decide. Intelligence woven into every node.',
-    },
-    skillNative: {
-      title: 'Skill-Native',
-      icon: '🔌',
-      body: 'Plug in any capability. AI generates custom nodes on demand — no code required.',
-    },
-    universal: {
-      title: 'Universal',
-      icon: '🌐',
-      body: 'E-commerce, content, operations — anything repetitive becomes automated.',
-    },
-    own: {
-      title: 'Yours to Own',
-      icon: '🔐',
-      body: 'Your data, your agents, your factory. No lock-in, no surveillance, no per-seat tax.',
-    },
-  },
-  useCases: {
-    title: 'Built for Every Domain',
-    subtitle: 'One factory. Infinite possibilities.',
-    ecommerce: {
-      title: 'E-Commerce',
-      items: 'Product listing · Face swap · Inventory sync · Price optimization',
-    },
-    content: {
-      title: 'Content Creation',
-      items: 'SEO articles · Social media · Blog pipelines · Asset generation',
-    },
-    operations: {
-      title: 'Operations',
-      items: 'Employee onboarding · Status reporting · Ticket triage · Compliance',
-    },
-    imagination: {
-      title: '...and anything you can imagine',
-      items: 'If it\'s repetitive, it belongs in the factory.',
-    },
+    title: 'Universal.',
+    items: [
+      { label: 'COMMERCE', headline: 'Products listed while you sleep', desc: 'AI handles photos, copy, pricing, and uploads to your store.' },
+      { label: 'CONTENT', headline: 'Words and images on autopilot', desc: 'Blog posts, social media, SEO — generated, reviewed, published.' },
+      { label: 'OPERATIONS', headline: 'The boring work, automated', desc: 'Onboarding, reporting, triage — workflows that run themselves.' },
+      { label: 'ANYTHING', headline: 'If it repeats, it\'s a workflow', desc: 'Face swap, translation, data entry — if you can describe it, PeopleClaw builds it.' },
+    ],
   },
   cta: {
-    title: 'Build Your Factory Today',
-    subtitle: 'Stop repeating. Start building.',
-    button: 'Get Started Free →',
-  },
-  latest: {
-    title: 'Latest posts',
-    sub: 'Field notes, build logs, and how we think about workflow automation.',
-    browseAll: 'Browse all →',
+    headline: 'Start building.',
+    link: 'Enter PeopleClaw →',
   },
   footer: {
-    tagline: 'PeopleClaw · The Unified Factory of the Agentic AI Era',
-  },
-  notFound: {
-    title: '404 — Not Found',
-    heading: '404',
-    message: 'This path is not available on the landing domain.',
-    backHome: 'Back to home',
-  },
-  blog: {
-    title: 'Blog — PeopleClaw',
-    description:
-      'Field notes, build logs, and how we think about workflow automation.',
-    heading: 'Blog',
-    backToList: '← Back to Blog',
-    updatedOn: '· Updated on',
-  },
-  langSwitcher: {
-    en: 'English',
-    zh: '中文',
+    text: 'PeopleClaw · 2026',
   },
 };
 

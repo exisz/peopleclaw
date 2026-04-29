@@ -1,52 +1,91 @@
 ---
-import '../../styles/global.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getLang, t } from '../../i18n/utils';
+import { getLang, altLangPath } from '../../i18n/utils';
+import zh from '../../i18n/zh';
+
 const lang = getLang(Astro.url);
-const appUrl = import.meta.env.PUBLIC_APP_URL || 'https://app.peopleclaw.com';
-const blogHref = lang === 'zh' ? '/zh/blog' : '/blog';
-const title = t(lang, 'hero.pageTitle');
+const i = zh;
+const altPath = altLangPath(Astro.url, 'en');
+const appUrl = 'https://app.peopleclaw.rollersoft.com.au';
 ---
-<BaseLayout title={title} description={t(lang, 'hero.description')}>
-  <section class="hero bg-base-200 rounded-box p-12 mb-12">
-    <div class="hero-content text-center">
-      <div class="max-w-2xl">
-        <h1 class="text-5xl font-bold">{t(lang, 'hero.title')}</h1>
-        <p class="py-6 opacity-80">
-          {t(lang, 'hero.description')}
-        </p>
-        <div class="flex gap-3 justify-center flex-wrap">
-          <a href={appUrl} class="btn btn-primary">{t(lang, 'hero.launchApp')}</a>
-          <a href={blogHref} class="btn btn-outline">{t(lang, 'hero.readBlog')}</a>
+<BaseLayout lang="zh" title="PeopleClaw — Agent 时代的工厂" description="你的 AI 劳动力。无需代码。无需配置。只要结果。">
+  <!-- Navbar -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 py-4 flex items-center justify-between transition-all duration-300">
+    <span class="font-body font-bold text-lg tracking-tight">{i.nav.brand}</span>
+    <div class="flex items-center gap-6 text-sm">
+      <a href={altPath} class="font-mono text-xs opacity-60 hover:opacity-100 transition-opacity">{i.nav.langSwitch}</a>
+      <a href={appUrl} class="cta-link font-body">{i.nav.enter}</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-24">
+    <div class="absolute top-1/2 right-0 -translate-y-1/2 select-none pointer-events-none">
+      <span class="font-display text-[20vw] leading-none opacity-[0.04] text-[#f5f0e8]">04</span>
+    </div>
+    <div class="relative z-10 max-w-3xl">
+      <h1 class="animate-fade-up">
+        <span class="font-display italic text-7xl md:text-8xl lg:text-9xl block leading-[0.9]">{i.hero.line1}</span>
+        <span class="font-display text-4xl md:text-5xl lg:text-6xl block mt-3 leading-tight opacity-80">{i.hero.line2}</span>
+      </h1>
+      <p class="animate-fade-up delay-2 mt-8 text-lg opacity-60 max-w-xl font-body leading-relaxed">
+        {i.hero.desc}
+      </p>
+      <a href={appUrl} class="animate-fade-up delay-3 inline-block mt-8 cta-link font-body text-lg text-[#f59e0b]">
+        {i.hero.cta}
+      </a>
+    </div>
+  </section>
+
+  <!-- Four Eras -->
+  <section class="px-6 md:px-12 lg:px-24 py-32">
+    <h2 class="font-display text-5xl md:text-6xl mb-20 animate-fade-up">{i.eras.title}</h2>
+    <div class="max-w-lg space-y-16">
+      {i.eras.items.map((era, idx) => (
+        <div class={`animate-fade-up delay-${idx + 2}`}>
+          <span class="font-mono text-sm text-[#f59e0b]">{era.num} —</span>
+          <h3 class="font-body font-bold text-xl mt-1">{era.name}</h3>
+          <p class="font-body opacity-50 mt-1">{era.desc}</p>
         </div>
-      </div>
+      ))}
     </div>
   </section>
 
-  <section class="grid md:grid-cols-3 gap-6">
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.automate.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.automate.body')}</p>
-      </div>
-    </div>
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.smallTeams.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.smallTeams.body')}</p>
-      </div>
-    </div>
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.own.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.own.body')}</p>
-      </div>
+  <!-- The Gap -->
+  <section class="py-24">
+    <div class="w-full h-px bg-[#f59e0b] opacity-30"></div>
+    <div class="max-w-2xl mx-auto text-center px-6 py-20">
+      <blockquote class="font-display italic text-2xl md:text-3xl leading-relaxed opacity-90 animate-fade-up">
+        "{i.gap.quote}"
+      </blockquote>
+      <p class="font-mono text-xs mt-6 opacity-40 animate-fade-up delay-1">{i.gap.attr}</p>
     </div>
   </section>
 
-  <section class="mt-16">
-    <h2 class="text-2xl font-bold mb-4">{t(lang, 'latest.title')}</h2>
-    <p class="opacity-70 mb-4">{t(lang, 'latest.sub')}</p>
-    <a href={blogHref} class="btn btn-outline">{t(lang, 'latest.browseAll')}</a>
+  <!-- Features -->
+  <section class="px-6 md:px-12 lg:px-24 py-32">
+    <h2 class="font-display text-5xl md:text-6xl mb-20 animate-fade-up">{i.features.title}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20">
+      {i.features.items.map((feat, idx) => (
+        <div class={`animate-fade-up delay-${idx + 2}`}>
+          <span class="font-mono text-xs uppercase tracking-widest text-[#f59e0b]">{feat.label}</span>
+          <h3 class="font-body font-bold text-xl mt-3">"{feat.headline}"</h3>
+          <p class="font-body opacity-50 mt-2">{feat.desc}</p>
+        </div>
+      ))}
+    </div>
   </section>
+
+  <!-- CTA -->
+  <section class="px-6 md:px-12 lg:px-24 py-32 text-center">
+    <h2 class="font-display italic text-4xl md:text-5xl animate-fade-up">{i.cta.headline}</h2>
+    <a href={appUrl} class="animate-fade-up delay-2 inline-block mt-8 cta-link font-body text-lg text-[#f59e0b]">
+      {i.cta.link}
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="px-6 md:px-12 lg:px-24 py-12">
+    <p class="font-mono text-xs opacity-30 text-center">{i.footer.text}</p>
+  </footer>
 </BaseLayout>
