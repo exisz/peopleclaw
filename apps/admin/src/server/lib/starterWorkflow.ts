@@ -23,7 +23,7 @@ export const STARTER_WORKFLOW = {
     icon: '🛍️',
     steps: [],
     nodes: [
-      { id: 's2', type: 'human:review', kind: 'human', config: { prompt: 'Review the product input' } },
+      { id: 's2', type: 'human:review', kind: 'human', config: { prompt: 'Review the product input' }, requiredFields: ['product_name', 'price', 'image_url', 'stock'] },
       { id: 's3', type: 'ai_description', kind: 'auto', handler: 'ai.product_description', config: {} },
       { id: 's4', type: 'human:approve_copy', kind: 'human', config: { prompt: 'Approve the AI-generated copy?' } },
       { id: 's5', type: 'shopify_upload', kind: 'auto', handler: 'shopify.list_product', config: {} },
@@ -50,7 +50,7 @@ export const DEFAULT_WORKFLOW = {
   category: '默认流程',
   definition: {
     steps: [
-      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 0,   y: 0 } },
+      { id: 'd2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',       description: '', position: { x: 0,   y: 0 }, requiredFields: ['product_name', 'price', 'image_url', 'stock'] },
       { id: 'd3', name: 'AI 图片生成',          type: 'agent', assignee: 'ai.image_generate',       description: '', position: { x: 175, y: 200 } },
       { id: 'd4', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description',  description: '', position: { x: 350, y: 0 } },
       { id: 'd_skus', name: 'AI SKU与价格生成',  type: 'agent', assignee: 'ai.generate_skus',         description: '', position: { x: 525, y: 200 } },
