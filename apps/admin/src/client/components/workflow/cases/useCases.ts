@@ -7,6 +7,8 @@ export interface UseCasesReturn {
   filtered: CaseRecord[] | null;
   filter: FilterKey;
   setFilter: (f: FilterKey) => void;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
   selectedIds: Set<string>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   creating: boolean;
@@ -51,6 +53,7 @@ export function useCases(workflowId: string): UseCasesReturn {
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [runningSelected, setRunningSelected] = useState(false);
   const [lastRunResult, setLastRunResult] = useState<{ status: string; title: string; error?: string; productUrl?: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadCases = useCallback(async () => {
     try {
@@ -67,8 +70,13 @@ export function useCases(workflowId: string): UseCasesReturn {
 
   const filtered = useMemo(() => {
     if (!cases) return null;
-    return filter === 'all' ? cases : cases.filter((c) => c.status === filter);
-  }, [cases, filter]);
+    let result = filter === 'all' ? cases : cases.filter((c) => c.status === filter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((c) => c.title.toLowerCase().includes(q));
+    }
+    return result;
+  }, [cases, filter, searchQuery]);
 
   const createCase = useCallback(async (): Promise<string | null> => {
     if (!newTitle.trim()) return null;
@@ -245,6 +253,8 @@ export function useCases(workflowId: string): UseCasesReturn {
     filtered,
     filter,
     setFilter: (f: FilterKey) => { setFilter(f); setSelectedIds(new Set()); },
+    searchQuery,
+    setSearchQuery,
     selectedIds,
     setSelectedIds,
     creating,

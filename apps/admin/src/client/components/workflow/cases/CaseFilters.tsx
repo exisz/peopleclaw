@@ -18,6 +18,8 @@ interface CaseFiltersProps {
   onRunSelected: () => void;
   stepsCount: number;
   hasSelection: boolean;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
 }
 
 export function CaseFilters({
@@ -32,6 +34,8 @@ export function CaseFilters({
   onRunSelected,
   stepsCount,
   hasSelection,
+  searchQuery,
+  setSearchQuery,
 }: CaseFiltersProps) {
   const { t } = useTranslation('workflow');
 
@@ -86,6 +90,26 @@ export function CaseFilters({
         <Upload className="h-3 w-3" />
         批量导入 Excel / CSV
       </Button>
+
+      {/* Row: Search */}
+      <div className="relative">
+        <Input
+          placeholder="搜索案例名称…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="h-7 text-xs pr-7"
+          data-testid="cases-search"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       {/* Row 3: Filters */}
       <div className="flex flex-wrap gap-1">

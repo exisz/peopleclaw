@@ -65,6 +65,8 @@ export default function CasesPanel({
           onRunSelected={() => void hook.runSelected()}
           stepsCount={workflow.steps.length}
           hasSelection={hook.selectedIds.size > 0}
+          searchQuery={hook.searchQuery}
+          setSearchQuery={hook.setSearchQuery}
         />
 
         <CaseBatchBar
