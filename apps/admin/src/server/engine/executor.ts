@@ -113,7 +113,9 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
       delete pl._missingFields;
       delete pl._blockedAt;
       c.payload = JSON.stringify(pl);
-      await prisma.case.update({ where: { id: caseId }, data: { payload: c.payload } });
+      // Reset currentStepId so workflow restarts from beginning after user fills fields
+      c.currentStepId = null;
+      await prisma.case.update({ where: { id: caseId }, data: { payload: c.payload, currentStepId: null } });
     }
   }
 
@@ -129,11 +131,10 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     return { status: 'failed', lastStepId: null };
   }
 
-  // PLANET-1371: Global requiredFields pre-check — collect all requiredFields from
-  // the FIRST node of the workflow. If the case hasn't passed the first node yet
-  // (currentStepId is null), block immediately when payload is missing required data.
+  // PLANET-1371: Global requiredFields pre-check — ALWAYS check the first node's
+  // requiredFields before ANY execution. If payload is missing required data, block.
   // This prevents AI nodes from "succeeding" with empty/garbage data.
-  if (!c.currentStepId) {
+  {
     const entryNodeId = firstNodeId(def);
     const entryNode = entryNodeId ? def.nodes.find(n => n.id === entryNodeId) : null;
     if (entryNode?.requiredFields?.length) {
@@ -159,7 +160,7 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
           where: { id: caseId },
           data: {
             status: 'waiting_human',
-            currentStepId: entryNode.id,
+            currentStepId: null,
             payload: JSON.stringify(newPayload),
           },
         });
