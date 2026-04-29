@@ -16,7 +16,7 @@ import { uploadRouter, uploadThingHandler } from './routes/upload.js';
 import { roadmapRouter } from './routes/roadmap.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
-import { migrateRequiredFields, seedFaceSwapWorkflow } from './lib/migrateWorkflows.js';
+import { migrateRequiredFields } from './lib/migrateWorkflows.js';
 
 export function createApp(): Express {
   // PLANET-912 item 8: validate env at startup (warn, don't crash)
@@ -67,7 +67,7 @@ export function createApp(): Express {
   migrateRequiredFields().catch(e => console.warn('[startup] migrateRequiredFields failed:', e));
 
   // PLANET-1372: seed face-swap workflow for existing tenants
-  seedFaceSwapWorkflow().catch(e => console.warn('[startup] seedFaceSwapWorkflow failed:', e));
+  // PLANET-1372: face-swap workflow available via template library — no auto-seed needed
 
   return app;
 }
