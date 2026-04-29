@@ -79,12 +79,42 @@ export const publishShopifyHandler: Handler = async (input, ctx) => {
   }
 
   const data = (await res.json()) as {
-    product?: { id?: number; title?: string; handle?: string };
+    product?: { id?: number; title?: string; handle?: string; variants?: Array<{ id?: number; inventory_item_id?: number }> };
   };
 
   const productId = data.product?.id;
   const productHandle = data.product?.handle ?? null;
   const shopDomain = creds.shop;
+
+  // PLANET-1363: Set inventory via Inventory Levels API (Shopify ignores inventory_quantity in create payload)
+  const firstVariant = data.product?.variants?.[0];
+  if (productId && stock != null && firstVariant?.inventory_item_id) {
+    try {
+      const locRes = await shopifyFetch(creds, 'locations.json', { method: 'GET' });
+      if (locRes.ok) {
+        const locData = (await locRes.json()) as { locations?: Array<{ id: number }> };
+        const locationId = locData.locations?.[0]?.id;
+        if (locationId) {
+          const invRes = await shopifyFetch(creds, 'inventory_levels/set.json', {
+            method: 'POST',
+            body: JSON.stringify({ location_id: locationId, inventory_item_id: firstVariant.inventory_item_id, available: stock }),
+          });
+          if (!invRes.ok) {
+            const errText = await invRes.text();
+            console.warn('[publish_shopify:inventory] set failed', { status: invRes.status, body: errText.slice(0, 200) });
+          } else {
+            console.log('[publish_shopify:inventory] set ok', { inventory_item_id: firstVariant.inventory_item_id, available: stock });
+          }
+        } else {
+          console.warn('[publish_shopify:inventory] no location found');
+        }
+      } else {
+        console.warn('[publish_shopify:inventory] failed to fetch locations', { status: locRes.status });
+      }
+    } catch (invErr) {
+      console.warn('[publish_shopify:inventory] error', invErr instanceof Error ? invErr.message : String(invErr));
+    }
+  }
 
   // Upload image if present
   if (imageUrl && productId) {

@@ -121,9 +121,60 @@ export const shopifyCreateProductHandler: Handler = async (input, ctx) => {
     };
   }
 
-  const data = (await res.json()) as { product?: { id?: number; title?: string; handle?: string } };
+  const data = (await res.json()) as { product?: { id?: number; title?: string; handle?: string; variants?: Array<{ id?: number; inventory_item_id?: number }> } };
   const productId = data.product?.id;
   const handle = shopHandle(creds);
+
+  // PLANET-1363: Set inventory via Inventory Levels API (Shopify ignores inventory_quantity in create payload)
+  const responseVariants = data.product?.variants ?? [];
+  if (productId && responseVariants.length > 0) {
+    // Build desired stock quantities matching variant order
+    let desiredStocks: number[];
+    if (colorVariants && colorVariants.length > 0) {
+      desiredStocks = colorVariants.map(cv => cv.stock ?? 0);
+    } else if (rawSkus.length > 0) {
+      desiredStocks = rawSkus.map(s => s.inventory_quantity ?? 0);
+    } else {
+      desiredStocks = [typeof payload.stock === 'number' ? payload.stock : 10];
+    }
+
+    try {
+      // Get primary location
+      const locRes = await shopifyFetch(creds, 'locations.json', { method: 'GET' });
+      if (locRes.ok) {
+        const locData = (await locRes.json()) as { locations?: Array<{ id: number }> };
+        const locationId = locData.locations?.[0]?.id;
+        if (locationId) {
+          for (let i = 0; i < responseVariants.length; i++) {
+            const invItemId = responseVariants[i].inventory_item_id;
+            const available = desiredStocks[i] ?? desiredStocks[0] ?? 0;
+            if (invItemId != null) {
+              try {
+                const invRes = await shopifyFetch(creds, 'inventory_levels/set.json', {
+                  method: 'POST',
+                  body: JSON.stringify({ location_id: locationId, inventory_item_id: invItemId, available }),
+                });
+                if (!invRes.ok) {
+                  const errText = await invRes.text();
+                  console.warn('[shopify:inventory] set failed', { invItemId, status: invRes.status, body: errText.slice(0, 200) });
+                } else {
+                  console.log('[shopify:inventory] set ok', { invItemId, available });
+                }
+              } catch (invErr) {
+                console.warn('[shopify:inventory] set error', invErr instanceof Error ? invErr.message : String(invErr));
+              }
+            }
+          }
+        } else {
+          console.warn('[shopify:inventory] no location found, skipping inventory set');
+        }
+      } else {
+        console.warn('[shopify:inventory] failed to fetch locations', { status: locRes.status });
+      }
+    } catch (locErr) {
+      console.warn('[shopify:inventory] location fetch error', locErr instanceof Error ? locErr.message : String(locErr));
+    }
+  }
 
   // Upload image via dedicated images endpoint (more reliable attachment support)
   if (imageUrl && productId) {
