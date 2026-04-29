@@ -8,45 +8,160 @@ const blogHref = lang === 'zh' ? '/zh/blog' : '/blog';
 const title = t(lang, 'hero.pageTitle');
 ---
 <BaseLayout title={title} description={t(lang, 'hero.description')}>
-  <section class="hero bg-base-200 rounded-box p-12 mb-12">
-    <div class="hero-content text-center">
-      <div class="max-w-2xl">
-        <h1 class="text-5xl font-bold">{t(lang, 'hero.title')}</h1>
-        <p class="py-6 opacity-80">
-          {t(lang, 'hero.description')}
-        </p>
-        <div class="flex gap-3 justify-center flex-wrap">
-          <a href={appUrl} class="btn btn-primary">{t(lang, 'hero.launchApp')}</a>
-          <a href={blogHref} class="btn btn-outline">{t(lang, 'hero.readBlog')}</a>
+
+  <!-- Hero Section -->
+  <section class="hero-gradient-bg min-h-[90vh] flex items-center justify-center relative">
+    <div class="max-w-5xl mx-auto px-6 text-center relative z-10">
+      <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5">
+        <span class="text-primary text-sm font-medium">AI's 4th Great Innovation</span>
+      </div>
+      <h1 class="text-5xl md:text-7xl font-black tracking-tight leading-tight mb-6">
+        {t(lang, 'hero.title')}
+      </h1>
+      <p class="text-xl md:text-2xl text-base-content/60 max-w-3xl mx-auto mb-10 leading-relaxed">
+        {t(lang, 'hero.description')}
+      </p>
+      <div class="flex gap-4 justify-center flex-wrap">
+        <a href={appUrl} class="btn btn-primary btn-lg btn-glow text-base font-semibold px-8">
+          {t(lang, 'hero.launchApp')}
+        </a>
+        <a href={blogHref} class="btn btn-outline btn-lg text-base font-semibold px-8 border-base-content/20 hover:border-primary hover:bg-primary/10">
+          {t(lang, 'hero.readBlog')}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vision / Four Eras Section -->
+  <section class="py-32 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-20">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'vision.title')}</h2>
+        <p class="text-lg text-base-content/50">{t(lang, 'vision.subtitle')}</p>
+      </div>
+
+      <div class="grid md:grid-cols-4 gap-6">
+        <!-- Era 1 -->
+        <div class="glass-card p-6 flex flex-col">
+          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era1.label')}</div>
+          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era1.name')}</h3>
+          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era1.example')}</p>
+          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era1.desc')}</p>
+        </div>
+        <!-- Era 2 -->
+        <div class="glass-card p-6 flex flex-col">
+          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era2.label')}</div>
+          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era2.name')}</h3>
+          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era2.example')}</p>
+          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era2.desc')}</p>
+        </div>
+        <!-- Era 3 -->
+        <div class="glass-card p-6 flex flex-col">
+          <div class="text-xs font-mono text-primary/70 mb-2">{t(lang, 'vision.era3.label')}</div>
+          <h3 class="text-lg font-bold mb-1">{t(lang, 'vision.era3.name')}</h3>
+          <p class="text-sm text-base-content/40 mb-3">{t(lang, 'vision.era3.example')}</p>
+          <p class="text-sm text-base-content/60 mt-auto">{t(lang, 'vision.era3.desc')}</p>
+        </div>
+        <!-- Era 4 (highlighted) -->
+        <div class="glass-card era-card-active p-6 flex flex-col">
+          <div class="text-xs font-mono text-primary mb-2">{t(lang, 'vision.era4.label')}</div>
+          <h3 class="text-lg font-bold mb-1 text-primary">{t(lang, 'vision.era4.name')}</h3>
+          <p class="text-sm text-primary/60 mb-3">{t(lang, 'vision.era4.example')}</p>
+          <p class="text-sm text-base-content/70 mt-auto">{t(lang, 'vision.era4.desc')}</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="grid md:grid-cols-3 gap-6">
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.automate.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.automate.body')}</p>
+  <!-- Features Section -->
+  <section class="py-32 px-6 relative">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-20">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'features.title')}</h2>
+        <p class="text-lg text-base-content/50">{t(lang, 'features.subtitle')}</p>
       </div>
-    </div>
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.smallTeams.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.smallTeams.body')}</p>
-      </div>
-    </div>
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">{t(lang, 'features.own.title')}</h2>
-        <p class="opacity-80 text-sm">{t(lang, 'features.own.body')}</p>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="glass-card p-8">
+          <div class="text-4xl mb-4">{t(lang, 'features.agentNative.icon')}</div>
+          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.agentNative.title')}</h3>
+          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.agentNative.body')}</p>
+        </div>
+        <div class="glass-card p-8">
+          <div class="text-4xl mb-4">{t(lang, 'features.aiEverywhere.icon')}</div>
+          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.aiEverywhere.title')}</h3>
+          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.aiEverywhere.body')}</p>
+        </div>
+        <div class="glass-card p-8">
+          <div class="text-4xl mb-4">{t(lang, 'features.skillNative.icon')}</div>
+          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.skillNative.title')}</h3>
+          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.skillNative.body')}</p>
+        </div>
+        <div class="glass-card p-8">
+          <div class="text-4xl mb-4">{t(lang, 'features.universal.icon')}</div>
+          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.universal.title')}</h3>
+          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.universal.body')}</p>
+        </div>
+        <div class="glass-card p-8 md:col-span-2 lg:col-span-1">
+          <div class="text-4xl mb-4">{t(lang, 'features.own.icon')}</div>
+          <h3 class="text-xl font-bold mb-3">{t(lang, 'features.own.title')}</h3>
+          <p class="text-base-content/60 text-sm leading-relaxed">{t(lang, 'features.own.body')}</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="mt-16">
-    <h2 class="text-2xl font-bold mb-4">{t(lang, 'latest.title')}</h2>
-    <p class="opacity-70 mb-4">{t(lang, 'latest.sub')}</p>
-    <a href={blogHref} class="btn btn-outline">{t(lang, 'latest.browseAll')}</a>
+  <!-- Use Cases Section -->
+  <section class="py-32 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-20">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'useCases.title')}</h2>
+        <p class="text-lg text-base-content/50">{t(lang, 'useCases.subtitle')}</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card p-8 group">
+          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
+            {t(lang, 'useCases.ecommerce.title')}
+          </h3>
+          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.ecommerce.items')}</p>
+        </div>
+        <div class="glass-card p-8 group">
+          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
+            {t(lang, 'useCases.content.title')}
+          </h3>
+          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.content.items')}</p>
+        </div>
+        <div class="glass-card p-8 group">
+          <h3 class="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
+            {t(lang, 'useCases.operations.title')}
+          </h3>
+          <p class="text-base-content/50 text-sm">{t(lang, 'useCases.operations.items')}</p>
+        </div>
+        <div class="glass-card p-8 border-dashed group">
+          <h3 class="text-2xl font-bold mb-3 text-base-content/40 group-hover:text-primary transition-colors">
+            {t(lang, 'useCases.imagination.title')}
+          </h3>
+          <p class="text-base-content/30 text-sm italic">{t(lang, 'useCases.imagination.items')}</p>
+        </div>
+      </div>
+    </div>
   </section>
+
+  <!-- CTA Section -->
+  <section class="py-32 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <div class="glass-card p-16 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"></div>
+        <div class="relative z-10">
+          <h2 class="text-4xl md:text-5xl font-bold mb-4">{t(lang, 'cta.title')}</h2>
+          <p class="text-xl text-base-content/50 mb-10">{t(lang, 'cta.subtitle')}</p>
+          <a href={appUrl} class="btn btn-primary btn-lg btn-glow text-base font-semibold px-10">
+            {t(lang, 'cta.button')}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </BaseLayout>

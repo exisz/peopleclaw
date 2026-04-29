@@ -5,26 +5,94 @@ const en = {
     home: 'Home',
   },
   hero: {
-    pageTitle: 'PeopleClaw — Workflow automation for SMEs and freelance IT',
-    title: 'PeopleClaw',
+    pageTitle: 'PeopleClaw — The Unified Factory of the Agentic AI Era',
+    title: 'The Unified Factory of the Agentic AI Era',
     description:
-      'Workflow automation for SMEs and freelance IT. Stop juggling spreadsheets, chat threads, and ad-hoc scripts — let PeopleClaw run the routine work for you.',
+      'Do everything. Build workflows that think, act, and deliver — from e-commerce to content, from data to decisions.',
     launchApp: 'Launch App →',
     readBlog: 'Read Blog',
   },
-  features: {
-    automate: {
-      title: '🤖 Automate the routine',
-      body: 'Onboarding, ticket triage, status reports — codify the boring bits once and let PeopleClaw run them.',
+  vision: {
+    title: 'The Four Eras of AI',
+    subtitle: 'Each era unlocked a new paradigm. We\'re building the fourth.',
+    era1: {
+      label: '1st Era',
+      name: 'Conversational AI',
+      example: 'ChatGPT',
+      desc: 'Dialogue manages everything. Ask questions, get answers.',
     },
-    smallTeams: {
-      title: '🧰 Built for small teams',
-      body: 'SMEs and freelance IT shops first. No enterprise bloat, no per-seat tax, no quarterly account review.',
+    era2: {
+      label: '2nd Era',
+      name: 'Tool-Calling',
+      example: 'Claude Code',
+      desc: 'Code as action. AI writes, executes, and iterates.',
+    },
+    era3: {
+      label: '3rd Era',
+      name: 'Agentic Workflow',
+      example: 'OpenClaw',
+      desc: 'Autonomous orchestration. Agents coordinate complex tasks.',
+    },
+    era4: {
+      label: '4th Era',
+      name: 'The Unified Factory',
+      example: 'PeopleClaw',
+      desc: 'Agent-native, skill-native, do-everything platform. The factory that builds itself.',
+    },
+  },
+  features: {
+    title: 'What Makes PeopleClaw Different',
+    subtitle: 'Not another workflow tool. A living factory.',
+    agentNative: {
+      title: 'Agent-Native Workflows',
+      icon: '🏭',
+      body: 'Not rigid flowcharts. Living, adaptive processes that evolve with your business.',
+    },
+    aiEverywhere: {
+      title: 'AI at Every Step',
+      icon: '🧠',
+      body: 'Generate, validate, transform, decide. Intelligence woven into every node.',
+    },
+    skillNative: {
+      title: 'Skill-Native',
+      icon: '🔌',
+      body: 'Plug in any capability. AI generates custom nodes on demand — no code required.',
+    },
+    universal: {
+      title: 'Universal',
+      icon: '🌐',
+      body: 'E-commerce, content, operations — anything repetitive becomes automated.',
     },
     own: {
-      title: '🔐 Yours to own',
-      body: 'Modern auth (Logto), Postgres / Turso storage, clean APIs. Your data, your workflows, no lock-in.',
+      title: 'Yours to Own',
+      icon: '🔐',
+      body: 'Your data, your agents, your factory. No lock-in, no surveillance, no per-seat tax.',
     },
+  },
+  useCases: {
+    title: 'Built for Every Domain',
+    subtitle: 'One factory. Infinite possibilities.',
+    ecommerce: {
+      title: 'E-Commerce',
+      items: 'Product listing · Face swap · Inventory sync · Price optimization',
+    },
+    content: {
+      title: 'Content Creation',
+      items: 'SEO articles · Social media · Blog pipelines · Asset generation',
+    },
+    operations: {
+      title: 'Operations',
+      items: 'Employee onboarding · Status reporting · Ticket triage · Compliance',
+    },
+    imagination: {
+      title: '...and anything you can imagine',
+      items: 'If it\'s repetitive, it belongs in the factory.',
+    },
+  },
+  cta: {
+    title: 'Build Your Factory Today',
+    subtitle: 'Stop repeating. Start building.',
+    button: 'Get Started Free →',
   },
   latest: {
     title: 'Latest posts',
@@ -32,7 +100,7 @@ const en = {
     browseAll: 'Browse all →',
   },
   footer: {
-    tagline: 'PeopleClaw · workflow automation for SMEs and freelance IT',
+    tagline: 'PeopleClaw · The Unified Factory of the Agentic AI Era',
   },
   notFound: {
     title: '404 — Not Found',
