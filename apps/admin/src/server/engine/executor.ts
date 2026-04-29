@@ -129,6 +129,45 @@ export async function advanceCase(caseId: string): Promise<{ status: string; las
     return { status: 'failed', lastStepId: null };
   }
 
+  // PLANET-1371: Global requiredFields pre-check — collect all requiredFields from
+  // the FIRST node of the workflow. If the case hasn't passed the first node yet
+  // (currentStepId is null), block immediately when payload is missing required data.
+  // This prevents AI nodes from "succeeding" with empty/garbage data.
+  if (!c.currentStepId) {
+    const entryNodeId = firstNodeId(def);
+    const entryNode = entryNodeId ? def.nodes.find(n => n.id === entryNodeId) : null;
+    if (entryNode?.requiredFields?.length) {
+      const payload = JSON.parse(c.payload);
+      const missing = entryNode.requiredFields.filter((f) => {
+        const val = payload[f];
+        return val === undefined || val === null || val === '' || val === 0;
+      });
+      if (missing.length > 0) {
+        await prisma.caseStep.create({
+          data: {
+            caseId: c.id,
+            stepId: entryNode.id,
+            stepType: entryNode.type,
+            kind: 'auto',
+            status: 'blocked',
+            input: JSON.stringify({ requiredFields: entryNode.requiredFields, missingFields: missing }),
+            startedAt: new Date(),
+          },
+        });
+        const newPayload = { ...payload, _missingFields: missing, _blockedAt: entryNode.id };
+        await prisma.case.update({
+          where: { id: caseId },
+          data: {
+            status: 'waiting_human',
+            currentStepId: entryNode.id,
+            payload: JSON.stringify(newPayload),
+          },
+        });
+        return { status: 'waiting_human', lastStepId: entryNode.id };
+      }
+    }
+  }
+
   // Determine which node to run next:
   // - if currentStepId is null → first node
   // - if resuming from waiting_review → next from currentStepId

@@ -6,10 +6,9 @@ import { getPrisma } from './prisma.js';
  */
 export async function migrateRequiredFields(): Promise<void> {
   const prisma = getPrisma();
-  // Find all workflows whose id starts with 'default-workflow-'
-  const workflows = await prisma.workflow.findMany({
-    where: { id: { startsWith: 'default-workflow-' } },
-  });
+  // Find ALL workflows (not just default-workflow-*) and add requiredFields to first step
+  // if the first step's assignee is 'ai.generate_title' (the standard first step)
+  const workflows = await prisma.workflow.findMany({});
 
   const REQUIRED = ['product_name', 'price', 'image_url', 'stock'];
 
@@ -19,8 +18,9 @@ export async function migrateRequiredFields(): Promise<void> {
       const steps = def.steps ?? [];
       if (!steps.length) continue;
 
-      // Check if first step already has the correct requiredFields
+      // Only add to workflows whose first step is ai.generate_title (standard product workflow)
       const firstStep = steps[0];
+      if (firstStep.assignee !== 'ai.generate_title' && firstStep.id !== 'd2') continue;
       if (
         firstStep.requiredFields &&
         REQUIRED.every((f: string) => firstStep.requiredFields.includes(f))
