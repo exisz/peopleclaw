@@ -22,6 +22,7 @@ import {
   genericDelayHandler,
 } from './generic.js';
 import { ecommerceEntryHandler } from './ecommerceEntry.js';
+import { aiFaceSwapHandler } from './aiFaceSwap.js';
 
 export type Handler = (
   input: { payload: Record<string, unknown> },
@@ -50,6 +51,7 @@ export const handlers: Record<string, Handler> = {
   'ai.generate_title': aiGenerateTitleHandler,   // PLANET-1059 placeholder
   'ai.switch_image': aiSwitchImageHandler,         // PLANET-1060 placeholder
   'ai.generate_skus': aiGenerateSkusHandler,       // PLANET-1061 placeholder
+  'ai.face_swap': aiFaceSwapHandler,                 // PLANET-1372
   // Canonical — Generic
   'generic.http_request': genericHttpRequestHandler,
   'generic.transform_json': genericTransformJsonHandler,

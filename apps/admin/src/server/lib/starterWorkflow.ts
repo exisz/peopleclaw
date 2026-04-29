@@ -119,12 +119,48 @@ export async function provisionStarterWorkflow(prisma: any, tenantId: string): P
   });
 }
 
+/**
+ * PLANET-1372: AI Face Swap workflow template.
+ * Same as product workflow but replaces AI image generation with face swap.
+ */
+export const FACE_SWAP_WORKFLOW = {
+  baseId: 'face-swap-workflow',
+  name: 'AI换脸工作流',
+  category: '电商工具',
+  definition: {
+    steps: [
+      { id: 'fs1', name: 'AI 换脸',             type: 'agent', assignee: 'ai.face_swap',           description: '将原图人脸替换为欧美模特脸', position: { x: 0,   y: 0 }, requiredFields: ['product_name', 'price', 'image_url', 'stock'] },
+      { id: 'fs2', name: 'AI 标题生成',          type: 'agent', assignee: 'ai.generate_title',     description: '', position: { x: 175, y: 200 } },
+      { id: 'fs3', name: 'AI 生成商品描述',      type: 'agent', assignee: 'ai.product_description', description: '', position: { x: 350, y: 0 } },
+      { id: 'fs4', name: 'AI SKU与价格生成',     type: 'agent', assignee: 'ai.generate_skus',      description: '', position: { x: 525, y: 200 } },
+      { id: 'fs5', name: '上架商品到Shopify',    type: 'agent', assignee: 'shopify.list_product',   description: '', position: { x: 700, y: 0 } },
+    ],
+    nodes: [
+      { id: 'fs1', position: { x: 0,   y: 0 } },
+      { id: 'fs2', position: { x: 175, y: 200 } },
+      { id: 'fs3', position: { x: 350, y: 0 } },
+      { id: 'fs4', position: { x: 525, y: 200 } },
+      { id: 'fs5', position: { x: 700, y: 0 } },
+    ],
+    edges: [
+      { source: 'fs1', target: 'fs2' },
+      { source: 'fs2', target: 'fs3' },
+      { source: 'fs3', target: 'fs4' },
+      { source: 'fs4', target: 'fs5' },
+    ],
+  },
+};
+
 // PLANET-1103: Template library — global templates visible to all tenants.
 // PLANET-1257: Removed shopify-direct-listing and product-workflow-2 templates.
-// Only keep product-workflow-1.
+// PLANET-1372: Added face-swap workflow template.
 export const TEMPLATES = [
   {
     id: 'template-product-workflow-1',
     ...DEFAULT_WORKFLOW,
+  },
+  {
+    id: 'template-face-swap-workflow',
+    ...FACE_SWAP_WORKFLOW,
   },
 ] as const;
