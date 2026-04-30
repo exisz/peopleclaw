@@ -23,14 +23,11 @@ const openai = new OpenAI({ apiKey, baseURL });
 const serviceAdapter = new OpenAIAdapter({ openai: openai as any, model });
 const runtime = new CopilotRuntime();
 
-// The handler gets req.url relative to the router mount point.
-// Since agentRouter is mounted at '/api', req.url will be '/agent'.
 const handler = copilotRuntimeNodeExpressEndpoint({
   runtime,
   serviceAdapter,
-  endpoint: '/agent',
+  endpoint: '/api/copilotkit',
 });
 
-// CopilotKit client may POST to various sub-paths
-agentRouter.all('/agent', handler);
-agentRouter.all('/agent/*', handler);
+// Catch ALL paths under this router (wildcard)
+agentRouter.all('*', handler);

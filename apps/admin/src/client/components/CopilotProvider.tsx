@@ -11,7 +11,7 @@ interface CopilotProviderProps {
 
 export function CopilotProvider({ children }: CopilotProviderProps) {
   return (
-    <CopilotKit runtimeUrl="/api/agent">
+    <CopilotKit runtimeUrl="/api/copilotkit">
       {children}
     </CopilotKit>
   );

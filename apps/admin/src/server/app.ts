@@ -34,7 +34,8 @@ export function createApp(): Express {
   app.use('/api/uploadthing', uploadThingHandler);
 
   // PLANET-1385: AG-UI agent endpoint — CopilotKit official runtime (needs raw body for streaming)
-  app.use('/api', agentRouter);
+  // Mount at /api/copilotkit so sub-paths like /api/copilotkit/default/run are caught
+  app.use('/api/copilotkit', agentRouter);
 
   app.use(express.json({ limit: '5mb' }));
   app.use('/api', healthRouter);
