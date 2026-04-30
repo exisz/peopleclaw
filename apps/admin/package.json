@@ -19,6 +19,7 @@
   "dependencies": {
     "@copilotkit/react-core": "^1.56.4",
     "@copilotkit/react-ui": "^1.56.4",
+    "@copilotkit/runtime": "^1.56.4",
     "@libsql/client": "^0.14.0",
     "@logto/browser": "^3.0.13",
     "@prisma/adapter-libsql": "^6.1.0",

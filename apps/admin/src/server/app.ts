@@ -33,8 +33,8 @@ export function createApp(): Express {
   // PLANET-1342: UploadThing needs raw body stream — mount BEFORE express.json
   app.use('/api/uploadthing', uploadThingHandler);
 
-  // PLANET-1385: AG-UI agent endpoint — lightweight OpenAI proxy (no @copilotkit/runtime)
-  app.use('/api', express.json(), agentRouter);
+  // PLANET-1385: AG-UI agent endpoint — CopilotKit official runtime (needs raw body for streaming)
+  app.use('/api', agentRouter);
 
   app.use(express.json({ limit: '5mb' }));
   app.use('/api', healthRouter);

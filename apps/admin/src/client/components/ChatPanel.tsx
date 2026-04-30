@@ -258,12 +258,12 @@ export function ChatPanel() {
   });
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col py-4">
+    <div className="flex-1 min-h-0 flex flex-col">
       <CopilotChat
         className="flex-1"
         instructions={SYSTEM_INSTRUCTIONS}
         labels={{
-          initial: '👋 告诉我你想自动化什么，我来帮你设计工作流。',
+          initial: '👋 告诉我你想自动化什么，我来帮你设计。',
           placeholder: '描述你想做的事...',
         }}
       />
