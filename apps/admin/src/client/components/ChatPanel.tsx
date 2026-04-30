@@ -275,16 +275,21 @@ export function ChatPanel() {
   });
 
   return (
-    <div className="h-full flex flex-col copilotkit-chat-panel">
-      <CopilotChat
-        className="h-full"
-        instructions={SYSTEM_INSTRUCTIONS}
-        labels={{
-          title: 'PeopleClaw AI',
-          initial: '👋 Hi! I\'m PeopleClaw AI. I can help you create workflows, analyze data, and manage your automation. What would you like to do?',
-          placeholder: 'Ask me anything... create a workflow, show data, generate configs...',
-        }}
-      />
+    <div className="h-full flex flex-col border-r bg-background">
+      <div className="px-4 py-3 border-b shrink-0">
+        <h2 className="text-sm font-semibold">PeopleClaw AI</h2>
+        <p className="text-[11px] text-muted-foreground">你的智能工作流助手</p>
+      </div>
+      <div className="flex-1 min-h-0 copilotkit-chat-container">
+        <CopilotChat
+          className="h-full"
+          instructions={SYSTEM_INSTRUCTIONS}
+          labels={{
+            initial: '👋 告诉我你想自动化什么，我来帮你设计工作流。',
+            placeholder: '描述你想做的事...',
+          }}
+        />
+      </div>
     </div>
   );
 }

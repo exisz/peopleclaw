@@ -3,12 +3,12 @@
  * Split layout: Chat panel (left 40%) + Dynamic Canvas (right 60%).
  * Chat is THE primary interface, not a sidebar.
  */
-import { Outlet } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable-panels';
 import AppTopBar from './AppTopBar';
 import { CopilotProvider } from './CopilotProvider';
 import { ChatPanel } from './ChatPanel';
 import { CanvasProvider } from './CanvasContext';
+import { CanvasContent } from './CanvasContent';
 
 export default function AppLayout() {
   return (
@@ -24,10 +24,10 @@ export default function AppLayout() {
 
             <ResizableHandle withHandle />
 
-            {/* Right: Dynamic Canvas — shows pages or generative UI */}
+            {/* Right: Dynamic Canvas */}
             <ResizablePanel defaultSize={60} minSize={30}>
-              <div className="h-full overflow-auto bg-background">
-                <Outlet />
+              <div className="h-full overflow-auto bg-muted/30">
+                <CanvasContent />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

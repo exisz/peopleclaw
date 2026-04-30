@@ -138,38 +138,32 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* PLANET-1385: CopilotKit Chat Panel — Chat-First styling */
-.copilotkit-chat-panel {
-  border-right: 1px solid var(--border);
+/* PLANET-1385: CopilotKit theme override — match our design system */
+:root {
+  --copilot-kit-primary-color: oklch(0.78 0.16 70);
+  --copilot-kit-contrast-color: oklch(0.18 0 0);
+  --copilot-kit-background-color: oklch(1 0 0);
+  --copilot-kit-secondary-color: oklch(0.97 0 0);
+  --copilot-kit-secondary-contrast-color: oklch(0.205 0 0);
+  --copilot-kit-separator-color: oklch(0.922 0 0);
+  --copilot-kit-input-background-color: oklch(0.97 0 0);
+  --copilot-kit-muted-color: oklch(0.556 0 0);
 }
 
-.copilotkit-chat-panel .copilotKitChat {
-  height: 100% !important;
-  max-height: 100% !important;
+.dark {
+  --copilot-kit-primary-color: oklch(0.78 0.16 70);
+  --copilot-kit-contrast-color: oklch(0.985 0 0);
+  --copilot-kit-background-color: oklch(0.36 0 0);
+  --copilot-kit-secondary-color: oklch(0.269 0 0);
+  --copilot-kit-secondary-contrast-color: oklch(0.985 0 0);
+  --copilot-kit-separator-color: oklch(0.27 0 0);
+  --copilot-kit-input-background-color: oklch(0.269 0 0);
+  --copilot-kit-muted-color: oklch(0.556 0 0);
+}
+
+/* Make CopilotChat blend seamlessly */
+.copilotkit-chat-container [data-copilotkit] {
   border: none !important;
   border-radius: 0 !important;
-  background: var(--background) !important;
-}
-
-.copilotkit-chat-panel .copilotKitHeader {
-  background: var(--card) !important;
-  border-bottom: 1px solid var(--border) !important;
-  padding: 0.75rem 1rem !important;
-}
-
-.copilotkit-chat-panel .copilotKitMessages {
-  background: var(--background) !important;
-  padding: 1rem !important;
-}
-
-.copilotkit-chat-panel .copilotKitMessage {
-  border-radius: 0.75rem !important;
-  padding: 0.75rem 1rem !important;
-  max-width: 85% !important;
-}
-
-.copilotkit-chat-panel .copilotKitInput {
-  border-top: 1px solid var(--border) !important;
-  background: var(--card) !important;
-  padding: 0.75rem !important;
+  box-shadow: none !important;
 }
