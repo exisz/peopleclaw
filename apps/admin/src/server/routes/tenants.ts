@@ -3,10 +3,7 @@ import { getPrisma } from '../lib/prisma.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest, suggestSlug, uniqueSlug } from '../middleware/tenant.js';
 import { exchangeShopifyClientCredentials } from '../lib/shopifyAuth.js';
-import { shopifyFetch } from '../engine/handlers/shopifyClient.js';
-// provisionStarterWorkflow import kept for reference; call-site disabled (PLANET-1103)
-import { provisionStarterWorkflow as _provisionStarterWorkflow } from '../lib/starterWorkflow.js';
-void _provisionStarterWorkflow; // suppress unused warning
+import { shopifyFetch } from '../lib/shopifyClient.js';
 
 export const tenantsRouter = Router();
 
@@ -21,10 +18,8 @@ tenantsRouter.post('/tenants', requireAuth, async (req, res) => {
     data: { name, slug: finalSlug },
   });
   await prisma.tenantUser.create({ data: { tenantId: t.id, userId: r.user.id, role: 'owner' } });
-  // PLANET-1103: provisionStarterWorkflow disabled — new tenants start with an empty workspace.
   // Users now choose workflows from the template library (/templates).
   // try {
-  //   await provisionStarterWorkflow(prisma, t.id);
   // } catch (err) {
   //   console.error('[tenants] starter workflow provisioning failed for', t.id, err);
   // }

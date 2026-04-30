@@ -1,4 +1,4 @@
-import { getPrisma } from '../../lib/prisma.js';
+import { getPrisma } from './prisma.js';
 
 interface ShopifyConfig {
   shop_domain?: string;
@@ -18,10 +18,6 @@ function normalizeShopDomain(s: string): string {
   return v;
 }
 
-/**
- * Resolve Shopify credentials (Connection-first, then dev env fallback).
- * Returns null when no creds are available.
- */
 export async function resolveShopifyCreds(tenantId: string): Promise<ShopifyCreds | null> {
   const prisma = getPrisma();
   if (tenantId) {
@@ -65,8 +61,4 @@ export async function shopifyFetch(
     ...((init.headers as Record<string, string>) ?? {}),
   };
   return fetch(url, { ...init, headers });
-}
-
-export function shopHandle(creds: ShopifyCreds): string {
-  return creds.shop.replace(/\.myshopify\.com$/, '');
 }

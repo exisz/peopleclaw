@@ -13,11 +13,10 @@ model User {
   logtoId          String   @unique
   email            String?
   visits           Int      @default(0)
-  credits          Int      @default(10) // legacy (per-user); tenant credits supersede
+  credits          Int      @default(10)
   stripeCustomerId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  cases            Case[]
   usageLogs        UsageLog[]
   tenants          TenantUser[]
 }
@@ -26,14 +25,12 @@ model Tenant {
   id               String       @id @default(cuid())
   name             String
   slug             String       @unique
-  plan             String       @default("free") // free|starter|pro|business
+  plan             String       @default("free")
   credits          Int          @default(20)
   stripeCustomerId String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   members          TenantUser[]
-  workflows        Workflow[]
-  cases            Case[]
   connections      Connection[]
   usageLogs        UsageLog[]
 }
@@ -42,7 +39,7 @@ model TenantUser {
   id        Int      @id @default(autoincrement())
   tenantId  String
   userId    Int
-  role      String   @default("member") // owner|admin|member
+  role      String   @default("member")
   createdAt DateTime @default(now())
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
@@ -52,91 +49,13 @@ model TenantUser {
 model Connection {
   id        String   @id @default(cuid())
   tenantId  String
-  type      String // "shopify" | "notion" | "stripe" | etc
-  config    String   @default("{}") // JSON string (sqlite has no native Json)
+  type      String
+  config    String   @default("{}")
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   @@unique([tenantId, type])
-}
-
-model Workflow {
-  id         String   @id
-  tenantId   String?
-  name       String
-  category   String?
-  definition String // JSON serialized {nodes, edges}
-  isSystem   Boolean  @default(false) // PLANET-1210: true = starter/system template, cannot be deleted
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  cases      Case[]
-  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
-}
-
-model Case {
-  id            String     @id @default(cuid())
-  tenantId      String?
-  workflowId    String
-  workflow      Workflow   @relation(fields: [workflowId], references: [id])
-  ownerId       Int
-  owner         User       @relation(fields: [ownerId], references: [id])
-  title         String
-  status        String     @default("running") // running|waiting_human|waiting_subflow|done|failed|cancelled|awaiting_fix
-  currentStepId String?
-  payload       String     @default("{}") // JSON
-  // Subflow execution (PLANET-941 P3.15a): a Case may be a child case spawned by a subflow step in a parent case.
-  // When parentCaseId/parentStepId are set, completion of this case advances the parent step.
-  parentCaseId  String?
-  parentStepId  String?
-  parent        Case?      @relation("CaseSubflow", fields: [parentCaseId], references: [id])
-  children      Case[]     @relation("CaseSubflow")
-  // PLANET-1196: batch_id for fan-out (read_table node)
-  batchId       String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  steps         CaseStep[]
-  tenant        Tenant?    @relation(fields: [tenantId], references: [id])
-
-  @@index([parentCaseId])
-  @@index([batchId])
-}
-
-model CaseStep {
-  id          String    @id @default(cuid())
-  caseId      String
-  case        Case      @relation(fields: [caseId], references: [id])
-  stepId      String
-  stepType    String
-  kind        String // auto|human
-  status      String    @default("pending")
-  input       String    @default("{}") // JSON
-  output      String    @default("{}") // JSON
-  error       String?
-  startedAt   DateTime?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-}
-
-model StepTemplate {
-  id              String   @id // e.g. "shopify.list_product"
-  category        String   // "shopify" | "ai" | "generic" | "human"
-  domain          String   // "ecommerce" | "marketing" | "support" | "generic"
-  labelI18n       String   // JSON {en, zh}
-  descriptionI18n String   // JSON {en, zh}
-  icon            String   // lucide-react icon name
-  kind            String   // "auto" | "human" | "subflow" — engine gate
-  handler         String   // dispatch key, e.g. "shopify.list_product"
-  defaultConfig   String   @default("{}") // JSON object
-  inputSchema     String   @default("{}") // JSON Schema
-  outputSchema    String   @default("{}") // JSON Schema
-  enabled         Boolean  @default(true)
-  builtIn         Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([domain, category])
-  @@index([enabled])
 }
 
 model UsageLog {
@@ -150,6 +69,6 @@ model UsageLog {
   creditsAdded Int      @default(0)
   packId       String?
   amountPaid   Int?
-  metadata     String   @default("{}") // JSON
+  metadata     String   @default("{}")
   createdAt    DateTime @default(now())
 }

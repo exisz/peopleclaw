@@ -9,8 +9,11 @@ import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { AppHome } from './components/replit/AppHome';
-import { AgentWorkspace } from './components/replit/AgentWorkspace';
+import AppPlaceholder from './pages/AppPlaceholder';
+import Settings from './pages/Settings';
+import SettingsBilling from './pages/SettingsBilling';
+import SettingsConnections from './pages/SettingsConnections';
+import SettingsTeam from './pages/SettingsTeam';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -20,13 +23,16 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/callback" element={<Callback />} />
-          <Route path="/app" element={<ErrorBoundary><AppHome /></ErrorBoundary>} />
-          <Route path="/app/task/:taskId" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
-          <Route path="/app/workflow/:id" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
-          <Route path="/app/workflow/:id/case/:caseId" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
+          <Route path="/app" element={<ErrorBoundary><AppPlaceholder /></ErrorBoundary>} />
+          <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+          <Route path="/settings/billing" element={<ErrorBoundary><SettingsBilling /></ErrorBoundary>} />
+          <Route path="/settings/connections" element={<ErrorBoundary><SettingsConnections /></ErrorBoundary>} />
+          <Route path="/settings/team" element={<ErrorBoundary><SettingsTeam /></ErrorBoundary>} />
+          {/* All old workflow/case/step URLs redirect to /app */}
+          <Route path="/app/workflow/*" element={<Navigate to="/app" replace />} />
+          <Route path="/app/task/*" element={<Navigate to="/app" replace />} />
           <Route path="/dashboard" element={<Navigate to="/app" replace />} />
           <Route path="/workflows/*" element={<Navigate to="/app" replace />} />
-          <Route path="/settings/*" element={<Navigate to="/app" replace />} />
           <Route path="/credits/*" element={<Navigate to="/app" replace />} />
           <Route path="/roadmap" element={<Navigate to="/app" replace />} />
           <Route path="*" element={<Navigate to="/app" replace />} />
