@@ -1,6 +1,7 @@
 /**
  * PLANET-1385: CopilotKit AG-UI agent endpoint.
- * Provides an AI chat backend using the CopilotKit runtime with OpenAI adapter.
+ * Uses DeepSeek (OpenAI-compatible) as the LLM backend.
+ * Falls back to OpenAI if DEEPSEEK_API_KEY is not set.
  */
 import { Router } from 'express';
 import {
@@ -8,11 +9,22 @@ import {
   OpenAIAdapter,
   copilotRuntimeNodeExpressEndpoint,
 } from '@copilotkit/runtime';
+import OpenAI from 'openai';
 
 export const agentRouter = Router();
 
+// Build OpenAI client pointing to DeepSeek or OpenAI
+const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || '';
+const baseURL = process.env.DEEPSEEK_API_KEY
+  ? 'https://api.deepseek.com'
+  : 'https://api.openai.com/v1';
+const model = process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4o-mini';
+
+const openai = new OpenAI({ apiKey, baseURL });
+
 const serviceAdapter = new OpenAIAdapter({
-  model: 'gpt-4o-mini',
+  openai: openai as any,
+  model,
 });
 
 const runtime = new CopilotRuntime();

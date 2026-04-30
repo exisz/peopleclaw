@@ -137,4 +137,39 @@ html, body, #root {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-// redeploy Tue Apr 21 17:11:14 AEST 2026
+
+/* PLANET-1385: CopilotKit Chat Panel — Chat-First styling */
+.copilotkit-chat-panel {
+  border-right: 1px solid var(--border);
+}
+
+.copilotkit-chat-panel .copilotKitChat {
+  height: 100% !important;
+  max-height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--background) !important;
+}
+
+.copilotkit-chat-panel .copilotKitHeader {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.copilotkit-chat-panel .copilotKitMessages {
+  background: var(--background) !important;
+  padding: 1rem !important;
+}
+
+.copilotkit-chat-panel .copilotKitMessage {
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  max-width: 85% !important;
+}
+
+.copilotkit-chat-panel .copilotKitInput {
+  border-top: 1px solid var(--border) !important;
+  background: var(--card) !important;
+  padding: 0.75rem !important;
+}
