@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (authed === true) navigate('/workflows', { replace: true });
+    if (authed === true) navigate('/app', { replace: true });
   }, [authed, navigate]);
 
   return (
