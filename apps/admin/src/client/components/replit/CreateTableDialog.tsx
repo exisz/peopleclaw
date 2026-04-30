@@ -1,50 +1,58 @@
 /**
- * PLANET-1385: Dialog to create a new table canvas element.
+ * PLANET-1385: Dialog to create a new table block.
  */
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import type { CanvasElement } from './canvasElements';
-import { addStoredElement } from './canvasElements';
+import type { Block, TableColumn } from './canvasElements';
+import { addStoredBlock } from './canvasElements';
 
 interface CreateTableDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (element: CanvasElement) => void;
+  onCreated: (block: Block) => void;
 }
 
 export function CreateTableDialog({ open, onClose, onCreated }: CreateTableDialogProps) {
   const [name, setName] = useState('');
-  const [columns, setColumns] = useState<string[]>(['']);
+  const [columns, setColumns] = useState<{ label: string; type: TableColumn['type'] }[]>([
+    { label: '', type: 'text' },
+  ]);
 
   if (!open) return null;
 
   function addColumn() {
-    setColumns([...columns, '']);
+    setColumns([...columns, { label: '', type: 'text' }]);
   }
 
   function removeColumn(index: number) {
     setColumns(columns.filter((_, i) => i !== index));
   }
 
-  function updateColumn(index: number, value: string) {
-    setColumns(columns.map((c, i) => i === index ? value : c));
+  function updateColumn(index: number, updates: Partial<{ label: string; type: TableColumn['type'] }>) {
+    setColumns(columns.map((c, i) => i === index ? { ...c, ...updates } : c));
   }
 
   function handleCreate() {
     if (!name.trim()) return;
-    const element: CanvasElement = {
-      id: `table-${Date.now()}`,
+    const validCols = columns.filter(c => c.label.trim());
+    const block: Block = {
+      id: `block-table-${Date.now()}`,
       name: name.trim(),
       type: 'table',
       status: 'active',
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      columns: columns.filter(c => c.trim()),
+      columns: validCols.map((c, i) => ({
+        id: `col-${i}`,
+        label: c.label.trim(),
+        type: c.type,
+      })),
       rows: [],
     };
-    addStoredElement(element);
-    onCreated(element);
+    addStoredBlock(block);
+    onCreated(block);
     setName('');
-    setColumns(['']);
+    setColumns([{ label: '', type: 'text' }]);
     onClose();
   }
 
@@ -72,16 +80,28 @@ export function CreateTableDialog({ open, onClose, onCreated }: CreateTableDialo
 
         {/* Columns */}
         <div className="mb-4">
-          <label className="block text-xs font-medium text-white/50 mb-2">列名</label>
+          <label className="block text-xs font-medium text-white/50 mb-2">列</label>
           <div className="space-y-2 max-h-[240px] overflow-y-auto">
             {columns.map((col, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
-                  value={col}
-                  onChange={e => updateColumn(index, e.target.value)}
+                  value={col.label}
+                  onChange={e => updateColumn(index, { label: e.target.value })}
                   placeholder={`列 ${index + 1}`}
                   className="flex-1 bg-white/[0.05] border border-white/[0.12] rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/50"
                 />
+                <select
+                  value={col.type}
+                  onChange={e => updateColumn(index, { type: e.target.value as TableColumn['type'] })}
+                  className="bg-white/[0.05] border border-white/[0.12] rounded-lg px-2 py-2 text-xs text-white/70 focus:outline-none"
+                >
+                  <option value="text">文本</option>
+                  <option value="number">数字</option>
+                  <option value="date">日期</option>
+                  <option value="status">状态</option>
+                  <option value="image">图片</option>
+                  <option value="actions">操作</option>
+                </select>
                 <button
                   onClick={() => removeColumn(index)}
                   className="p-1.5 rounded hover:bg-red-500/10 text-white/30 hover:text-red-400"

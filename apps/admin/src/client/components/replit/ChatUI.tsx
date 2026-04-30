@@ -1,15 +1,17 @@
 /**
- * PLANET-1385: Custom chat UI — replaces CopilotKit chat.
- * Streams responses from /api/chat endpoint.
+ * PLANET-1385: Custom chat UI — streams responses from /api/chat.
+ * Quick actions: 📋 New Form / 📊 New Table / 🔄 New Flow
  */
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Link2, Sparkles, FileText, Table2 } from 'lucide-react';
+import { Paperclip, Link2, Sparkles, FileText, Table2, Zap } from 'lucide-react';
 import { CreateFormDialog } from './CreateFormDialog';
 import { CreateTableDialog } from './CreateTableDialog';
+import { CreateFlowDialog } from './CreateFlowDialog';
 import { useCanvas } from '../CanvasContext';
 import { CanvasFormView } from './CanvasFormView';
 import { CanvasTableView } from './CanvasTableView';
-import type { CanvasElement } from './canvasElements';
+import { CanvasFlowView } from './CanvasFlowView';
+import type { Block } from './canvasElements';
 
 interface Message {
   id: string;
@@ -76,6 +78,7 @@ export function ChatUI({ taskId }: { taskId: string }) {
   const [model, setModel] = useState('Economy');
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showFlowDialog, setShowFlowDialog] = useState(false);
   const { setCanvas } = useCanvas();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -213,6 +216,13 @@ export function ChatUI({ taskId }: { taskId: string }) {
           >
             <Table2 className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setShowFlowDialog(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="新建 Flow"
+          >
+            <Zap className="w-4 h-4" />
+          </button>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -244,12 +254,17 @@ export function ChatUI({ taskId }: { taskId: string }) {
       <CreateFormDialog
         open={showFormDialog}
         onClose={() => setShowFormDialog(false)}
-        onCreated={(el: CanvasElement) => setCanvas(<CanvasFormView element={el} />, el.name)}
+        onCreated={(block: Block) => setCanvas(<CanvasFormView block={block} />, block.name)}
       />
       <CreateTableDialog
         open={showTableDialog}
         onClose={() => setShowTableDialog(false)}
-        onCreated={(el: CanvasElement) => setCanvas(<CanvasTableView element={el} />, el.name)}
+        onCreated={(block: Block) => setCanvas(<CanvasTableView block={block} />, block.name)}
+      />
+      <CreateFlowDialog
+        open={showFlowDialog}
+        onClose={() => setShowFlowDialog(false)}
+        onCreated={(block: Block) => setCanvas(<CanvasFlowView block={block} />, block.name)}
       />
     </div>
   );

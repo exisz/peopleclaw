@@ -1,9 +1,7 @@
 /**
- * PLANET-1257: Template library as a dialog (not a page).
- * Triggered from the AppTopBar "模板库" button.
+ * PLANET-1385: Template library dialog — creates workflow then pushes a flow Block to canvas.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle2, LibraryBig } from 'lucide-react';
 import { Button } from './ui/button';
@@ -17,6 +15,10 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { apiClient } from '../lib/api';
+import { useCanvas } from './CanvasContext';
+import { CanvasFlowView } from './replit/CanvasFlowView';
+import type { Block } from './replit/canvasElements';
+import { addStoredBlock } from './replit/canvasElements';
 
 interface TemplateStep {
   name: string;
@@ -37,7 +39,7 @@ interface TemplateLibraryDialogProps {
 }
 
 export default function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDialogProps) {
-  const navigate = useNavigate();
+  const { setCanvas } = useCanvas();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingId, setUsingId] = useState<string | null>(null);
@@ -62,9 +64,24 @@ export default function TemplateLibraryDialog({ open, onOpenChange }: TemplateLi
     try {
       const data = await apiClient.post(`/api/templates/${t.id}/use`, {}) as { workflow: { id: string; name: string } };
       toast.success(`已创建工作流「${data.workflow.name}」`);
+
+      // Create a flow block and push to canvas
+      const block: Block = {
+        id: `wf-${data.workflow.id}`,
+        name: data.workflow.name,
+        type: 'flow',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        workflowId: data.workflow.id,
+        input: { schema: {} },
+        output: { schema: {} },
+      };
+      addStoredBlock(block);
+      setCanvas(<CanvasFlowView block={block} />, block.name);
+
       setUsingId(null);
       onOpenChange(false);
-      navigate(`/app/workflow/${data.workflow.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`一键使用失败: ${msg}`);

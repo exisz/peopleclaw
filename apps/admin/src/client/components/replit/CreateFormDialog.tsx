@@ -1,15 +1,15 @@
 /**
- * PLANET-1385: Dialog to create a new form canvas element.
+ * PLANET-1385: Dialog to create a new form block.
  */
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import type { CanvasElement, FormField } from './canvasElements';
-import { addStoredElement } from './canvasElements';
+import type { Block, FormField } from './canvasElements';
+import { addStoredBlock } from './canvasElements';
 
 interface CreateFormDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (element: CanvasElement) => void;
+  onCreated: (block: Block) => void;
 }
 
 export function CreateFormDialog({ open, onClose, onCreated }: CreateFormDialogProps) {
@@ -34,16 +34,17 @@ export function CreateFormDialog({ open, onClose, onCreated }: CreateFormDialogP
 
   function handleCreate() {
     if (!name.trim()) return;
-    const element: CanvasElement = {
-      id: `form-${Date.now()}`,
+    const block: Block = {
+      id: `block-form-${Date.now()}`,
       name: name.trim(),
       type: 'form',
       status: 'active',
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       fields: fields.filter(f => f.label.trim()),
     };
-    addStoredElement(element);
-    onCreated(element);
+    addStoredBlock(block);
+    onCreated(block);
     setName('');
     setFields([{ id: `f-${Date.now()}`, label: '', type: 'text' }]);
     onClose();
@@ -93,6 +94,8 @@ export function CreateFormDialog({ open, onClose, onCreated }: CreateFormDialogP
                   <option value="number">数字</option>
                   <option value="select">下拉</option>
                   <option value="file">文件</option>
+                  <option value="email">邮箱</option>
+                  <option value="url">URL</option>
                 </select>
                 <button
                   onClick={() => removeField(index)}
