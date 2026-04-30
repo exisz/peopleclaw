@@ -1,14 +1,13 @@
 /**
  * PLANET-1385: Chat-First Panel — THE primary interface.
  * Full-height chat using CopilotKit's CopilotChat component.
- * Registers generative UI actions: createWorkflow, showDataTable, showForm, showCode, executeCaseStep.
+ * Generative UI actions render INLINE in the chat via CopilotKit's render system.
  */
 import { CopilotChat } from '@copilotkit/react-ui';
 import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
 import '@copilotkit/react-ui/styles.css';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useCanvas } from './CanvasContext';
 import { DynamicTable } from './generative/DynamicTable';
 import { DynamicForm } from './generative/DynamicForm';
 import { CodeBlock } from './generative/CodeBlock';
@@ -42,7 +41,6 @@ When a user first arrives, greet them briefly and offer to help with their curre
 
 export function ChatPanel() {
   const location = useLocation();
-  const { setCanvas } = useCanvas();
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [cases, setCases] = useState<any[]>([]);
 
@@ -110,13 +108,6 @@ export function ChatPanel() {
       },
     ],
     handler: async ({ name, description, steps }) => {
-      // Show preview in canvas first
-      setCanvas(
-        <WorkflowPreview name={name} description={description} steps={steps} />,
-        `New Workflow: ${name}`
-      );
-
-      // Create via API
       try {
         const res = await fetch('/api/workflows', {
           method: 'POST',
@@ -125,18 +116,18 @@ export function ChatPanel() {
         });
         if (res.ok) {
           const data = await res.json();
-          return `✅ Workflow "${name}" created successfully (ID: ${data.id || 'created'}). It has ${steps.length} steps. You can view it in the Workflows page.`;
+          return `✅ Workflow "${name}" created successfully (ID: ${data.id || 'created'}). It has ${steps.length} steps.`;
         }
-        return `⚠️ Workflow created visually but API returned ${res.status}. The workflow design is shown in the canvas.`;
+        return `⚠️ API returned ${res.status}. The workflow design is shown above.`;
       } catch {
-        return `⚠️ Could not save to backend, but workflow design is shown in the canvas panel.`;
+        return `⚠️ Could not save to backend. Network error.`;
       }
     },
     render: (props) => {
       if (props.status === 'executing' || props.status === 'complete') {
         return <WorkflowPreview {...(props.args as any)} />;
       }
-      return <div className="text-sm text-muted-foreground">Designing workflow...</div>;
+      return <div className="text-sm text-muted-foreground animate-pulse">Designing workflow...</div>;
     },
   });
 
@@ -157,19 +148,17 @@ export function ChatPanel() {
       },
       { name: 'data', type: 'object[]', description: 'Row data' },
     ],
-    handler: async ({ title, columns, data }) => {
-      setCanvas(
-        <DynamicTable title={title} columns={columns} data={data || []} />,
-        title
-      );
-      return `Displayed table "${title}" with ${(data || []).length} rows in the canvas.`;
+    handler: async ({ title, data }) => {
+      return `Displayed table "${title}" with ${(data || []).length} rows.`;
     },
     render: (props) => {
       if (props.args?.title) {
         return (
-          <div className="text-sm p-2 rounded bg-muted/50">
-            📊 Table: {props.args.title} ({(props.args.data as any[])?.length || 0} rows)
-          </div>
+          <DynamicTable
+            title={props.args.title as string}
+            columns={(props.args.columns as any[]) || []}
+            data={(props.args.data as any[]) || []}
+          />
         );
       }
       return null;
@@ -196,20 +185,16 @@ export function ChatPanel() {
       },
     ],
     handler: async ({ title, fields }) => {
-      setCanvas(
-        <DynamicForm title={title} fields={fields} onSubmit={(data) => {
-          console.log('Form submitted:', data);
-        }} />,
-        title
-      );
-      return `Form "${title}" is displayed in the canvas. The user can fill it out there.`;
+      return `Form "${title}" displayed with ${fields.length} fields.`;
     },
     render: (props) => {
       if (props.args?.title) {
         return (
-          <div className="text-sm p-2 rounded bg-muted/50">
-            📝 Form: {props.args.title} ({(props.args.fields as any[])?.length || 0} fields)
-          </div>
+          <DynamicForm
+            title={props.args.title as string}
+            fields={(props.args.fields as any[]) || []}
+            onSubmit={(data) => console.log('Form submitted:', data)}
+          />
         );
       }
       return null;
@@ -219,25 +204,23 @@ export function ChatPanel() {
   // 4. Show Code Block
   useCopilotAction({
     name: 'showCode',
-    description: 'Display a code block with syntax highlighting in the canvas. Use for runner scripts, configurations, API responses.',
+    description: 'Display a code block with syntax highlighting. Use for runner scripts, configurations, API responses.',
     parameters: [
       { name: 'title', type: 'string', description: 'Code block title', required: true },
       { name: 'language', type: 'string', description: 'Programming language', required: true },
       { name: 'code', type: 'string', description: 'The code content', required: true },
     ],
-    handler: async ({ title, language, code }) => {
-      setCanvas(
-        <CodeBlock title={title} language={language} code={code} />,
-        title
-      );
-      return `Code block "${title}" displayed in canvas.`;
+    handler: async ({ title }) => {
+      return `Code block "${title}" displayed.`;
     },
     render: (props) => {
       if (props.args?.title) {
         return (
-          <div className="text-sm p-2 rounded bg-muted/50">
-            💻 Code: {props.args.title} ({props.args.language})
-          </div>
+          <CodeBlock
+            title={props.args.title as string}
+            language={props.args.language as string}
+            code={props.args.code as string}
+          />
         );
       }
       return null;
@@ -275,21 +258,15 @@ export function ChatPanel() {
   });
 
   return (
-    <div className="h-full flex flex-col border-r bg-background">
-      <div className="px-4 py-3 border-b shrink-0">
-        <h2 className="text-sm font-semibold">PeopleClaw AI</h2>
-        <p className="text-[11px] text-muted-foreground">你的智能工作流助手</p>
-      </div>
-      <div className="flex-1 min-h-0 copilotkit-chat-container">
-        <CopilotChat
-          className="h-full"
-          instructions={SYSTEM_INSTRUCTIONS}
-          labels={{
-            initial: '👋 告诉我你想自动化什么，我来帮你设计工作流。',
-            placeholder: '描述你想做的事...',
-          }}
-        />
-      </div>
+    <div className="flex-1 min-h-0 flex flex-col py-4">
+      <CopilotChat
+        className="flex-1"
+        instructions={SYSTEM_INSTRUCTIONS}
+        labels={{
+          initial: '👋 告诉我你想自动化什么，我来帮你设计工作流。',
+          placeholder: '描述你想做的事...',
+        }}
+      />
     </div>
   );
 }

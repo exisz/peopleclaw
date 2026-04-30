@@ -1,38 +1,32 @@
 /**
- * PLANET-1385: Chat-First App Layout.
- * Split layout: Chat panel (left 40%) + Dynamic Canvas (right 60%).
- * Chat is THE primary interface, not a sidebar.
+ * PLANET-1385: Chat-First Unified Layout.
+ * Single-page chat interface on /dashboard, traditional layout for other routes.
  */
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable-panels';
+import { Outlet, useLocation } from 'react-router-dom';
 import AppTopBar from './AppTopBar';
 import { CopilotProvider } from './CopilotProvider';
 import { ChatPanel } from './ChatPanel';
-import { CanvasProvider } from './CanvasContext';
-import { CanvasContent } from './CanvasContent';
 
 export default function AppLayout() {
+  const location = useLocation();
+  const isChatView = location.pathname === '/dashboard';
+
   return (
     <CopilotProvider>
-      <CanvasProvider>
-        <div className="flex flex-col h-screen overflow-hidden">
-          <AppTopBar />
-          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-            {/* Left: Chat Panel — THE primary interface */}
-            <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+      <div className="flex flex-col h-screen overflow-hidden bg-background">
+        <AppTopBar />
+        {isChatView ? (
+          <main className="flex-1 min-h-0 flex flex-col items-center">
+            <div className="w-full max-w-3xl flex-1 min-h-0 flex flex-col px-4">
               <ChatPanel />
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Right: Dynamic Canvas */}
-            <ResizablePanel defaultSize={60} minSize={30}>
-              <div className="h-full overflow-auto bg-muted/30">
-                <CanvasContent />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-      </CanvasProvider>
+            </div>
+          </main>
+        ) : (
+          <main className="flex-1 min-h-0 overflow-auto">
+            <Outlet />
+          </main>
+        )}
+      </div>
     </CopilotProvider>
   );
 }
