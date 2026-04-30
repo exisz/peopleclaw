@@ -138,25 +138,4 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* PLANET-1385: CopilotKit theme override — match our design system */
-:root {
-  --copilot-kit-primary-color: oklch(0.78 0.16 70);
-  --copilot-kit-contrast-color: oklch(0.18 0 0);
-  --copilot-kit-background-color: oklch(1 0 0);
-  --copilot-kit-secondary-color: oklch(0.97 0 0);
-  --copilot-kit-secondary-contrast-color: oklch(0.205 0 0);
-  --copilot-kit-separator-color: oklch(0.922 0 0);
-  --copilot-kit-input-background-color: oklch(0.97 0 0);
-  --copilot-kit-muted-color: oklch(0.556 0 0);
-}
-
-.dark {
-  --copilot-kit-primary-color: oklch(0.78 0.16 70);
-  --copilot-kit-contrast-color: oklch(0.985 0 0);
-  --copilot-kit-background-color: oklch(0.36 0 0);
-  --copilot-kit-secondary-color: oklch(0.269 0 0);
-  --copilot-kit-secondary-contrast-color: oklch(0.985 0 0);
-  --copilot-kit-separator-color: oklch(0.27 0 0);
-  --copilot-kit-input-background-color: oklch(0.269 0 0);
-  --copilot-kit-muted-color: oklch(0.556 0 0);
-}
+/* PLANET-1385: Replit-style UI — custom chat, no CopilotKit */

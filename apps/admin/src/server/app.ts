@@ -17,6 +17,7 @@ import { roadmapRouter } from './routes/roadmap.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
 import { agentRouter } from './routes/agent.js';
+import { chatRouter } from './routes/chat.js';
 import { migrateRequiredFields } from './lib/migrateWorkflows.js';
 
 export function createApp(): Express {
@@ -38,6 +39,7 @@ export function createApp(): Express {
   app.use('/api/copilotkit', agentRouter);
 
   app.use(express.json({ limit: '5mb' }));
+  app.use('/api', chatRouter);
   app.use('/api', healthRouter);
   app.use('/api', meRouter);
   app.use('/api', workflowsRouter);

@@ -9,7 +9,8 @@ import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import AppLayout from './components/AppLayout';
+import { AppHome } from './components/replit/AppHome';
+import { AgentWorkspace } from './components/replit/AgentWorkspace';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,9 +20,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/callback" element={<Callback />} />
-          {/* All authenticated routes → single chat+canvas layout */}
-          <Route path="/app" element={<ErrorBoundary><AppLayout /></ErrorBoundary>} />
-          {/* Redirect any old routes to /app */}
+          <Route path="/app" element={<ErrorBoundary><AppHome /></ErrorBoundary>} />
+          <Route path="/app/task/:taskId" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
           <Route path="/dashboard" element={<Navigate to="/app" replace />} />
           <Route path="/workflows/*" element={<Navigate to="/app" replace />} />
           <Route path="/settings/*" element={<Navigate to="/app" replace />} />
