@@ -3,7 +3,13 @@
  * Streams responses from /api/chat endpoint.
  */
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Link2, Sparkles } from 'lucide-react';
+import { Paperclip, Link2, Sparkles, FileText, Table2 } from 'lucide-react';
+import { CreateFormDialog } from './CreateFormDialog';
+import { CreateTableDialog } from './CreateTableDialog';
+import { useCanvas } from '../CanvasContext';
+import { CanvasFormView } from './CanvasFormView';
+import { CanvasTableView } from './CanvasTableView';
+import type { CanvasElement } from './canvasElements';
 
 interface Message {
   id: string;
@@ -68,6 +74,9 @@ export function ChatUI({ taskId }: { taskId: string }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState('Economy');
+  const [showFormDialog, setShowFormDialog] = useState(false);
+  const [showTableDialog, setShowTableDialog] = useState(false);
+  const { setCanvas } = useCanvas();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -190,6 +199,20 @@ export function ChatUI({ taskId }: { taskId: string }) {
           <button className="text-muted-foreground hover:text-foreground transition-colors">
             <Link2 className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setShowFormDialog(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="新建表单"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowTableDialog(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="新建表格"
+          >
+            <Table2 className="w-4 h-4" />
+          </button>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -216,6 +239,18 @@ export function ChatUI({ taskId }: { taskId: string }) {
           </button>
         </div>
       </div>
+
+      {/* Create dialogs */}
+      <CreateFormDialog
+        open={showFormDialog}
+        onClose={() => setShowFormDialog(false)}
+        onCreated={(el: CanvasElement) => setCanvas(<CanvasFormView element={el} />, el.name)}
+      />
+      <CreateTableDialog
+        open={showTableDialog}
+        onClose={() => setShowTableDialog(false)}
+        onCreated={(el: CanvasElement) => setCanvas(<CanvasTableView element={el} />, el.name)}
+      />
     </div>
   );
 }

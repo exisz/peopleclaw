@@ -35,7 +35,10 @@ export function AppHome() {
   useEffect(() => {
     fetch('/api/workflows')
       .then(r => r.ok ? r.json() : [])
-      .then((data: WorkflowSummary[]) => setRecentWorkflows(data.slice(0, 6)))
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.workflows || []);
+        setRecentWorkflows(list.slice(0, 6));
+      })
       .catch(() => {});
   }, []);
 

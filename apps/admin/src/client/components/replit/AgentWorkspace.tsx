@@ -27,7 +27,10 @@ function MasterOverview() {
   useEffect(() => {
     fetch('/api/workflows')
       .then(r => r.ok ? r.json() : [])
-      .then(data => setWorkflows(Array.isArray(data) ? data : []))
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.workflows || []);
+        setWorkflows(list);
+      })
       .catch(() => setWorkflows([]))
       .finally(() => setLoading(false));
   }, []);
