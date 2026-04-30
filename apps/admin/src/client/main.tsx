@@ -22,6 +22,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/callback" element={<Callback />} />
           <Route path="/app" element={<ErrorBoundary><AppHome /></ErrorBoundary>} />
           <Route path="/app/task/:taskId" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
+          <Route path="/app/workflow/:id" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
+          <Route path="/app/workflow/:id/case/:caseId" element={<ErrorBoundary><AgentWorkspace /></ErrorBoundary>} />
           <Route path="/dashboard" element={<Navigate to="/app" replace />} />
           <Route path="/workflows/*" element={<Navigate to="/app" replace />} />
           <Route path="/settings/*" element={<Navigate to="/app" replace />} />

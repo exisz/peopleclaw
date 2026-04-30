@@ -64,8 +64,7 @@ export default function TemplateLibraryDialog({ open, onOpenChange }: TemplateLi
       toast.success(`已创建工作流「${data.workflow.name}」`);
       setUsingId(null);
       onOpenChange(false);
-      // Reload workspace so MasterOverview re-fetches the new workflow
-      window.location.reload();
+      navigate(`/app/workflow/${data.workflow.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`一键使用失败: ${msg}`);

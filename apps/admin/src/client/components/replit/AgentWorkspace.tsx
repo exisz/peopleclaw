@@ -10,6 +10,7 @@ import { ChatUI } from './ChatUI';
 import { CanvasProvider, useCanvas } from '../CanvasContext';
 import { ComponentsDrawer } from './ComponentsDrawer';
 import TemplateLibraryDialog from '../TemplateLibraryDialog';
+import { WorkflowCanvas } from './WorkflowCanvas';
 
 /* ---------- Master Overview (default canvas content) ---------- */
 
@@ -23,6 +24,7 @@ interface WorkflowCard {
 function MasterOverview() {
   const [workflows, setWorkflows] = useState<WorkflowCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch('/api/workflows')
@@ -62,7 +64,8 @@ function MasterOverview() {
         {workflows.map(wf => (
           <div
             key={wf.id}
-            className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 hover:border-amber-500/30 hover:bg-white/[0.05] transition-all cursor-default"
+            onClick={() => navigate(`/app/workflow/${wf.id}`)}
+            className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 hover:border-amber-500/30 hover:bg-white/[0.05] transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2 mb-2">
               <Workflow className="w-4 h-4 text-amber-400/70" />
@@ -88,7 +91,7 @@ function MasterOverview() {
 /* ---------- Main Workspace ---------- */
 
 function WorkspaceInner() {
-  const { taskId } = useParams<{ taskId: string }>();
+  const { taskId, id: workflowId } = useParams<{ taskId?: string; id?: string; caseId?: string }>();
   const navigate = useNavigate();
   const { canvas } = useCanvas();
   const [activeTab, setActiveTab] = useState<'agent' | 'preview'>('agent');
@@ -170,8 +173,10 @@ function WorkspaceInner() {
           </div>
 
           {/* Canvas content */}
-          <div className="flex-1 flex items-center justify-center">
-            {canvas.component ? (
+          <div className="flex-1 flex items-stretch min-h-0">
+            {workflowId ? (
+              <WorkflowCanvas />
+            ) : canvas.component ? (
               <div className="w-full h-full overflow-auto p-4">
                 {canvas.component}
               </div>

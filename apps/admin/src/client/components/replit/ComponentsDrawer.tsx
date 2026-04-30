@@ -3,6 +3,7 @@
  * Positioned absolute within the Canvas panel, slides up from bottom.
  */
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, ChevronDown, Loader2, Eye, Plus } from 'lucide-react';
 import { useCanvas } from '../CanvasContext';
 import type { CanvasElement } from './canvasElements';
@@ -24,6 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function ComponentsDrawer({ open, onClose, onOpenTemplateLibrary }: ComponentsDrawerProps) {
   const { setCanvas } = useCanvas();
+  const navigate = useNavigate();
   const [elements, setElements] = useState<CanvasElement[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +49,11 @@ export function ComponentsDrawer({ open, onClose, onOpenTemplateLibrary }: Compo
   }, [open]);
 
   const handleView = (el: CanvasElement) => {
+    if (el.type === 'workflow') {
+      navigate(`/app/workflow/${el.id}`);
+      onClose();
+      return;
+    }
     if (el.type === 'form') {
       setCanvas(<CanvasFormView element={el} />, el.name);
     } else if (el.type === 'table') {
@@ -55,7 +62,7 @@ export function ComponentsDrawer({ open, onClose, onOpenTemplateLibrary }: Compo
       setCanvas(
         <div className="p-6">
           <h2 className="text-lg font-semibold text-white mb-2">{el.name}</h2>
-          <p className="text-sm text-white/50">工作流 ID: {el.id}</p>
+          <p className="text-sm text-white/50">ID: {el.id}</p>
           {el.status && <p className="text-sm text-white/50 mt-1">状态: {el.status}</p>}
         </div>,
         el.name
