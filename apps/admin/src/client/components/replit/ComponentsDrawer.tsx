@@ -1,10 +1,9 @@
 /**
- * PLANET-1385: Right-side components/resources drawer.
- * Lists existing workflows + placeholder categories.
- * Clicking a component pushes it to the Canvas via useCanvas().
+ * PLANET-1385: Bottom-up drawer showing workflows as a table.
+ * Positioned absolute within the Canvas panel, slides up from bottom.
  */
 import { useState, useEffect } from 'react';
-import { X, Workflow, FileText, Table2, Box, Code2, Loader2 } from 'lucide-react';
+import { X, ChevronDown, Loader2, Eye, Plus } from 'lucide-react';
 import { useCanvas } from '../CanvasContext';
 
 interface WorkflowItem {
@@ -17,9 +16,10 @@ interface WorkflowItem {
 interface ComponentsDrawerProps {
   open: boolean;
   onClose: () => void;
+  onOpenTemplateLibrary: () => void;
 }
 
-export function ComponentsDrawer({ open, onClose }: ComponentsDrawerProps) {
+export function ComponentsDrawer({ open, onClose, onOpenTemplateLibrary }: ComponentsDrawerProps) {
   const { setCanvas } = useCanvas();
   const [workflows, setWorkflows] = useState<WorkflowItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export function ComponentsDrawer({ open, onClose }: ComponentsDrawerProps) {
     }
   }, [open]);
 
-  const handleWorkflowClick = (wf: WorkflowItem) => {
+  const handleView = (wf: WorkflowItem) => {
     setCanvas(
       <div className="p-6">
         <h2 className="text-lg font-semibold text-white mb-2">{wf.name}</h2>
@@ -50,85 +50,91 @@ export function ComponentsDrawer({ open, onClose }: ComponentsDrawerProps) {
   if (!open) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-[320px] bg-[#1a1a1a] border-l border-white/10 z-50 flex flex-col animate-in slide-in-from-right duration-200">
-        {/* Header */}
-        <div className="h-12 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
-          <span className="text-sm font-medium text-white">已有组件</span>
+    <div
+      className="absolute bottom-0 left-0 right-0 z-30 flex flex-col bg-[#1a1a1a] border-t border-white/10 animate-in slide-in-from-bottom duration-200"
+      style={{ maxHeight: '60%' }}
+    >
+      {/* Header */}
+      <div className="h-10 flex items-center justify-between px-4 border-b border-white/[0.08] shrink-0">
+        <span className="text-sm font-medium text-white/80">已有组件</span>
+        <div className="flex items-center gap-1">
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            title="收起"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            title="关闭"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {/* Workflows */}
-          <Section
-            icon={<Workflow className="w-4 h-4 text-amber-400" />}
-            title="工作流 Workflows"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
-              </div>
-            ) : workflows.length > 0 ? (
-              workflows.map(wf => (
-                <button
-                  key={wf.id}
-                  onClick={() => handleWorkflowClick(wf)}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 transition-colors group"
-                >
-                  <p className="text-sm text-white/80 group-hover:text-white truncate">{wf.name}</p>
-                  {wf.status && (
-                    <p className="text-xs text-white/30 mt-0.5">{wf.status}</p>
-                  )}
-                </button>
-              ))
-            ) : (
-              <p className="text-xs text-white/30 px-3 py-2">暂无工作流</p>
-            )}
-          </Section>
-
-          {/* Placeholder categories */}
-          <Section icon={<FileText className="w-4 h-4 text-blue-400" />} title="表单 Forms">
-            <p className="text-xs text-white/30 px-3 py-2">即将推出</p>
-          </Section>
-
-          <Section icon={<Table2 className="w-4 h-4 text-green-400" />} title="表格 Tables">
-            <p className="text-xs text-white/30 px-3 py-2">即将推出</p>
-          </Section>
-
-          <Section icon={<Box className="w-4 h-4 text-purple-400" />} title="模块 Modules">
-            <p className="text-xs text-white/30 px-3 py-2">即将推出</p>
-          </Section>
-
-          <Section icon={<Code2 className="w-4 h-4 text-rose-400" />} title="代码块 Code">
-            <p className="text-xs text-white/30 px-3 py-2">即将推出</p>
-          </Section>
-        </div>
       </div>
-    </>
-  );
-}
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-center gap-2 px-2 mb-1">
-        {icon}
-        <span className="text-xs font-medium text-white/60 uppercase tracking-wide">{title}</span>
+      {/* Toolbar */}
+      <div className="px-4 py-2 border-b border-white/[0.06] shrink-0">
+        <button
+          onClick={onOpenTemplateLibrary}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          从模板添加
+        </button>
       </div>
-      {children}
+
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
+          </div>
+        ) : workflows.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-xs text-white/30">暂无工作流</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-[#1a1a1a]">
+              <tr className="border-b border-white/[0.08]">
+                <th className="text-left px-4 py-2 text-xs font-medium text-white/40">名称</th>
+                <th className="text-left px-4 py-2 text-xs font-medium text-white/40">类型</th>
+                <th className="text-left px-4 py-2 text-xs font-medium text-white/40">状态</th>
+                <th className="text-left px-4 py-2 text-xs font-medium text-white/40">更新时间</th>
+                <th className="text-right px-4 py-2 text-xs font-medium text-white/40">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workflows.map(wf => (
+                <tr key={wf.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
+                  <td className="px-4 py-2.5 text-white/80 truncate max-w-[200px]">{wf.name}</td>
+                  <td className="px-4 py-2.5 text-white/50">工作流</td>
+                  <td className="px-4 py-2.5">
+                    <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      {wf.status || 'active'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-white/40 text-xs">
+                    {wf.updatedAt ? new Date(wf.updatedAt).toLocaleDateString('zh-CN') : '-'}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      onClick={() => handleView(wf)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-amber-400 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <Eye className="w-3 h-3" />
+                      查看
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

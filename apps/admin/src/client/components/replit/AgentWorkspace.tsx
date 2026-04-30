@@ -1,7 +1,7 @@
 /**
  * PLANET-1385: Replit-style Agent Workspace — restyled with dark theme + amber accents.
  * Removed: left column, bottom bar, excess top-bar buttons.
- * Added: ComponentsDrawer, MasterOverview default canvas.
+ * Added: ComponentsDrawer (bottom-up), MasterOverview default canvas, TemplateLibraryDialog.
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { ArrowLeft, Bot, Eye, Layers, Loader2, Workflow } from 'lucide-react';
 import { ChatUI } from './ChatUI';
 import { CanvasProvider, useCanvas } from '../CanvasContext';
 import { ComponentsDrawer } from './ComponentsDrawer';
+import TemplateLibraryDialog from '../TemplateLibraryDialog';
 
 /* ---------- Master Overview (default canvas content) ---------- */
 
@@ -89,6 +90,7 @@ function WorkspaceInner() {
   const { canvas } = useCanvas();
   const [activeTab, setActiveTab] = useState<'agent' | 'preview'>('agent');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [templateLibOpen, setTemplateLibOpen] = useState(false);
   const [taskName, setTaskName] = useState('新任务');
 
   useEffect(() => {
@@ -151,7 +153,7 @@ function WorkspaceInner() {
           <ChatUI taskId={taskId || 'default'} />
         </div>
 
-        {/* Canvas panel (55%) */}
+        {/* Canvas panel (55%) — relative for absolute-positioned drawer */}
         <div className="flex-[55] min-w-0 flex flex-col relative bg-gradient-to-br from-[#0f0f0f] to-[#0a0a0a]">
           {/* Canvas top actions */}
           <div className="absolute top-3 right-3 z-10">
@@ -179,11 +181,18 @@ function WorkspaceInner() {
           <div className="absolute bottom-2 right-3 text-[10px] text-white/[0.12] font-medium select-none">
             PeopleClaw
           </div>
+
+          {/* Components Drawer — absolute within canvas panel */}
+          <ComponentsDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onOpenTemplateLibrary={() => setTemplateLibOpen(true)}
+          />
         </div>
       </div>
 
-      {/* Components Drawer */}
-      <ComponentsDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      {/* Template Library Dialog */}
+      <TemplateLibraryDialog open={templateLibOpen} onOpenChange={setTemplateLibOpen} />
     </div>
   );
 }
