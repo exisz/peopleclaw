@@ -16,6 +16,7 @@ import { uploadRouter, uploadThingHandler } from './routes/upload.js';
 import { roadmapRouter } from './routes/roadmap.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { testRouter } from './routes/test.js';
+import { agentRouter } from './routes/agent.js';
 import { migrateRequiredFields } from './lib/migrateWorkflows.js';
 
 export function createApp(): Express {
@@ -31,6 +32,9 @@ export function createApp(): Express {
 
   // PLANET-1342: UploadThing needs raw body stream — mount BEFORE express.json
   app.use('/api/uploadthing', uploadThingHandler);
+
+  // PLANET-1385: CopilotKit AG-UI agent endpoint (needs raw body for streaming)
+  app.use('/api', agentRouter);
 
   app.use(express.json({ limit: '5mb' }));
   app.use('/api', healthRouter);
