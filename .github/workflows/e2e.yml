@@ -43,6 +43,19 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @peopleclaw/admin exec playwright install --with-deps chromium
 
+      - name: Wait for Vercel deploy
+        run: |
+          echo "Waiting for starter-app template to be available..."
+          for i in $(seq 1 60); do
+            if curl -s "$PLAYWRIGHT_BASE_URL/api/apps/templates" | grep -q 'starter-app'; then
+              echo "✅ Deploy detected after ${i}0s"
+              exit 0
+            fi
+            echo "  attempt $i/60 — not ready yet"
+            sleep 10
+          done
+          echo "⚠️ Timeout waiting for deploy, running tests anyway"
+
       - name: Run e2e tests
         id: tests
         run: pnpm --filter @peopleclaw/admin exec playwright test
