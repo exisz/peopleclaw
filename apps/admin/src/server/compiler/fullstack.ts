@@ -6,14 +6,11 @@
  */
 
 import { buildSync, transformSync } from 'esbuild';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { extractExports } from './extract-exports.js';
 import { injectGlue } from './inject-glue.js';
 import { distillProbes } from './distill-probes.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const NODE_MODULES = resolve(__dirname, '..', '..', '..', '..', 'node_modules');
+// process.cwd() = monorepo root where node_modules lives
 
 export interface CompileResult {
   serverHandler: string;
@@ -46,7 +43,7 @@ const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] ent
     stdin: {
       contents: clientWithGlue,
       loader: 'tsx',
-      resolveDir: NODE_MODULES,
+      resolveDir: process.cwd(),
     },
     bundle: true,
     format: 'esm',
@@ -54,7 +51,6 @@ const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] ent
     minify: false,
     jsx: 'automatic',
     write: false,
-    nodePaths: [NODE_MODULES],
   });
   const clientBundle = clientBuildResult.outputFiles[0].text;
 

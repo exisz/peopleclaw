@@ -1,16 +1,10 @@
 /**
  * Frontend compiler — compiles a FRONTEND component's client-only code into
  * an ESM bundle that exports a default React component.
- * (PLANET-1428)
+ * (PLANET-1428, PLANET-1432)
  */
 
 import { buildSync } from 'esbuild';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// Resolve node_modules from the admin app root
-const NODE_MODULES = resolve(__dirname, '..', '..', '..', '..', 'node_modules');
 
 export interface FrontendCompileResult {
   clientBundle: string;
@@ -23,7 +17,7 @@ export function compileFrontend(source: string, _componentId: string): FrontendC
     stdin: {
       contents: source,
       loader: 'tsx',
-      resolveDir: NODE_MODULES,
+      resolveDir: process.cwd(),
     },
     bundle: true,
     format: 'esm',
@@ -31,7 +25,6 @@ export function compileFrontend(source: string, _componentId: string): FrontendC
     minify: false,
     jsx: 'automatic',
     write: false,
-    nodePaths: [NODE_MODULES],
   });
 
   return {
