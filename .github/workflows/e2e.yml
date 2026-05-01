@@ -3,39 +3,77 @@ name: E2E (Playwright)
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 * * * *'  # every hour
   workflow_dispatch:
+
+# Only allow one e2e run at a time, cancel in-progress on new push
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || 'https://admin.peopleclaw.rollersoft.com.au' }}
-      E2E_USERNAME: ${{ secrets.E2E_USERNAME || 'demo_acceptance_test' }}
+      PLAYWRIGHT_BASE_URL: https://admin.peopleclaw.rollersoft.com.au
+      E2E_USERNAME: demo_acceptance_test
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.30.3
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browsers
         run: pnpm --filter @peopleclaw/admin exec playwright install --with-deps chromium
+
       - name: Run e2e tests
-        if: ${{ env.E2E_PASSWORD != '' }}
+        id: tests
         run: pnpm --filter @peopleclaw/admin exec playwright test
-      - name: Skip note (no E2E_PASSWORD secret)
-        if: ${{ env.E2E_PASSWORD == '' }}
-        run: echo "::warning ::E2E_PASSWORD secret not set — skipping playwright run."
-      - name: Upload Playwright report
+
+      - name: Upload Playwright report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: apps/admin/playwright-report/
-          retention-days: 14
+          retention-days: 30
+
+      - name: Prepare report for Pages
+        if: always()
+        run: |
+          mkdir -p public
+          cp -r apps/admin/playwright-report/* public/ 2>/dev/null || true
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          force_orphan: true
+
+      - name: Discord notification on failure
+        if: failure() && env.DISCORD_WEBHOOK_E2E_FAIL != ''
+        env:
+          DISCORD_WEBHOOK_E2E_FAIL: ${{ secrets.DISCORD_WEBHOOK_E2E_FAIL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\":\"❌ **E2E Failed** | [Report](https://exisz.github.io/peopleclaw/) | [Run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) | \`${GITHUB_SHA:0:7}\`\"}" \
+            "$DISCORD_WEBHOOK_E2E_FAIL"

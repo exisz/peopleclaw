@@ -1,5 +1,7 @@
 # PeopleClaw
 
+[![E2E](https://github.com/exisz/peopleclaw/actions/workflows/e2e.yml/badge.svg)](https://github.com/exisz/peopleclaw/actions/workflows/e2e.yml) [![Report](https://img.shields.io/badge/E2E_Report-live-blue)](https://exisz.github.io/peopleclaw/)
+
 Workflow automation for SMEs and freelance IT.
 
 A pnpm monorepo with two independent Vercel deployments:
