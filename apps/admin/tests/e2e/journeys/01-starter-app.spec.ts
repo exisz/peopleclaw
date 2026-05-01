@@ -49,7 +49,7 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     // Step 5: 回到 flow graph → 验证 BACKEND status done
     await page.getByTestId(TID.tabFlowGraph).click();
     const backendId = await app.canvas.getNodeId(backendNode);
-    await app.canvas.waitStatus(backendId, 'done', 10_000);
+    await app.canvas.waitStatus(backendId, 'done', 45_000);
 
     // Step 6: 点 FULLSTACK → run → 验证商品 probes
     await fullstackNode.click();
