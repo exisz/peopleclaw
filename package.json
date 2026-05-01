@@ -10,6 +10,8 @@
     "build:admin": "pnpm --filter @peopleclaw/admin build",
     "db:generate": "pnpm --filter @peopleclaw/admin exec prisma generate",
     "db:push-remote": "pnpm --filter @peopleclaw/admin exec node scripts/db-push-remote.mjs",
-    "test:e2e": "pnpm --filter @peopleclaw/admin e2e"
+    "test:e2e": "pnpm --filter @peopleclaw/admin e2e",
+    "test:e2e:ui": "pnpm --filter @peopleclaw/admin e2e:ui",
+    "test:e2e:headed": "pnpm --filter @peopleclaw/admin e2e:headed"
   }
 }

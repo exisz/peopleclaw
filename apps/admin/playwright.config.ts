@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  *   PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @peopleclaw/admin exec playwright test
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false, // multi-tenant DB writes — keep serial for reliability
