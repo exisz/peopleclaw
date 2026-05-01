@@ -3,8 +3,6 @@ name: E2E (Playwright)
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 * * * *'  # every hour
   workflow_dispatch:
 
 # Only allow one e2e run at a time, cancel in-progress on new push
@@ -71,13 +69,11 @@ jobs:
           publish_dir: ./public
           force_orphan: true
 
-      - name: Discord notification on failure
-        if: failure() && env.DISCORD_BOT_TOKEN != ''
+      - name: Notify Discord on failure
+        if: failure() && env.DISCORD_WEBHOOK_E2E_FAIL != ''
         env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_WEBHOOK_E2E_FAIL: ${{ secrets.DISCORD_WEBHOOK_E2E_FAIL }}
         run: |
-          curl -s -X POST \
+          curl -X POST "$DISCORD_WEBHOOK_E2E_FAIL?thread_id=1499265524851540089" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bot ${DISCORD_BOT_TOKEN}" \
-            -d "{\"content\":\"🚨 **E2E Failed** | [Report](https://exisz.github.io/peopleclaw/) | [Run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) | \`${GITHUB_SHA:0:7}\`\"}" \
-            "https://discord.com/api/v10/channels/1499265524851540089/messages"
+            -d '{"content":"🚨 e2e failed on '${{ github.sha }}' — see https://exisz.github.io/peopleclaw/"}'
