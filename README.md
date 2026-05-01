@@ -43,6 +43,13 @@ scripts/     Shared utility scripts (e.g. db-push-remote.mjs)
 
 Each app deploys as its own Vercel project, both pointing at this repo with a per-app `rootDirectory`. See `ROADMAP.md` and `docs/` for full deploy notes.
 
+## E2E Testing
+
+- **Local**: `pnpm --filter @peopleclaw/admin exec playwright test` — uses Logto OAuth UI flow (default)
+- **CI / Mint mode**: Set `E2E_USE_MINT=1` to skip OAuth UI and use a minted token via `/api/internal/e2e-mint-session`
+- `E2E_SECRET` must be a strong random 32+ char string. Never commit or expose it.
+- Report: https://exisz.github.io/peopleclaw/
+
 ## License
 
 See `LICENSE`.

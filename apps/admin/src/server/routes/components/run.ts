@@ -76,14 +76,14 @@ componentRunRouter.post(
       return;
     }
 
-    // Rewrite: strip import { peopleClaw } from '@peopleclaw/sdk' (already compiled to ESM)
-    // esbuild keeps imports; we replace them with empty + rely on injected global
+    // Rewrite: strip all import statements (esbuild keeps them; we run in a Function sandbox)
+    // SDK is injected as peopleClaw global; React/other imports are Client-only (server doesn't need them)
     compiledCode = compiledCode.replace(
-      /import\s*\{[^}]*\}\s*from\s*['"]@peopleclaw\/sdk['"];?\n?/g,
+      /import\s*\{[^}]*\}\s*from\s*['"][^'"]+['"];?\n?/g,
       ''
     );
     compiledCode = compiledCode.replace(
-      /import\s+.*\s+from\s*['"]@peopleclaw\/sdk['"];?\n?/g,
+      /import\s+.*\s+from\s*['"][^'"]+['"];?\n?/g,
       ''
     );
 

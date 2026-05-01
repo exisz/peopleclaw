@@ -25,6 +25,8 @@ jobs:
       PLAYWRIGHT_BASE_URL: https://peopleclaw-admin-roller.vercel.app
       E2E_USERNAME: demo_acceptance_test
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      E2E_USE_MINT: '1'
+      E2E_SECRET: ${{ secrets.E2E_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,10 +72,12 @@ jobs:
           force_orphan: true
 
       - name: Discord notification on failure
-        if: failure() && env.DISCORD_WEBHOOK_E2E_FAIL != ''
+        if: failure() && env.DISCORD_BOT_TOKEN != ''
         env:
-          DISCORD_WEBHOOK_E2E_FAIL: ${{ secrets.DISCORD_WEBHOOK_E2E_FAIL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: |
-          curl -H "Content-Type: application/json" \
-            -d "{\"content\":\"❌ **E2E Failed** | [Report](https://exisz.github.io/peopleclaw/) | [Run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) | \`${GITHUB_SHA:0:7}\`\"}" \
-            "$DISCORD_WEBHOOK_E2E_FAIL"
+          curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bot ${DISCORD_BOT_TOKEN}" \
+            -d "{\"content\":\"🚨 **E2E Failed** | [Report](https://exisz.github.io/peopleclaw/) | [Run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) | \`${GITHUB_SHA:0:7}\`\"}" \
+            "https://discord.com/api/v10/channels/1499265524851540089/messages"

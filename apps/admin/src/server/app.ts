@@ -6,6 +6,7 @@ import { creditsRouter } from './routes/credits.js';
 import { stripeWebhookRouter } from './routes/stripeWebhook.js';
 import { tenantsRouter } from './routes/tenants.js';
 import { internalRouter } from './routes/internal.js';
+import { e2eMintRouter } from './routes/e2e-mint.js';
 import { uploadRouter, uploadThingHandler } from './routes/upload.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { appsRouter } from './routes/apps.js';
@@ -37,6 +38,7 @@ export function createApp(): Express {
   app.use('/api', creditsRouter);
   app.use('/api', tenantsRouter);
   app.use('/api', internalRouter);
+  app.use('/api', e2eMintRouter);
   app.use('/api', uploadRouter);
   app.use('/api', templatesRouter);
   app.use('/api', appsRouter);

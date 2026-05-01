@@ -14,3 +14,4 @@ apps/admin/api-dist
 .astro/
 .env*.local
 .env.production
+.auth/
