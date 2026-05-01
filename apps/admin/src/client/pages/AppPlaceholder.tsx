@@ -36,8 +36,8 @@ interface Component {
 }
 interface Connection {
   id: string;
-  sourceId: string;
-  targetId: string;
+  fromComponentId: string;
+  toComponentId: string;
   type?: string;
 }
 interface ChatMessage {
@@ -226,6 +226,13 @@ function CanvasPane() {
     setSelectedAppId(d.app.id);
   };
 
+  // Create app from template (PLANET-1422)
+  const createFromTemplate = async () => {
+    const d = await apiClient.post<{ app: { id: string; name: string } }>('/api/apps/from-template', { templateId: 'ecommerce-starter' });
+    setApps(prev => [{ id: d.app.id, name: d.app.name }, ...prev]);
+    setSelectedAppId(d.app.id);
+  };
+
   // Convert to xyflow nodes/edges with custom node type
   const nodes: Node[] = useMemo(() => components.map((c, i) => ({
     id: c.id,
@@ -243,8 +250,8 @@ function CanvasPane() {
 
   const edges: Edge[] = useMemo(() => connections.map(conn => ({
     id: conn.id,
-    source: conn.sourceId,
-    target: conn.targetId,
+    source: conn.fromComponentId,
+    target: conn.toComponentId,
     label: conn.type ?? '',
     animated: true,
   })), [connections]);
@@ -266,6 +273,12 @@ function CanvasPane() {
           className="text-sm text-primary hover:underline"
         >
           + New App
+        </button>
+        <button
+          onClick={createFromTemplate}
+          className="text-sm text-orange-600 hover:underline"
+        >
+          🛍️ 电商起步
         </button>
         {/* Right-side tabs */}
         <div className="ml-auto flex gap-1 text-xs">
