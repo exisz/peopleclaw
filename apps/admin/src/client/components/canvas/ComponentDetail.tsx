@@ -154,11 +154,11 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
 
       // Mount React component
       if (containerRef.current) {
-        const { createRoot } = await import('react-dom/client');
-        const { createElement } = await import('react');
+        const ReactDOM = await import('react-dom/client');
+        const React = await import('react');
         containerRef.current.innerHTML = '';
-        const root = createRoot(containerRef.current);
-        root.render(createElement(Client, {
+        const root = ReactDOM.createRoot(containerRef.current);
+        root.render(React.createElement(Client, {
           data: null,
           refresh: () => loadPreview(),
         }));
