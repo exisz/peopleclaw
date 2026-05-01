@@ -31,7 +31,7 @@ test.describe('TC4: AI 换脸上传全流程', () => {
     // Step: 点击节点 → 切到 detail panel → Run
     await fullstackNode.click();
     await app.switchToDetail();
-    await page.getByRole('button', { name: /Run/ }).click();
+    await page.getByTestId(TID.detailRunBtn).click();
 
     // Step: 等 3 探针 done
     await expect(page.getByTestId(TID.detailProbeStep('uploadOriginal'))).toBeVisible({ timeout: 30_000 });

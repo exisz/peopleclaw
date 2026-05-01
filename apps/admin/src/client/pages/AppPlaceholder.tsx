@@ -240,10 +240,10 @@ function CanvasPane() {
   }, []);
 
   const createFromTemplate = async (templateId: string) => {
+    setShowTemplatePicker(false);
     const d = await apiClient.post<{ app: { id: string; name: string } }>('/api/apps/from-template', { templateId });
     setApps(prev => [{ id: d.app.id, name: d.app.name }, ...prev]);
     setSelectedAppId(d.app.id);
-    setShowTemplatePicker(false);
   };
 
   // Convert to xyflow nodes/edges with custom node type

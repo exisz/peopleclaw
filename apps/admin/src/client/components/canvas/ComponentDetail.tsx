@@ -39,6 +39,7 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
       {/* Run button */}
       {component.type !== 'FRONTEND' && (
         <button
+          data-testid="detail-run-btn"
           onClick={onRun}
           disabled={runState.status === 'running'}
           className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"

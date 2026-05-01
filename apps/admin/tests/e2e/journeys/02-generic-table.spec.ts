@@ -33,7 +33,7 @@ test.describe('TC2: 通用表格全流程', () => {
     await app.switchToDetail();
 
     // Step: 点 ▶ Run (通过 detail panel 的 Run 按钮)
-    await page.getByRole('button', { name: /Run/ }).click();
+    await page.getByTestId(TID.detailRunBtn).click();
 
     // Step: 等 probe loadRows 出现
     await expect(page.getByTestId(TID.detailProbeStep('loadRows'))).toBeVisible({ timeout: 30_000 });
