@@ -11,7 +11,10 @@ export const TID = {
   // App selector bar
   appSelector: 'app-selector',
   newAppBtn: 'new-app-btn',
-  templateEcommerceBtn: 'template-ecommerce-btn',
+  templateEcommerceBtn: 'template-ecommerce-starter-btn',
+  templatePickerOverlay: 'template-picker-overlay',
+  templateBtn: (id: string) => `template-${id}-btn`,
+  templateBlankBtn: 'template-blank-btn',
 
   // Chat
   chatInput: 'chat-input',
@@ -31,6 +34,7 @@ export const TID = {
   // Detail panel
   detailMetaName: 'detail-meta-name',
   detailProbeStep: (nodeName: string) => `detail-probe-step-${nodeName}`,
+  detailProbeExpected: (nodeName: string) => `detail-probe-expected-${nodeName}`,
   detailResultJson: 'detail-result-json',
   detailFullstackPreview: 'detail-fullstack-preview',
 

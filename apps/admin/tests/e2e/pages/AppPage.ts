@@ -18,7 +18,17 @@ export class AppPage {
   }
 
   async createFromEcommerceTemplate() {
-    await this.page.getByTestId(TID.templateEcommerceBtn).click();
+    await this.openTemplatePicker();
+    await this.page.getByTestId(TID.templateBtn('ecommerce-starter')).click();
+  }
+
+  async openTemplatePicker() {
+    await this.page.getByTestId(TID.newAppBtn).click();
+  }
+
+  async createFromTemplate(templateId: string) {
+    await this.openTemplatePicker();
+    await this.page.getByTestId(TID.templateBtn(templateId)).click();
   }
 
   async openModuleList() {
