@@ -50,7 +50,7 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
       {/* Probe Timeline */}
       <section>
         <h3 className="font-medium text-sm mb-2">探针 Timeline</h3>
-        <ProbeTimeline probes={runState.probes} status={runState.status} />
+        <ProbeTimeline probes={runState.probes} status={runState.status} componentId={component.id} />
       </section>
 
       {/* Result / Error */}
@@ -81,8 +81,40 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
   );
 }
 
-function ProbeTimeline({ probes, status }: { probes: ProbeStep[]; status: string }) {
+function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; status: string; componentId: string }) {
+  const [expectedProbes, setExpectedProbes] = useState<string[]>([]);
+
+  // Fetch expected probes from component.probes field when not yet run (PLANET-1424)
+  useEffect(() => {
+    if (status === 'idle' && probes.length === 0) {
+      apiFetch(`/api/components/${componentId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.component?.probes) {
+            try {
+              const parsed = JSON.parse(d.component.probes);
+              setExpectedProbes(parsed.nodes ?? []);
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [componentId, status, probes.length]);
+
   if (probes.length === 0) {
+    if (expectedProbes.length > 0) {
+      return (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs text-muted-foreground mb-1">预期:</p>
+          {expectedProbes.map((node, i) => (
+            <div key={i} data-testid={`detail-probe-expected-${node}`} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>○</span>
+              <span className="font-mono">{node}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
     return <p className="text-xs text-muted-foreground">{status === 'running' ? '等待探针...' : '尚未运行'}</p>;
   }
 

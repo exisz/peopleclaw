@@ -228,11 +228,22 @@ function CanvasPane() {
     setSelectedAppId(d.app.id);
   };
 
-  // Create app from template (PLANET-1422)
-  const createFromTemplate = async () => {
-    const d = await apiClient.post<{ app: { id: string; name: string } }>('/api/apps/from-template', { templateId: 'ecommerce-starter' });
+  // Template picker state (PLANET-1424)
+  const [templates, setTemplates] = useState<{ id: string; name: string; description: string; componentCount: number }[]>([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+
+  // Load templates on mount
+  useEffect(() => {
+    apiClient.get<{ templates: typeof templates }>('/api/apps/templates')
+      .then(d => setTemplates(d.templates))
+      .catch(() => {});
+  }, []);
+
+  const createFromTemplate = async (templateId: string) => {
+    const d = await apiClient.post<{ app: { id: string; name: string } }>('/api/apps/from-template', { templateId });
     setApps(prev => [{ id: d.app.id, name: d.app.name }, ...prev]);
     setSelectedAppId(d.app.id);
+    setShowTemplatePicker(false);
   };
 
   // Convert to xyflow nodes/edges with custom node type
@@ -272,17 +283,10 @@ function CanvasPane() {
         </select>
         <button
           data-testid="new-app-btn"
-          onClick={createApp}
+          onClick={() => setShowTemplatePicker(true)}
           className="text-sm text-primary hover:underline"
         >
           + New App
-        </button>
-        <button
-          data-testid="template-ecommerce-btn"
-          onClick={createFromTemplate}
-          className="text-sm text-orange-600 hover:underline"
-        >
-          🛒 电商起步
         </button>
         {/* Right-side tabs */}
         <div className="ml-auto flex gap-1 text-xs">
@@ -298,6 +302,36 @@ function CanvasPane() {
           >组件详情</button>
         </div>
       </div>
+
+      {/* Template picker modal (PLANET-1424) */}
+      {showTemplatePicker && (
+        <div className="absolute inset-0 z-50 bg-black/40 flex items-center justify-center" data-testid="template-picker-overlay" onClick={() => setShowTemplatePicker(false)}>
+          <div className="bg-background border border-border rounded-lg shadow-xl p-6 w-96 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">选择模板</h3>
+            <div className="space-y-2">
+              <button
+                data-testid="template-blank-btn"
+                onClick={() => { setShowTemplatePicker(false); createApp(); }}
+                className="w-full text-left p-3 rounded border border-border hover:bg-muted transition"
+              >
+                <span className="font-medium">📄 空白 App</span>
+                <p className="text-xs text-muted-foreground">从零开始</p>
+              </button>
+              {templates.map(t => (
+                <button
+                  key={t.id}
+                  data-testid={`template-${t.id}-btn`}
+                  onClick={() => createFromTemplate(t.id)}
+                  className="w-full text-left p-3 rounded border border-border hover:bg-muted transition"
+                >
+                  <span className="font-medium">{t.name}</span>
+                  <p className="text-xs text-muted-foreground">{t.description} ({t.componentCount} 组件)</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main canvas area */}
       <div data-testid="canvas-pane" className="flex-1 relative">

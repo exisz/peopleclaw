@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PLAYWRIGHT_BASE_URL: https://admin.peopleclaw.rollersoft.com.au
+      PLAYWRIGHT_BASE_URL: https://peopleclaw-admin-roller.vercel.app
       E2E_USERNAME: demo_acceptance_test
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
     steps:

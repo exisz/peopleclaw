@@ -15,6 +15,7 @@ import { componentRunRouter } from './routes/components/run.js';
 import { componentCompileRouter } from './routes/components/compile.js';
 import { componentServerRouter } from './routes/components/server.js';
 import { componentClientRouter } from './routes/components/client.js';
+import { componentDetailRouter } from './routes/components/detail.js';
 import { templatesRouter } from './routes/templates.js';
 
 export function createApp(): Express {
@@ -45,6 +46,7 @@ export function createApp(): Express {
   app.use('/api', componentCompileRouter);
   app.use('/api', componentServerRouter);
   app.use('/api', componentClientRouter);
+  app.use('/api', componentDetailRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
