@@ -7,13 +7,14 @@ import { useNavigate } from 'react-router-dom';
 import TenantSwitcher from '../components/TenantSwitcher';
 import UserMenu from '../components/UserMenu';
 import CreditsBadge from '../components/CreditsBadge';
+import { apiFetch } from '../lib/api';
 
 export default function AppPlaceholder() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/me')
+    apiFetch('/api/me')
       .then(r => {
         if (!r.ok) { navigate('/signin'); return null; }
         return r.json();
