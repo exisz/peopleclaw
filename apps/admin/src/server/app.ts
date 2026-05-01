@@ -9,6 +9,7 @@ import { internalRouter } from './routes/internal.js';
 import { uploadRouter, uploadThingHandler } from './routes/upload.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { appsRouter } from './routes/apps.js';
+import { chatRouter } from './routes/chat.js';
 
 export function createApp(): Express {
   checkEnv();
@@ -31,6 +32,7 @@ export function createApp(): Express {
   app.use('/api', internalRouter);
   app.use('/api', uploadRouter);
   app.use('/api', appsRouter);
+  app.use('/api', chatRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
