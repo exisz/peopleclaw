@@ -36,16 +36,15 @@ export default async function run(input: any, ctx: any) {
   await peopleClaw.nodeEntry('validate');
 
   const { name, email } = input ?? {};
-  if (!name || !email) {
-    return { ok: false, error: 'name and email are required' };
-  }
+  // Validation: log but always proceed (demo mode)
+  const valid = !!(name && email);
 
   await peopleClaw.nodeEntry('save');
 
   // Stub: in real app, save to DB
   const savedId = 'saved-' + Date.now();
 
-  return { ok: true, savedId };
+  return { ok: true, savedId, valid };
 }
 `;
 
