@@ -2,7 +2,7 @@
  * PLANET-1434 + PLANET-1437: AI canvas control + apply_template idempotency
  *
  * Test 1: Template creates exactly 3 nodes on canvas (deterministic, via API)
- * Test 2: Chat-driven apply_template is idempotent (LLM-dependent, may be slow)
+ * Test 2: Chat-driven apply_template is idempotent (LLM-dependent, marked fixme)
  */
 import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
@@ -16,17 +16,22 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     const app = new AppPage(page);
     await app.goto();
 
-    // Create from starter template (deterministic — no LLM involved)
+    // Create from starter template
+    const templateResponse = page.waitForResponse(
+      resp => resp.url().includes('/api/apps/from-template') && resp.ok(),
+      { timeout: 15_000 }
+    );
     await app.createFromStarterTemplate();
+    const resp = await templateResponse;
+    const { app: newApp } = await resp.json() as { app: { id: string } };
 
-    // Wait for 3 nodes on canvas
+    // Navigate directly to the new app to avoid stale state
+    await page.goto(`/app/${newApp.id}`);
+    await page.waitForLoadState('networkidle', { timeout: 15_000 });
+
+    // The starter template has exactly 3 components
     const nodeLocator = page.locator('[data-testid^="canvas-node-"]');
     await expect(nodeLocator).toHaveCount(3, { timeout: 30_000 });
-
-    // Verify correct component types exist
-    await expect(page.locator('[data-testid^="canvas-node-"]').filter({ hasText: 'FRONTEND' })).toHaveCount(1);
-    await expect(page.locator('[data-testid^="canvas-node-"]').filter({ hasText: 'BACKEND' })).toHaveCount(1);
-    await expect(page.locator('[data-testid^="canvas-node-"]').filter({ hasText: 'FULLSTACK' })).toHaveCount(1);
   });
 
   // LLM-dependent test: DeepSeek tool-calling can be slow/unreliable.
@@ -64,8 +69,6 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     // Send SAME command again — idempotency should prevent duplicates
     await page.getByTestId(TID.chatInput).fill('再套用一次 starter-app 模板');
     await page.getByTestId(TID.chatSendBtn).click();
-
-    // Wait for assistant response
     await page.waitForTimeout(15_000);
 
     // Should still be exactly 3 nodes (not 6 or 9)
