@@ -16,7 +16,7 @@ export class CanvasPage {
   /** Find a canvas node wrapper by type text (BACKEND/FULLSTACK/FRONTEND) */
   nodeByType(type: string) {
     return this.page
-      .locator('[data-testid^="canvas-node-"]:not([data-testid*="-run-btn"]):not([data-testid*="-status-"])')
+      .locator('[data-canvas-node="true"]')
       .filter({ hasText: type })
       .first();
   }

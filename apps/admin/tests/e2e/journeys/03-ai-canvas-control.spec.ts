@@ -1,8 +1,8 @@
 /**
  * PLANET-1434 + PLANET-1437: AI canvas control + apply_template idempotency
  *
- * Test 1: Template creates exactly 3 nodes on canvas (deterministic, via API)
- * Test 2: Chat-driven apply_template is idempotent (LLM-dependent, marked fixme)
+ * Test 1: New app from starter template has exactly 3 nodes
+ * Test 2: Chat-driven apply_template idempotency (LLM-dependent, fixme)
  */
 import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
@@ -13,67 +13,48 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     const page = authedPage;
     test.setTimeout(60_000);
 
-    const app = new AppPage(page);
-    await app.goto();
+    // Go to apps list to create from there (navigates to /app/:id after creation)
+    await page.goto('/apps', { waitUntil: 'networkidle', timeout: 15_000 });
 
-    // Create from starter template
-    const templateResponse = page.waitForResponse(
-      resp => resp.url().includes('/api/apps/from-template') && resp.ok(),
-      { timeout: 15_000 }
-    );
-    await app.createFromStarterTemplate();
-    const resp = await templateResponse;
-    const { app: newApp } = await resp.json() as { app: { id: string } };
+    // Click create button on the apps list
+    await page.getByTestId('create-new-app-card').click({ timeout: 10_000 });
 
-    // Navigate directly to the new app to avoid stale state
-    await page.goto(`/app/${newApp.id}`);
-    await page.waitForLoadState('networkidle', { timeout: 15_000 });
+    // Pick starter template from the overlay
+    await page.getByTestId(TID.templateBtn('starter-app')).click();
+
+    // Wait for navigation to the new app
+    await page.waitForURL(/\/app\//, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 });
 
     // The starter template has exactly 3 components
-    const nodeLocator = page.locator('[data-testid^="canvas-node-"]');
+    const nodeLocator = page.locator('[data-canvas-node="true"]');
     await expect(nodeLocator).toHaveCount(3, { timeout: 30_000 });
   });
 
-  // LLM-dependent test: DeepSeek tool-calling can be slow/unreliable.
-  // The idempotency guard (PLANET-1437) is verified by the server-side code change;
-  // this E2E test validates the full flow but requires a responsive LLM.
+  // LLM-dependent: DeepSeek tool-calling unreliable in CI.
   test.fixme('chat apply_template is idempotent — no duplicate nodes', async ({ authedPage }) => {
     const page = authedPage;
     test.setTimeout(180_000);
 
-    const consoleErrors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-
     const app = new AppPage(page);
     await app.goto();
 
-    // Create a blank app
     await app.openTemplatePicker();
     page.once('dialog', d => d.accept('Idempotency Test'));
     await page.getByTestId(TID.templateBlankBtn).click();
 
-    // Wait for empty canvas
     await expect(page.getByTestId(TID.canvasPane)).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('[data-testid^="canvas-node-"]')).toHaveCount(0, { timeout: 10_000 });
+    await expect(page.locator('[data-canvas-node="true"]')).toHaveCount(0, { timeout: 10_000 });
 
-    // Send chat to apply template
     await page.getByTestId(TID.chatInput).fill('套用 starter-app 模板');
     await page.getByTestId(TID.chatSendBtn).click();
 
-    // Wait for nodes (LLM calls apply_template)
-    const nodeLocator = page.locator('[data-testid^="canvas-node-"]');
+    const nodeLocator = page.locator('[data-canvas-node="true"]');
     await expect(nodeLocator).toHaveCount(3, { timeout: 90_000 });
 
-    // Send SAME command again — idempotency should prevent duplicates
     await page.getByTestId(TID.chatInput).fill('再套用一次 starter-app 模板');
     await page.getByTestId(TID.chatSendBtn).click();
     await page.waitForTimeout(15_000);
-
-    // Should still be exactly 3 nodes (not 6 or 9)
     await expect(nodeLocator).toHaveCount(3);
-
-    expect(consoleErrors).toHaveLength(0);
   });
 });

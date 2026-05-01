@@ -31,7 +31,7 @@ function ComponentNode({ data, id }: NodeProps) {
   const canRun = d.type !== 'FRONTEND';
 
   return (
-    <div data-testid={`canvas-node-${id}`} className="bg-card border border-border rounded-lg shadow-sm px-3 py-2 min-w-[160px] select-none">
+    <div data-testid={`canvas-node-${id}`} data-canvas-node="true" className="bg-card border border-border rounded-lg shadow-sm px-3 py-2 min-w-[160px] select-none">
       <Handle type="target" position={Position.Left} className="!w-2 !h-2" />
 
       {/* Header: icon + name + status */}
