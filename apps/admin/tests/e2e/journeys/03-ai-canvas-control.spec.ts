@@ -28,13 +28,14 @@ test.describe('TC3: AI tool-calling 改画布', () => {
 
     // Create a blank app first
     await app.openTemplatePicker();
-    await page.getByTestId(TID.templateBlankBtn).click();
-    // Fill prompt for blank app name
+    // Dialog handler must be registered BEFORE the click that triggers prompt()
     page.once('dialog', d => d.accept('AI Canvas Test App'));
+    await page.getByTestId(TID.templateBlankBtn).click();
     await page.waitForTimeout(1000);
 
-    // Wait for empty canvas
+    // Wait for empty canvas (new blank app should have 0 nodes)
     await expect(page.getByTestId(TID.canvasPane)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid^="canvas-node-"]')).toHaveCount(0, { timeout: 10_000 });
 
     // Step 1: Chat "apply starter-app template"
     await page.getByTestId(TID.chatInput).fill('apply starter-app template');
