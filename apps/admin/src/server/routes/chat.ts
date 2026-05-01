@@ -161,6 +161,12 @@ chatRouter.post('/chat', requireAuth, requireTenant, async (req, res) => {
         const template = TEMPLATES[templateId];
         if (!template) return { error: `Template "${templateId}" not found` };
 
+        // Idempotency guard (PLANET-1437): if app already has components, noop.
+        const existing = await prisma.component.findMany({ where: { appId }, select: { name: true } });
+        if (existing.length > 0) {
+          return { alreadyApplied: true, message: `Template already applied. Current components: ${existing.map(c => c.name).join(', ')}`, components: existing.length };
+        }
+
         const componentIds: string[] = [];
         for (const comp of template.components) {
           const probes = (comp.type === 'BACKEND' || comp.type === 'FULLSTACK')
