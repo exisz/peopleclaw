@@ -23,6 +23,7 @@
     "@copilotkit/runtime": "^1.56.4",
     "@libsql/client": "^0.14.0",
     "@logto/browser": "^3.0.13",
+    "@peopleclaw/sdk": "workspace:*",
     "@prisma/adapter-libsql": "^6.1.0",
     "@prisma/client": "^6.1.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -43,6 +44,7 @@
     "ai": "^6.0.172",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "esbuild": "^0.28.0",
     "express": "^4.21.0",
     "i18next": "^26.0.5",
     "i18next-browser-languagedetector": "^8.2.1",
@@ -63,8 +65,7 @@
     "uploadthing": "^7.7.4",
     "vite-express": "^0.21.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.3.6",
-    "@peopleclaw/sdk": "workspace:*"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

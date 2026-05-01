@@ -11,6 +11,7 @@ import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { appsRouter } from './routes/apps.js';
 import { chatRouter } from './routes/chat.js';
 import { probeTestRouter } from './routes/probe-test.js';
+import { componentRunRouter } from './routes/components/run.js';
 
 export function createApp(): Express {
   checkEnv();
@@ -35,6 +36,7 @@ export function createApp(): Express {
   app.use('/api', appsRouter);
   app.use('/api', chatRouter);
   app.use('/api', probeTestRouter);
+  app.use('/api', componentRunRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });

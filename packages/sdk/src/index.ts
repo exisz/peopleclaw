@@ -12,3 +12,14 @@ class PeopleClawInstance implements PeopleClawProbe {
 }
 
 export const peopleClaw: PeopleClawProbe = new PeopleClawInstance();
+
+// Fullstack component definition
+export interface FullstackDefinition {
+  server: (ctx: any) => Promise<any>;
+  Client: (props: { data: any; refresh: () => void }) => any;
+  _kind: 'fullstack';
+}
+
+export function defineFullstack(opts: { server: (ctx: any) => Promise<any>; Client: (props: any) => any }): FullstackDefinition {
+  return { ...opts, _kind: 'fullstack' };
+}
