@@ -10,6 +10,9 @@ import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
 import { TID } from '../helpers/test-ids';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test.describe('TC5: FRONTEND → BACKEND 端到端闭环', () => {
   test('上传图 → 提交 → 看到 swapped 结果', async ({ authedPage }) => {
@@ -44,7 +47,7 @@ test.describe('TC5: FRONTEND → BACKEND 端到端闭环', () => {
     await expect(preview.locator('form')).toBeVisible({ timeout: 10_000 });
 
     // Upload a small test image via setInputFiles
-    const testImagePath = path.resolve(__dirname, '../fixtures/test-image.png');
+    const testImagePath = path.resolve(__dirname, '..', 'fixtures', 'test-image.png');
     const fileInput = preview.locator('[data-testid="face-swap-file-input"]');
     await fileInput.setInputFiles(testImagePath);
 
