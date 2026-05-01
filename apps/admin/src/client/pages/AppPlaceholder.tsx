@@ -240,6 +240,8 @@ function ChatPane({ appId, onCanvasChange }: { appId: string | null; onCanvasCha
 const nodeTypes = { component: ComponentNode };
 
 function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?: string; onAppSelected?: (id: string | null) => void; refreshKey?: number }) {
+  // PLANET-1442: When route provides an app id, lock to that app (no switcher)
+  const isLocked = !!initialAppId;
   const [apps, setApps] = useState<App[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(initialAppId ?? null);
   const [components, setComponents] = useState<Component[]>([]);
@@ -247,7 +249,7 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'flow' | 'detail'>('flow');
   const [selectedNode, setSelectedNode] = useState<Component | null>(null);
-  const [detailTab, setDetailTab] = useState<'flow' | 'preview'>('flow');
+  const [detailTab, setDetailTab] = useState<'flow' | 'preview'>('preview');
   const { getState, runComponent, runs } = useComponentRun();
 
   // Load apps
@@ -332,23 +334,32 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* App selector bar */}
+      {/* App selector bar — hidden when locked to a single app (PLANET-1442) */}
       <div data-testid="app-selector" className="h-10 border-b border-border flex items-center px-3 gap-2 shrink-0">
-        <select
-          className="text-sm border border-input rounded px-2 py-1 bg-background"
-          value={selectedAppId ?? ''}
-          onChange={e => setSelectedAppId(e.target.value || null)}
-        >
-          {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-          {apps.length === 0 && <option value="">无 App</option>}
-        </select>
-        <button
-          data-testid="new-app-btn"
-          onClick={() => setShowTemplatePicker(true)}
-          className="text-sm text-primary hover:underline"
-        >
-          + New App
-        </button>
+        {!isLocked && (
+          <>
+            <select
+              className="text-sm border border-input rounded px-2 py-1 bg-background"
+              value={selectedAppId ?? ''}
+              onChange={e => setSelectedAppId(e.target.value || null)}
+            >
+              {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {apps.length === 0 && <option value="">无 App</option>}
+            </select>
+            <button
+              data-testid="new-app-btn"
+              onClick={() => setShowTemplatePicker(true)}
+              className="text-sm text-primary hover:underline"
+            >
+              + New App
+            </button>
+          </>
+        )}
+        {isLocked && (
+          <span data-testid="app-locked-name" className="text-sm font-medium">
+            {apps.find(a => a.id === selectedAppId)?.name ?? 'App'}
+          </span>
+        )}
         {/* Right-side tabs */}
         <div className="ml-auto flex gap-1 text-xs">
           <button
