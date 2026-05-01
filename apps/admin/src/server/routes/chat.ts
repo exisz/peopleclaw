@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { streamText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant } from '../middleware/tenant.js';
 
@@ -14,14 +14,19 @@ chatRouter.post('/chat', requireAuth, requireTenant, async (req, res) => {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+    res.status(500).json({ error: 'DEEPSEEK_API_KEY not configured' });
     return;
   }
 
+  const deepseek = createOpenAI({
+    baseURL: 'https://api.deepseek.com',
+    apiKey,
+  });
+
   const result = streamText({
-    model: openai('gpt-4o-mini'),
+    model: deepseek('deepseek-chat'),
     system: 'You are PeopleClaw AI assistant. Help users build their apps. Respond concisely.',
     messages: messages.map((m: { role: string; content: string }) => ({
       role: m.role as 'user' | 'assistant',
