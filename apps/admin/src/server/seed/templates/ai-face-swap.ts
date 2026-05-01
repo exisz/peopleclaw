@@ -8,7 +8,7 @@ const FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
 import { useState } from 'react';
 
 // --- SERVER ---
-export async function server(input: any, ctx: any) {
+export const server = async (input: any, ctx: any) => {
   await peopleClaw.nodeEntry('uploadOriginal');
 
   const imageUrl = input?.imageUrl ?? 'https://placekitten.com/400/400';
@@ -26,10 +26,10 @@ export async function server(input: any, ctx: any) {
     faceMatched: true,
     provider: 'stub-v1',
   };
-}
+};
 
 // --- CLIENT ---
-export function Client({ data, onRun }: { data: any; onRun?: (input: any) => void }) {
+export const Client = ({ data, onRun }: { data: any; onRun?: (input: any) => void }) => {
   const [file, setFile] = useState<string | null>(null);
 
   const handleUpload = (e: any) => {
@@ -57,7 +57,7 @@ export function Client({ data, onRun }: { data: any; onRun?: (input: any) => voi
       )}
     </div>
   );
-}
+};
 `;
 
 export const aiFaceSwapTemplate: AppTemplate = {

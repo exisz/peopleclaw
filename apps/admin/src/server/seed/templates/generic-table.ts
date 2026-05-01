@@ -7,7 +7,7 @@ import type { AppTemplate } from './ecommerce-starter.js';
 const FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
 
 // --- SERVER ---
-export async function server(ctx: any) {
+export const server = async (ctx: any) => {
   await peopleClaw.nodeEntry('loadRows');
 
   // Demo data — replace with real DB/API call
@@ -18,10 +18,10 @@ export async function server(ctx: any) {
   ];
 
   return { rows };
-}
+};
 
 // --- CLIENT ---
-export function Client({ data }: { data: any }) {
+export const Client = ({ data }: { data: any }) => {
   const rows = data?.rows ?? [];
   if (rows.length === 0) return <p>无数据</p>;
   const columns = Object.keys(rows[0]);
@@ -48,7 +48,7 @@ export function Client({ data }: { data: any }) {
       </table>
     </div>
   );
-}
+};
 `;
 
 export const genericTableTemplate: AppTemplate = {

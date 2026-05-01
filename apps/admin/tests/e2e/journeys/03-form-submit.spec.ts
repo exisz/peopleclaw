@@ -30,13 +30,10 @@ test.describe('TC3: 表单提交全流程', () => {
     const backendNode = app.canvas.nodeByType('BACKEND');
     await expect(backendNode).toBeVisible({ timeout: 15_000 });
 
-    // Step: 点 BACKEND 节点 → Run
-    const backendId = await app.canvas.getNodeId(backendNode);
-    await app.canvas.runNode(backendId);
-
-    // Step: 切到 detail panel
+    // Step: 点 BACKEND 节点 → 切到 detail panel → Run
     await backendNode.click();
     await app.switchToDetail();
+    await page.getByRole('button', { name: /Run/ }).click();
 
     // Step: 等 probe validate + save 出现
     await expect(page.getByTestId(TID.detailProbeStep('validate'))).toBeVisible({ timeout: 30_000 });

@@ -27,14 +27,11 @@ test.describe('TC4: AI 换脸上传全流程', () => {
     // Step: 等 FULLSTACK 节点出现
     const fullstackNode = app.canvas.nodeByType('FULLSTACK');
     await expect(fullstackNode).toBeVisible({ timeout: 15_000 });
-    const nodeId = await app.canvas.getNodeId(fullstackNode);
 
-    // Step: 点 ▶ Run (用默认 placekitten URL)
-    await app.canvas.runNode(nodeId);
-
-    // Step: 切到 detail panel
+    // Step: 点击节点 → 切到 detail panel → Run
     await fullstackNode.click();
     await app.switchToDetail();
+    await page.getByRole('button', { name: /Run/ }).click();
 
     // Step: 等 3 探针 done
     await expect(page.getByTestId(TID.detailProbeStep('uploadOriginal'))).toBeVisible({ timeout: 30_000 });
