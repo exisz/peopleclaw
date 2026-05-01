@@ -15,7 +15,7 @@ export default function AppShell({ title, children }: AppShellProps) {
       <AppTopBar title={title} />
       <div className="flex flex-1 min-h-0">
         <AppsSidebar />
-        <main className="flex-1 overflow-auto min-w-0">
+        <main className="flex-1 min-w-0 min-h-0 overflow-hidden">
           {children}
         </main>
       </div>
