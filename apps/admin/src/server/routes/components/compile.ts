@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getPrisma } from '../../lib/prisma.js';
 import { compileFullstack } from '../../compiler/fullstack.js';
+import { compileFrontend } from '../../compiler/frontend.js';
 
 export const componentCompileRouter = Router();
 
@@ -22,7 +23,6 @@ componentCompileRouter.post('/components/:id/compile', async (req, res) => {
       res.json({ ok: true, compiledAt: result.compiledAt, probes: result.probes });
     } else {
       // FRONTEND: compile client-only bundle
-      const { compileFrontend } = await import('../../compiler/frontend.js');
       const result = compileFrontend(component.code, component.id);
       await prisma.component.update({
         where: { id: component.id },
