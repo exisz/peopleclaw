@@ -33,6 +33,7 @@ model Tenant {
   members          TenantUser[]
   connections      Connection[]
   usageLogs        UsageLog[]
+  apps             App[]
 }
 
 model TenantUser {
@@ -56,6 +57,71 @@ model Connection {
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   @@unique([tenantId, type])
+}
+
+enum ComponentType {
+  FRONTEND
+  BACKEND
+  FULLSTACK
+}
+
+enum ComponentRuntime {
+  PEOPLECLAW_CLOUD
+  USER_BYO_NODE
+  EDGE
+}
+
+enum ConnectionType {
+  TRIGGER
+  DATA_FLOW
+}
+
+model App {
+  id          String      @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  components  Component[]
+  connections ComponentConnection[]
+  @@index([tenantId])
+}
+
+model Component {
+  id           String           @id @default(cuid())
+  appId        String
+  type         ComponentType
+  name         String
+  runtime      ComponentRuntime @default(PEOPLECLAW_CLOUD)
+  code         String           @default("")
+  inputSchema  String?
+  outputSchema String?
+  probes       String?
+  canvasX      Int              @default(0)
+  canvasY      Int              @default(0)
+  icon         String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  app          App              @relation(fields: [appId], references: [id], onDelete: Cascade)
+  connectionsFrom ComponentConnection[] @relation("FromComponent")
+  connectionsTo   ComponentConnection[] @relation("ToComponent")
+  @@index([appId])
+}
+
+model ComponentConnection {
+  id              String         @id @default(cuid())
+  appId           String
+  fromComponentId String
+  toComponentId   String
+  type            ConnectionType
+  createdAt       DateTime       @default(now())
+  app             App            @relation(fields: [appId], references: [id], onDelete: Cascade)
+  fromComponent   Component      @relation("FromComponent", fields: [fromComponentId], references: [id], onDelete: Cascade)
+  toComponent     Component      @relation("ToComponent", fields: [toComponentId], references: [id], onDelete: Cascade)
+  @@index([appId])
+  @@unique([fromComponentId, toComponentId, type])
 }
 
 model UsageLog {
