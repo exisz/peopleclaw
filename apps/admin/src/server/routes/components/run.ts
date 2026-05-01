@@ -137,10 +137,23 @@ componentRunRouter.post(
       };
 
       // Wrap compiled code in an async function that returns the run export
+      // esbuild ESM output uses: `export { name as default }` or `export { fn }` syntax
+      let processedCode = compiledCode
+        .replace(/export\s+default\s+/g, '__exports.default = ')
+        .replace(/export\s+(?:async\s+)?function\s+run/g, '__exports.run = async function run')
+        .replace(/export\s*\{([^}]+)\};?/g, (_, inner) => {
+          // Parse "run as default" or "server" etc.
+          return inner.split(',').map((part: string) => {
+            const [name, alias] = part.trim().split(/\s+as\s+/);
+            const key = (alias || name).trim();
+            return `__exports["${key}"] = ${name.trim()};`;
+          }).join('\n');
+        });
+
       const wrappedCode = `
         ${Object.keys(allowedGlobals).map(k => `const ${k} = __globals.${k};`).join('\n')}
         const __exports = {};
-        ${compiledCode.replace(/export\s+default\s+/g, '__exports.default = ').replace(/export\s+(?:async\s+)?function\s+run/g, '__exports.run = async function run')}
+        ${processedCode}
         return __exports;
       `;
 
