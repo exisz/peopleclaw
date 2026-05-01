@@ -15,6 +15,7 @@ import { componentRunRouter } from './routes/components/run.js';
 import { componentCompileRouter } from './routes/components/compile.js';
 import { componentServerRouter } from './routes/components/server.js';
 import { componentClientRouter } from './routes/components/client.js';
+import { templatesRouter } from './routes/templates.js';
 
 export function createApp(): Express {
   checkEnv();
@@ -36,6 +37,7 @@ export function createApp(): Express {
   app.use('/api', tenantsRouter);
   app.use('/api', internalRouter);
   app.use('/api', uploadRouter);
+  app.use('/api', templatesRouter);
   app.use('/api', appsRouter);
   app.use('/api', chatRouter);
   app.use('/api', probeTestRouter);

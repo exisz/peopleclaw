@@ -1,7 +1,7 @@
 /**
  * PLANET-1416: Chat + Canvas dual-pane interface (Stage 2).
  */
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
@@ -11,6 +11,9 @@ import {
   type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import ComponentNode, { type ComponentNodeData } from '../components/canvas/ComponentNode';
+import ComponentDetail from '../components/canvas/ComponentDetail';
+import { useComponentRun } from '../components/canvas/useComponentRun';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import TenantSwitcher from '../components/TenantSwitcher';
 import UserMenu from '../components/UserMenu';
@@ -183,6 +186,8 @@ function ChatPane() {
 }
 
 // ─── Canvas Pane ─────────────────────────────────────────────────
+const nodeTypes = { component: ComponentNode };
+
 function CanvasPane() {
   const [apps, setApps] = useState<App[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -191,6 +196,7 @@ function CanvasPane() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'flow' | 'detail'>('flow');
   const [selectedNode, setSelectedNode] = useState<Component | null>(null);
+  const { getState, runComponent, runs } = useComponentRun();
 
   // Load apps
   useEffect(() => {
@@ -220,18 +226,28 @@ function CanvasPane() {
     setSelectedAppId(d.app.id);
   };
 
-  // Convert to xyflow nodes/edges
-  const nodes: Node[] = components.map((c, i) => ({
+  // Convert to xyflow nodes/edges with custom node type
+  const nodes: Node[] = useMemo(() => components.map((c, i) => ({
     id: c.id,
+    type: 'component',
     position: { x: c.canvasX ?? 100 + i * 200, y: c.canvasY ?? 100 },
-    data: { label: `${c.name}\n[${c.type}]` },
-  }));
-  const edges: Edge[] = connections.map(conn => ({
+    data: {
+      label: c.name,
+      name: c.name,
+      type: c.type,
+      icon: c.type === 'BACKEND' ? '⚙️' : c.type === 'FULLSTACK' ? '🔗' : '🎨',
+      status: getState(c.id).status,
+      onRun: () => runComponent(c.id),
+    } satisfies ComponentNodeData,
+  })), [components, runs]);
+
+  const edges: Edge[] = useMemo(() => connections.map(conn => ({
     id: conn.id,
     source: conn.sourceId,
     target: conn.targetId,
     label: conn.type ?? '',
-  }));
+    animated: true,
+  })), [connections]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -278,6 +294,7 @@ function CanvasPane() {
             <ReactFlow
               nodes={nodes}
               edges={edges}
+              nodeTypes={nodeTypes}
               onNodeClick={(_e, node) => {
                 const comp = components.find(c => c.id === node.id);
                 if (comp) { setSelectedNode(comp); setActiveTab('detail'); }
@@ -289,16 +306,17 @@ function CanvasPane() {
             </ReactFlow>
           )
         ) : (
-          <div className="p-4 overflow-auto h-full">
-            <h3 className="font-medium mb-2">组件详情</h3>
-            {selectedNode ? (
-              <pre className="text-xs bg-muted p-3 rounded overflow-auto">
-                {JSON.stringify(selectedNode, null, 2)}
-              </pre>
-            ) : (
+          selectedNode ? (
+            <ComponentDetail
+              component={selectedNode}
+              runState={getState(selectedNode.id)}
+              onRun={() => runComponent(selectedNode.id)}
+            />
+          ) : (
+            <div className="p-4">
               <p className="text-muted-foreground text-sm">点击流程图中的节点查看详情</p>
-            )}
-          </div>
+            </div>
+          )
         )}
       </div>
 
@@ -326,14 +344,21 @@ function CanvasPane() {
                   </tr>
                 </thead>
                 <tbody>
-                  {components.map(c => (
-                    <tr key={c.id} className="border-b border-border/50">
-                      <td className="py-1">{c.name}</td>
-                      <td className="py-1">{c.type}</td>
-                      <td className="py-1">{c.runtime ?? '-'}</td>
-                      <td className="py-1 text-muted-foreground">idle</td>
-                    </tr>
-                  ))}
+                  {components.map(c => {
+                    const st = getState(c.id);
+                    return (
+                      <tr key={c.id} className="border-b border-border/50">
+                        <td className="py-1">{c.name}</td>
+                        <td className="py-1">{c.type}</td>
+                        <td className="py-1">{c.runtime ?? '-'}</td>
+                        <td className="py-1">
+                          <span className={st.status === 'running' ? 'text-yellow-600' : st.status === 'done' ? 'text-green-600' : st.status === 'error' ? 'text-red-600' : 'text-muted-foreground'}>
+                            {st.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

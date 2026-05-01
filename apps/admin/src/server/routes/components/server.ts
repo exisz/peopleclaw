@@ -25,8 +25,15 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       return res.status(500).json({ error: 'Compiled server handler is not a function' });
     }
 
-    // Provide empty ctx for now (future: inject integrations)
-    const result = await serverFn({});
+    // Env whitelist for fullstack server handlers (PLANET-1422)
+    const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
+    const envBag: Record<string, string> = {};
+    for (const key of ENV_WHITELIST) {
+      if (process.env[key]) envBag[key] = process.env[key]!;
+    }
+
+    // Provide ctx with env for server handler
+    const result = await serverFn({ env: envBag });
     res.json(result);
   } catch (err: any) {
     console.error('[component/server] error:', err);

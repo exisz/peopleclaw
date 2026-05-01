@@ -88,6 +88,13 @@ componentRunRouter.post(
 
     const input = req.body ?? {};
 
+    // Env whitelist — expose approved env vars via ctx.env (PLANET-1422)
+    const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
+    const envBag: Record<string, string> = {};
+    for (const key of ENV_WHITELIST) {
+      if (process.env[key]) envBag[key] = process.env[key]!;
+    }
+
     // Stream the execution via createSSEStream
     const sseResponse = createSSEStream(async (probe) => {
       // Build restricted execution environment
@@ -152,7 +159,7 @@ componentRunRouter.post(
 
         // Race against timeout
         const result = await Promise.race([
-          runFn(input, { signal: controller.signal }),
+          runFn(input, { signal: controller.signal, env: envBag }),
           new Promise((_, reject) => {
             controller.signal.addEventListener('abort', () =>
               reject(new Error('timeout'))
