@@ -1,11 +1,9 @@
 /**
- * Component Detail Panel — sub-tabs: flow (probes+run) / preview (client render)
- * (PLANET-1421, PLANET-1428)
- *
- * Behavior:
- * - BACKEND click → defaults to 'flow' tab (probe timeline + last result + ▶ rerun)
- * - FRONTEND click → defaults to 'preview' tab (renders client export; skips server)
- * - FULLSTACK click → defaults to 'flow' tab (has both)
+ * Component Detail Panel — PLANET-1443: Restructured tabs.
+ * Tab structure:
+ *   - [运行] (default) — live preview / product view
+ *   - [代码] — code viewer (future)
+ *   - [流程] — probe timeline + run (BACKEND/FULLSTACK only)
  */
 import { useEffect, useRef, useState } from 'react';
 import type { RunState, ProbeStep } from './useComponentRun';
@@ -18,6 +16,8 @@ interface Component {
   runtime?: string;
 }
 
+type SubTab = 'run' | 'code' | 'flow';
+
 interface Props {
   component: Component;
   runState: RunState;
@@ -26,94 +26,93 @@ interface Props {
 }
 
 export default function ComponentDetail({ component, runState, onRun, defaultTab }: Props) {
-  const [subTab, setSubTab] = useState<'flow' | 'preview'>(defaultTab ?? 'flow');
+  // Map legacy defaultTab values to new tab names
+  const mapTab = (t?: 'flow' | 'preview'): SubTab => t === 'flow' ? 'flow' : 'run';
+  const [subTab, setSubTab] = useState<SubTab>(mapTab(defaultTab));
 
-  // Sync when component changes (user clicks different node)
   useEffect(() => {
-    if (defaultTab) setSubTab(defaultTab);
+    setSubTab(mapTab(defaultTab));
   }, [component.id, defaultTab]);
 
   const hasFlow = component.type === 'BACKEND' || component.type === 'FULLSTACK';
-  const hasPreview = component.type === 'FRONTEND' || component.type === 'FULLSTACK';
 
   return (
-    <div className="p-4 overflow-auto h-full space-y-4">
-      {/* Meta */}
-      <section>
-        <h3 className="font-medium text-sm mb-2">组件信息</h3>
-        <div data-testid="detail-meta-name" className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-          <span className="text-muted-foreground">Name</span><span>{component.name}</span>
-          <span className="text-muted-foreground">Type</span><span>{component.type}</span>
-          <span className="text-muted-foreground">Runtime</span><span>{component.runtime ?? '-'}</span>
-          <span className="text-muted-foreground">ID</span><span className="font-mono truncate">{component.id}</span>
-        </div>
-      </section>
-
-      {/* Sub-tabs */}
-      {(hasFlow || hasPreview) && (
-        <div className="flex gap-1 text-xs border-b border-border pb-1">
-          {hasFlow && (
-            <button
-              data-testid="detail-sub-tab-flow"
-              onClick={() => setSubTab('flow')}
-              className={`px-2 py-1 rounded-t ${subTab === 'flow' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-            >流程图</button>
-          )}
-          {hasPreview && (
-            <button
-              data-testid="detail-sub-tab-preview"
-              onClick={() => setSubTab('preview')}
-              className={`px-2 py-1 rounded-t ${subTab === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-            >预览</button>
-          )}
-        </div>
-      )}
-
-      {/* Flow sub-tab content */}
-      {subTab === 'flow' && hasFlow && (
-        <>
-          {/* Run button */}
+    <div className="flex flex-col h-full">
+      {/* Tabs */}
+      <div className="flex gap-1 text-xs border-b border-border px-4 pt-3 pb-0">
+        <button
+          data-testid="detail-sub-tab-run"
+          onClick={() => setSubTab('run')}
+          className={`px-3 py-1.5 rounded-t ${subTab === 'run' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+        >运行</button>
+        <button
+          data-testid="detail-sub-tab-code"
+          onClick={() => setSubTab('code')}
+          className={`px-3 py-1.5 rounded-t ${subTab === 'code' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+        >代码</button>
+        {hasFlow && (
           <button
-            data-testid="detail-run-btn"
-            onClick={onRun}
-            disabled={runState.status === 'running'}
-            className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {runState.status === 'running' ? '运行中...' : '▶ Run'}
-          </button>
+            data-testid="detail-sub-tab-flow"
+            onClick={() => setSubTab('flow')}
+            className={`px-3 py-1.5 rounded-t ${subTab === 'flow' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >流程</button>
+        )}
+      </div>
 
-          {/* Probe Timeline */}
-          <section>
-            <h3 className="font-medium text-sm mb-2">探针 Timeline</h3>
-            <ProbeTimeline probes={runState.probes} status={runState.status} componentId={component.id} />
+      {/* Tab content */}
+      <div className="flex-1 overflow-auto">
+        {/* 运行 tab — fullscreen preview */}
+        {subTab === 'run' && (
+          <section className="h-full">
+            <FullstackPreview componentId={component.id} status={runState.status} />
           </section>
+        )}
 
-          {/* Result / Error */}
-          {runState.error && (
-            <section className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-2">
-              <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">{runState.error}</p>
-            </section>
-          )}
-          {runState.result !== null && runState.result !== undefined && (
-            <section>
+        {/* 代码 tab */}
+        {subTab === 'code' && (
+          <section className="p-4">
+            <p className="text-xs text-muted-foreground">代码查看器 (coming soon)</p>
+            {/* Meta info lives here for now */}
+            <div data-testid="detail-meta-name" className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mt-4">
+              <span className="text-muted-foreground">Name</span><span>{component.name}</span>
+              <span className="text-muted-foreground">Type</span><span>{component.type}</span>
+              <span className="text-muted-foreground">Runtime</span><span>{component.runtime ?? '-'}</span>
+              <span className="text-muted-foreground">ID</span><span className="font-mono truncate">{component.id}</span>
+            </div>
+          </section>
+        )}
+
+        {/* 流程 tab */}
+        {subTab === 'flow' && hasFlow && (
+          <section className="p-4 space-y-4">
+            <button
+              data-testid="detail-run-btn"
+              onClick={onRun}
+              disabled={runState.status === 'running'}
+              className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {runState.status === 'running' ? '运行中...' : '▶ Run'}
+            </button>
+            <div>
+              <h3 className="font-medium text-sm mb-2">探针 Timeline</h3>
+              <ProbeTimeline probes={runState.probes} status={runState.status} componentId={component.id} />
+            </div>
+            {runState.error && (
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-2">
+                <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">{runState.error}</p>
+              </div>
+            )}
+            {runState.result !== null && runState.result !== undefined && (
               <details className="text-xs">
                 <summary className="cursor-pointer font-medium text-sm mb-1">上次结果</summary>
                 <pre data-testid="detail-result-json" className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
                   {JSON.stringify(runState.result, null, 2)}
                 </pre>
               </details>
-            </section>
-          )}
-        </>
-      )}
-
-      {/* Preview sub-tab content */}
-      {subTab === 'preview' && hasPreview && (
-        <section>
-          <h3 className="font-medium text-sm mb-2">预览</h3>
-          <FullstackPreview componentId={component.id} status={runState.status} />
-        </section>
-      )}
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
@@ -245,12 +244,47 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         return;
       }
 
+      // Fetch outgoing TRIGGER connections to wire onSubmit → backend run
+      let triggerTargetId: string | null = null;
+      try {
+        const connRes = await apiFetch(`/api/components/${componentId}/connections`);
+        if (connRes.ok) {
+          const connData = await connRes.json();
+          const trigger = (connData.connections ?? []).find((c: any) => c.type === 'TRIGGER' && c.fromComponentId === componentId);
+          if (trigger) triggerTargetId = trigger.toComponentId;
+        }
+      } catch {}
+
+      const onSubmit = triggerTargetId
+        ? async (data: any) => {
+            const runRes = await apiFetch(`/api/components/${triggerTargetId}/run`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+            if (!runRes.ok) throw new Error('Backend run failed');
+            // Parse SSE response to extract result
+            const text = await runRes.text();
+            const lines = text.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const evt = JSON.parse(line.slice(6));
+                  if (evt.type === 'result') return evt.data;
+                } catch {}
+              }
+            }
+            return null;
+          }
+        : undefined;
+
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
         const root = ReactDOM.createRoot(containerRef.current);
         root.render(React.createElement(Client, {
           data: null,
           refresh: () => loadPreview(),
+          onSubmit,
         }));
         setMounted(true);
       }
