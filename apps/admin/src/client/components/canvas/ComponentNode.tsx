@@ -27,19 +27,19 @@ const TYPE_COLORS: Record<string, string> = {
   FRONTEND: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
 };
 
-function ComponentNode({ data }: NodeProps) {
+function ComponentNode({ data, id }: NodeProps) {
   const d = data as unknown as ComponentNodeData;
   const canRun = d.type !== 'FRONTEND';
 
   return (
-    <div className="bg-card border border-border rounded-lg shadow-sm px-3 py-2 min-w-[160px] select-none">
+    <div data-testid={`canvas-node-${id}`} className="bg-card border border-border rounded-lg shadow-sm px-3 py-2 min-w-[160px] select-none">
       <Handle type="target" position={Position.Left} className="!w-2 !h-2" />
 
       {/* Header: icon + name + status */}
       <div className="flex items-center gap-2 mb-1">
         <span className="text-base">{d.icon || '📦'}</span>
         <span className="text-sm font-medium truncate flex-1">{d.name}</span>
-        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_COLORS[d.status] || STATUS_COLORS.idle}`} />
+        <span data-testid={`canvas-node-${id}-status-${d.status}`} className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_COLORS[d.status] || STATUS_COLORS.idle}`} />
       </div>
 
       {/* Type badge */}
@@ -50,6 +50,7 @@ function ComponentNode({ data }: NodeProps) {
 
         {/* Run button */}
         <button
+          data-testid={`canvas-node-${id}-run-btn`}
           onClick={e => { e.stopPropagation(); d.onRun?.(); }}
           disabled={!canRun || d.status === 'running'}
           className="text-xs px-1.5 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"

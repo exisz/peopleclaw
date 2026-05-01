@@ -25,7 +25,7 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
       {/* Meta */}
       <section>
         <h3 className="font-medium text-sm mb-2">组件信息</h3>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <div data-testid="detail-meta-name" className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
           <span className="text-muted-foreground">Name</span><span>{component.name}</span>
           <span className="text-muted-foreground">Type</span><span>{component.type}</span>
           <span className="text-muted-foreground">Runtime</span><span>{component.runtime ?? '-'}</span>
@@ -63,7 +63,7 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
         <section>
           <details className="text-xs">
             <summary className="cursor-pointer font-medium text-sm mb-1">上次结果</summary>
-            <pre className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
+            <pre data-testid="detail-result-json" className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
               {JSON.stringify(runState.result, null, 2)}
             </pre>
           </details>
@@ -109,7 +109,7 @@ function ProbeTimeline({ probes, status }: { probes: ProbeStep[]; status: string
   return (
     <div className="flex flex-col gap-1">
       {[...merged.values()].map((step, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs">
+        <div key={i} data-testid={`detail-probe-step-${step.node}`} className="flex items-center gap-2 text-xs">
           <span className={step.done ? 'text-green-600' : 'text-yellow-600'}>
             {step.done ? '✓' : '⏳'}
           </span>
@@ -189,7 +189,7 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
       )}
       {loading && <p className="text-xs text-muted-foreground">编译加载中...</p>}
       {compileError && <p className="text-xs text-red-600">{compileError}</p>}
-      <div ref={containerRef} className="mt-2 border border-border rounded p-2 min-h-[100px]" />
+      <div ref={containerRef} data-testid="detail-fullstack-preview" className="mt-2 border border-border rounded p-2 min-h-[100px]" />
     </div>
   );
 }

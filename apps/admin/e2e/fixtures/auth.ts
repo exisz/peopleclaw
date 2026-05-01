@@ -26,8 +26,8 @@ export async function signIn(page: Page) {
   await page.fill('input[name="password"], input[type="password"]', PASSWORD);
   await page.click('button[type="submit"]');
 
-  // Back in app — wait for dashboard
-  await page.waitForURL(/\/dashboard|\/workflows|\/cases/, { timeout: 30_000 });
+  // Back in app — wait for app page
+  await page.waitForURL(/\/app/, { timeout: 30_000 });
   // Dashboard has nav-cases (small header); Workflows has nav-workflows.
   // Just check we're in the app (not auth page) by confirming body has loaded.
   await page.waitForLoadState('networkidle', { timeout: 15_000 });
