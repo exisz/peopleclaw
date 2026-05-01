@@ -43,15 +43,16 @@ componentRunRouter.post(
       return;
     }
 
-    // Compile TS → JS
+    // Compile TS/TSX → JS
     let compiledCode: string;
     try {
       const result = transformSync(component.code, {
-        loader: 'ts',
+        loader: 'tsx',
         target: 'esnext',
         format: 'esm',
-        // Replace @peopleclaw/sdk import with global reference
-        banner: '',
+        jsx: 'transform',
+        jsxFactory: '__jsx',
+        jsxFragment: '__Fragment',
       });
       compiledCode = result.code;
     } catch (err: any) {
@@ -134,6 +135,10 @@ componentRunRouter.post(
         decodeURI,
         atob,
         btoa,
+        // JSX stubs — FULLSTACK components contain Client JSX that compiles to __jsx calls.
+        // Server-side run only executes server(), but the compiled code has __jsx references.
+        __jsx: (...args: any[]) => ({ type: args[0], props: args[1], children: args.slice(2) }),
+        __Fragment: Symbol('Fragment'),
       };
 
       // Wrap compiled code in an async function that returns the run export
