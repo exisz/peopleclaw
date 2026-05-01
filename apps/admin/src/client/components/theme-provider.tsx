@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type Theme = 'light' | 'dark' | 'eye-care' | 'green' | 'gray';
+export type Theme = 'light' | 'dark';
 
 type ThemeContextValue = {
   theme: Theme;
@@ -17,7 +17,7 @@ type ThemeContextValue = {
 
 const STORAGE_KEY = 'peopleclaw-theme';
 const DEFAULT_THEME: Theme = 'light';
-const VALID_THEMES: Theme[] = ['light', 'dark', 'eye-care', 'green', 'gray'];
+const VALID_THEMES: Theme[] = ['light', 'dark'];
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -34,7 +34,6 @@ function readStoredTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  // Remove legacy class-based tokens
   root.classList.remove('light', 'dark');
   root.removeAttribute('data-theme');
 
@@ -42,7 +41,6 @@ function applyTheme(theme: Theme) {
     root.classList.add('dark');
     root.style.colorScheme = 'dark';
   } else {
-    root.setAttribute('data-theme', theme);
     root.style.colorScheme = 'light';
   }
 }
