@@ -10,8 +10,8 @@ const TEMPLATES: Record<string, AppTemplate> = {
   'ecommerce-starter': ecommerceStarterTemplate,
 };
 
-// GET /api/apps/templates — list available templates
-templatesRouter.get('/apps/templates', requireAuth, requireTenant, (_req, res) => {
+// GET /api/apps/templates — list available templates (no auth needed, static data)
+templatesRouter.get('/apps/templates', (_req, res) => {
   const list = Object.values(TEMPLATES).map(t => ({
     id: t.id,
     name: t.name,
