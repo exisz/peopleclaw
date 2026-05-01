@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
-    "build": "prisma generate && vite build && tsc -p tsconfig.server.json && node -e \"import('node:fs').then(fs=>{fs.cpSync('src/server/generated','api-dist/server/generated',{recursive:true,force:true});console.log('[build] copied prisma generated to api-dist')})\" && node -e \"import('node:fs').then(fs=>{fs.mkdirSync('api-dist/data',{recursive:true});fs.copyFileSync('src/data/roadmap.yaml','api-dist/data/roadmap.yaml');console.log('[build] copied roadmap.yaml to api-dist/data')})\"",
+    "build": "pnpm --filter @peopleclaw/sdk build && prisma generate && vite build && tsc -p tsconfig.server.json && node -e \"import('node:fs').then(fs=>{fs.cpSync('src/server/generated','api-dist/server/generated',{recursive:true,force:true});console.log('[build] copied prisma generated to api-dist')})\" && node -e \"import('node:fs').then(fs=>{fs.mkdirSync('api-dist/data',{recursive:true});fs.copyFileSync('src/data/roadmap.yaml','api-dist/data/roadmap.yaml');console.log('[build] copied roadmap.yaml to api-dist/data')})\"",
     "preview": "vite preview",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
