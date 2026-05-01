@@ -3,7 +3,7 @@ import { getPrisma } from '../../lib/prisma.js';
 
 export const componentClientRouter = Router();
 
-// GET /api/components/:id/client.js — serve compiled client bundle
+// GET /api/components/:id/client.js — serve compiled client bundle (FULLSTACK or FRONTEND)
 componentClientRouter.get('/components/:id/client.js', async (req, res) => {
   try {
     const prisma = getPrisma();
