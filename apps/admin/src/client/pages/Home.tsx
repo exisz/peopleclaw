@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (authed === true) navigate('/app', { replace: true });
+    if (authed === true) navigate('/apps', { replace: true });
   }, [authed, navigate]);
 
   return (

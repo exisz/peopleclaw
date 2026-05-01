@@ -2,7 +2,7 @@
  * PLANET-1416: Chat + Canvas dual-pane interface (Stage 2).
  */
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ReactFlow,
   Background,
@@ -47,6 +47,7 @@ interface ChatMessage {
 
 export default function AppPlaceholder() {
   const navigate = useNavigate();
+  const { id: routeAppId } = useParams<{ id: string }>();
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function AppPlaceholder() {
         </Panel>
         <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors cursor-col-resize" />
         <Panel defaultSize={50} minSize={25}>
-          <CanvasPane />
+          <CanvasPane initialAppId={routeAppId} />
         </Panel>
       </PanelGroup>
     </div>
@@ -190,9 +191,9 @@ function ChatPane() {
 // ─── Canvas Pane ─────────────────────────────────────────────────
 const nodeTypes = { component: ComponentNode };
 
-function CanvasPane() {
+function CanvasPane({ initialAppId }: { initialAppId?: string }) {
   const [apps, setApps] = useState<App[]>([]);
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(initialAppId ?? null);
   const [components, setComponents] = useState<Component[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);

@@ -10,6 +10,8 @@ import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppPlaceholder from './pages/AppPlaceholder';
+import AppsList from './pages/AppsList';
+import PlaceholderPage from './pages/PlaceholderPage';
 import Settings from './pages/Settings';
 import SettingsBilling from './pages/SettingsBilling';
 import SettingsConnections from './pages/SettingsConnections';
@@ -23,7 +25,11 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/callback" element={<Callback />} />
+          <Route path="/apps" element={<ErrorBoundary><AppsList /></ErrorBoundary>} />
+          <Route path="/published" element={<ErrorBoundary><PlaceholderPage title="Published Apps" /></ErrorBoundary>} />
+          <Route path="/security" element={<ErrorBoundary><PlaceholderPage title="Security" /></ErrorBoundary>} />
           <Route path="/app" element={<ErrorBoundary><AppPlaceholder /></ErrorBoundary>} />
+          <Route path="/app/:id" element={<ErrorBoundary><AppPlaceholder /></ErrorBoundary>} />
           <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
           <Route path="/settings/billing" element={<ErrorBoundary><SettingsBilling /></ErrorBoundary>} />
           <Route path="/settings/connections" element={<ErrorBoundary><SettingsConnections /></ErrorBoundary>} />
@@ -35,7 +41,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/workflows/*" element={<Navigate to="/app" replace />} />
           <Route path="/credits/*" element={<Navigate to="/app" replace />} />
           <Route path="/roadmap" element={<Navigate to="/app" replace />} />
-          <Route path="*" element={<Navigate to="/app" replace />} />
+          <Route path="*" element={<Navigate to="/apps" replace />} />
         </Routes>
         <Toaster richColors closeButton position="top-right" />
       </BrowserRouter>
