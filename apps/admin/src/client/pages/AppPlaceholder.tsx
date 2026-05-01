@@ -66,6 +66,9 @@ export default function AppPlaceholder() {
   const navigate = useNavigate();
   const { id: routeAppId } = useParams<{ id: string }>();
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(routeAppId ?? null);
+  const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
+  const refreshCanvas = useCallback(() => setCanvasRefreshKey(k => k + 1), []);
 
   useEffect(() => {
     apiFetch('/api/me')
@@ -75,10 +78,6 @@ export default function AppPlaceholder() {
   }, [navigate]);
 
   if (!user) return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
-
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(routeAppId ?? null);
-  const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
-  const refreshCanvas = useCallback(() => setCanvasRefreshKey(k => k + 1), []);
 
   return (
     <div className="flex flex-col h-full">
