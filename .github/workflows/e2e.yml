@@ -1,8 +1,8 @@
 name: E2E (Playwright)
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '0 22 * * *'  # daily 22:00 UTC (08:00 Sydney)
   workflow_dispatch:
 
 # Only allow one e2e run at a time, cancel in-progress on new push
