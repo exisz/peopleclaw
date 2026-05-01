@@ -17,19 +17,41 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       return res.status(400).json({ error: 'Component not compiled. POST /compile first.' });
     }
 
-    // Execute the server handler in a minimal sandbox via dynamic import
-    const dataUrl = `data:text/javascript;base64,${Buffer.from(artifacts.serverHandler).toString('base64')}`;
-    const mod = await import(/* @vite-ignore */ dataUrl);
-    const serverFn = mod.default ?? mod.server;
-    if (typeof serverFn !== 'function') {
-      return res.status(500).json({ error: 'Compiled server handler is not a function' });
-    }
-
     // Env whitelist for fullstack server handlers (PLANET-1422)
     const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
     const envBag: Record<string, string> = {};
     for (const key of ENV_WHITELIST) {
       if (process.env[key]) envBag[key] = process.env[key]!;
+    }
+    console.log('[component/server] env keys available:', Object.keys(envBag));
+
+    // Execute server handler via Function sandbox (data: URL import unreliable on Vercel)
+    // Strip import/export statements and run as a function body
+    let code = artifacts.serverHandler;
+    code = code.replace(/import\s*\{[^}]*\}\s*from\s*['"][^'"]+['"];?\n?/g, '');
+    code = code.replace(/import\s+.*\s+from\s*['"][^'"]+['"];?\n?/g, '');
+    code = code.replace(/export\s+default\s+/g, '__exports.default = ');
+    code = code.replace(/export\s+(?:async\s+)?function\s+server/g, '__exports.server = async function server');
+    code = code.replace(/export\s*\{([^}]+)\};?/g, (_: string, inner: string) => {
+      return inner.split(',').map((part: string) => {
+        const [name, alias] = part.trim().split(/\s+as\s+/);
+        const key = (alias || name).trim();
+        return `__exports["${key}"] = ${name.trim()};`;
+      }).join('\n');
+    });
+
+    const wrappedCode = `
+      const __exports = {};
+      ${code}
+      return __exports;
+    `;
+
+    const factory = new Function('fetch', 'console', 'JSON', 'Date', 'URL', 'URLSearchParams', 'Promise', 'setTimeout', 'Math', wrappedCode);
+    const exports = factory(globalThis.fetch, console, JSON, Date, URL, URLSearchParams, Promise, setTimeout, Math);
+
+    const serverFn = exports.default ?? exports.server;
+    if (typeof serverFn !== 'function') {
+      return res.status(500).json({ error: 'Compiled server handler is not a function' });
     }
 
     // Provide ctx with env for server handler
