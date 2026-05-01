@@ -199,7 +199,45 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
       }
 
       const url = `/api/components/${componentId}/client.js?t=${Date.now()}`;
-      const mod = await import(/* @vite-ignore */ url);
+      const res = await fetch(url);
+      if (!res.ok) {
+        setCompileError(`Failed to fetch client bundle: ${res.status}`);
+        setLoading(false);
+        return;
+      }
+      let source = await res.text();
+
+      // The client bundle has bare react imports (externalized at compile time).
+      // We must provide the host page's React to avoid dual-instance issues.
+      // Strategy: create blob shims that re-export from host React, rewrite imports.
+      const React = await import('react');
+      const ReactDOM = await import('react-dom/client');
+      const ReactJSX = await import('react/jsx-runtime');
+      (window as any).__PC_REACT__ = React;
+      (window as any).__PC_REACT_DOM_CLIENT__ = ReactDOM;
+      (window as any).__PC_REACT_JSX__ = ReactJSX;
+
+      const makeShim = (code: string) =>
+        URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+
+      const reactShim = makeShim(`const R = window.__PC_REACT__; export const { useState, useEffect, useRef, useCallback, useMemo, useContext, useReducer, createElement, Fragment, createContext, forwardRef, memo, lazy, Suspense, startTransition, useId, useSyncExternalStore, useTransition, useDeferredValue, useImperativeHandle, useLayoutEffect, useDebugValue, useInsertionEffect } = R; export default R;`);
+      const jsxShim = makeShim(`const J = window.__PC_REACT_JSX__; export const { jsx, jsxs, Fragment } = J; export default J;`);
+      const domShim = makeShim(`const D = window.__PC_REACT_DOM_CLIENT__; export const { createRoot, hydrateRoot } = D; export default D;`);
+
+      // Rewrite bare specifier imports to blob shim URLs
+      source = source.replace(/from\s*["']react\/jsx-runtime["']/g, `from "${jsxShim}"`);
+      source = source.replace(/from\s*["']react\/jsx-dev-runtime["']/g, `from "${jsxShim}"`);
+      source = source.replace(/from\s*["']react-dom\/client["']/g, `from "${domShim}"`);
+      source = source.replace(/from\s*["']react-dom["']/g, `from "${domShim}"`);
+      source = source.replace(/from\s*["']react["']/g, `from "${reactShim}"`);
+
+      const blobUrl = URL.createObjectURL(new Blob([source], { type: 'application/javascript' }));
+      const mod = await import(/* @vite-ignore */ blobUrl);
+      URL.revokeObjectURL(blobUrl);
+      URL.revokeObjectURL(reactShim);
+      URL.revokeObjectURL(jsxShim);
+      URL.revokeObjectURL(domShim);
+
       const Client = mod.default ?? mod.Client;
       if (!Client) {
         setCompileError('No Client export found in bundle');
@@ -208,8 +246,6 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
       }
 
       if (containerRef.current) {
-        const ReactDOM = await import('react-dom/client');
-        const React = await import('react');
         containerRef.current.innerHTML = '';
         const root = ReactDOM.createRoot(containerRef.current);
         root.render(React.createElement(Client, {
