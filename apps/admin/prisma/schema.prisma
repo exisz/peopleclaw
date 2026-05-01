@@ -102,6 +102,7 @@ model Component {
   canvasX      Int              @default(0)
   canvasY      Int              @default(0)
   icon         String?
+  compiledArtifacts String?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   app          App              @relation(fields: [appId], references: [id], onDelete: Cascade)

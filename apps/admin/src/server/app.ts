@@ -12,6 +12,9 @@ import { appsRouter } from './routes/apps.js';
 import { chatRouter } from './routes/chat.js';
 import { probeTestRouter } from './routes/probe-test.js';
 import { componentRunRouter } from './routes/components/run.js';
+import { componentCompileRouter } from './routes/components/compile.js';
+import { componentServerRouter } from './routes/components/server.js';
+import { componentClientRouter } from './routes/components/client.js';
 
 export function createApp(): Express {
   checkEnv();
@@ -37,6 +40,9 @@ export function createApp(): Express {
   app.use('/api', chatRouter);
   app.use('/api', probeTestRouter);
   app.use('/api', componentRunRouter);
+  app.use('/api', componentCompileRouter);
+  app.use('/api', componentServerRouter);
+  app.use('/api', componentClientRouter);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
