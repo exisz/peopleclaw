@@ -18,6 +18,20 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { apiFetch, apiClient } from '../lib/api';
 
+function formatToolResult(name: string, result: unknown): string {
+  const r = result as Record<string, unknown> | undefined;
+  switch (name) {
+    case 'add_component': return `加了 ${r?.name ?? '组件'} 节点`;
+    case 'update_component': return `更新了 ${r?.name ?? '组件'}`;
+    case 'delete_component': return `删除了组件`;
+    case 'add_connection': return `加了连线`;
+    case 'delete_connection': return `删除了连线`;
+    case 'apply_template': return `套用了模板 (${r?.components ?? 0} 组件, ${r?.connections ?? 0} 连线)`;
+    case 'list_components': return `列出了组件`;
+    default: return `${name} 完成`;
+  }
+}
+
 // Types
 interface App {
   id: string;
@@ -38,9 +52,14 @@ interface Connection {
   toComponentId: string;
   type?: string;
 }
+interface ToolCallCard {
+  name: string;
+  result?: unknown;
+}
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  toolCalls?: ToolCallCard[];
 }
 
 export default function AppPlaceholder() {
@@ -57,16 +76,20 @@ export default function AppPlaceholder() {
 
   if (!user) return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
 
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(routeAppId ?? null);
+  const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
+  const refreshCanvas = useCallback(() => setCanvasRefreshKey(k => k + 1), []);
+
   return (
     <div className="flex flex-col h-full">
       {/* Dual pane with resizable panels */}
       <PanelGroup direction="horizontal" className="flex-1">
         <Panel defaultSize={50} minSize={25}>
-          <ChatPane />
+          <ChatPane appId={selectedAppId} onCanvasChange={refreshCanvas} />
         </Panel>
         <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors cursor-col-resize" />
         <Panel defaultSize={50} minSize={25}>
-          <CanvasPane initialAppId={routeAppId} />
+          <CanvasPane initialAppId={routeAppId} onAppSelected={setSelectedAppId} refreshKey={canvasRefreshKey} />
         </Panel>
       </PanelGroup>
     </div>
@@ -74,7 +97,7 @@ export default function AppPlaceholder() {
 }
 
 // ─── Chat Pane ─────────────────────────────────────────────────
-function ChatPane() {
+function ChatPane({ appId, onCanvasChange }: { appId: string | null; onCanvasChange: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -88,7 +111,7 @@ function ChatPane() {
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || isStreaming) return;
+    if (!text || isStreaming || !appId) return;
     const userMsg: ChatMessage = { role: 'user', content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -96,7 +119,7 @@ function ChatPane() {
     setIsStreaming(true);
 
     try {
-      const res = await apiClient.postRaw('/api/chat', { messages: newMessages });
+      const res = await apiClient.postRaw('/api/chat', { messages: newMessages, appId });
       if (!res.ok) {
         const err = await res.text();
         setMessages([...newMessages, { role: 'assistant', content: `Error: ${err}` }]);
@@ -104,21 +127,52 @@ function ChatPane() {
         return;
       }
 
-      // Parse plain text stream
+      // Parse SSE stream
       const reader = res.body?.getReader();
       if (!reader) { setIsStreaming(false); return; }
       const decoder = new TextDecoder();
       let assistantContent = '';
-      setMessages([...newMessages, { role: 'assistant', content: '' }]);
+      let toolCalls: ToolCallCard[] = [];
+      let buffer = '';
+      setMessages([...newMessages, { role: 'assistant', content: '', toolCalls: [] }]);
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        assistantContent += chunk;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+              if (currentEvent === 'text_delta') {
+                assistantContent += data.text;
+              } else if (currentEvent === 'tool_result') {
+                const label = formatToolResult(data.name, data.result);
+                toolCalls = [...toolCalls, { name: data.name, result: data.result }];
+                assistantContent += '';
+                // Trigger canvas refresh on mutation events
+                onCanvasChange();
+              } else if (currentEvent === 'component_added' || currentEvent === 'component_updated' ||
+                         currentEvent === 'component_deleted' || currentEvent === 'connection_added' ||
+                         currentEvent === 'connection_deleted') {
+                onCanvasChange();
+              }
+            } catch { /* skip malformed */ }
+            currentEvent = '';
+          }
+        }
+
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1] = { role: 'assistant', content: assistantContent };
+          copy[copy.length - 1] = { role: 'assistant', content: assistantContent, toolCalls: [...toolCalls] };
           return copy;
         });
       }
@@ -126,7 +180,7 @@ function ChatPane() {
       setMessages([...newMessages, { role: 'assistant', content: `Error: ${e}` }]);
     }
     setIsStreaming(false);
-  }, [input, messages, isStreaming]);
+  }, [input, messages, isStreaming, appId, onCanvasChange]);
 
   return (
     <div className="flex flex-col h-full bg-muted/20">
@@ -145,6 +199,15 @@ function ChatPane() {
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-card border border-border text-card-foreground'
             }`}>
+              {m.toolCalls && m.toolCalls.length > 0 && (
+                <div className="mb-2 space-y-1">
+                  {m.toolCalls.map((tc, j) => (
+                    <div key={j} className="text-xs bg-muted/50 rounded px-2 py-1 border border-border/50">
+                      ✓ {formatToolResult(tc.name, tc.result)}
+                    </div>
+                  ))}
+                </div>
+              )}
               {m.content || (isStreaming && i === messages.length - 1 ? '...' : '')}
             </div>
           </div>
@@ -177,7 +240,7 @@ function ChatPane() {
 // ─── Canvas Pane ─────────────────────────────────────────────────
 const nodeTypes = { component: ComponentNode };
 
-function CanvasPane({ initialAppId }: { initialAppId?: string }) {
+function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?: string; onAppSelected?: (id: string | null) => void; refreshKey?: number }) {
   const [apps, setApps] = useState<App[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(initialAppId ?? null);
   const [components, setComponents] = useState<Component[]>([]);
@@ -196,7 +259,12 @@ function CanvasPane({ initialAppId }: { initialAppId?: string }) {
     }).catch(() => {});
   }, []);
 
-  // Load app detail when selected
+  // Notify parent of app selection
+  useEffect(() => {
+    onAppSelected?.(selectedAppId);
+  }, [selectedAppId, onAppSelected]);
+
+  // Load app detail when selected or refreshKey changes
   useEffect(() => {
     if (!selectedAppId) { setComponents([]); setConnections([]); return; }
     apiClient.get<{ app: { components: Component[]; connections: Connection[] } }>(`/api/apps/${selectedAppId}`)
@@ -205,7 +273,7 @@ function CanvasPane({ initialAppId }: { initialAppId?: string }) {
         setConnections(d.app.connections);
       })
       .catch(() => { setComponents([]); setConnections([]); });
-  }, [selectedAppId]);
+  }, [selectedAppId, refreshKey]);
 
   // Create new app
   const createApp = async () => {
