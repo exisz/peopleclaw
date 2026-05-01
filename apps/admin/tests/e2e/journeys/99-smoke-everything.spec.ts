@@ -206,7 +206,7 @@ test.describe('99-smoke-everything: Full discovery', () => {
       await safeClick(node, `click node ${nodeType}`, 10_000);
 
       // Try switching tabs in detail panel
-      for (const tabTid of ['detail-sub-tab-flow', 'detail-sub-tab-preview']) {
+      for (const tabTid of ['detail-sub-tab-flow', 'detail-sub-tab-run']) {
         await safeClick(page.locator(`[data-testid="${tabTid}"]`), `${nodeType} → tab ${tabTid}`);
       }
     }

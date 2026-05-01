@@ -33,7 +33,7 @@ test.describe('TC0: Apps 列表页 + AppShell', () => {
     await expect(page.locator('[data-testid="create-new-app-card"]')).toBeVisible();
   });
 
-  test('/app/:id 也展示 sidebar', async ({ authedPage }) => {
+  test('/app/:id 锁定当前 app, sidebar 隐藏 (PLANET-1442)', async ({ authedPage }) => {
     const page = authedPage;
 
     // First get an app id
@@ -47,9 +47,9 @@ test.describe('TC0: Apps 列表页 + AppShell', () => {
     await page.locator('[data-testid="template-starter-app-btn"]').click();
     await page.waitForURL(/\/app\/[a-zA-Z0-9-]+/, { timeout: 30_000 });
 
-    // Sidebar should be visible on /app/:id
-    const sidebar = page.locator('[data-testid="apps-sidebar"]');
-    await expect(sidebar).toBeVisible({ timeout: 10_000 });
+    // PLANET-1442: sidebar hidden in app detail, back link shown
+    await expect(page.locator('[data-testid="apps-sidebar"]')).toBeHidden();
+    await expect(page.getByTestId('back-to-apps')).toBeVisible({ timeout: 10_000 });
   });
 
   test('/settings 展示 sidebar', async ({ authedPage }) => {
