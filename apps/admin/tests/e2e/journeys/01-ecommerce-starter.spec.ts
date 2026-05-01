@@ -72,7 +72,11 @@ test.describe('TC1: 电商预制 App 全流程', () => {
     // Just verify the preview section is visible (compile succeeded)
 
     // Step: 打开模块列表 验证 status
+    // Switch back to flow graph first (module list is at bottom of canvas pane)
+    await page.getByTestId(TID.tabFlowGraph).click();
     await app.openModuleList();
+    // Wait for the module list rows to render
+    await expect(page.getByTestId(TID.moduleListRow(backendId))).toBeVisible({ timeout: 5_000 });
     await app.expectModuleStatus(backendId, 'done');
     await app.expectModuleStatus(fullstackId, 'done');
   });

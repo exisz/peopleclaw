@@ -165,14 +165,18 @@ componentRunRouter.post(
         const factory = new Function('__globals', '__signal', wrappedCode);
         const exports = factory(allowedGlobals, controller.signal);
 
-        const runFn = exports.default ?? exports.run;
+        const runFn = exports.default ?? exports.run ?? exports.server;
         if (typeof runFn !== 'function') {
-          throw new Error('Component has no default export or named "run" export');
+          throw new Error('Component has no default, "run", or "server" export');
         }
+
+        // FULLSTACK server(ctx) takes single ctx arg; default/run take (input, ctx)
+        const ctx = { signal: controller.signal, env: envBag, ...input };
+        const args = (exports.server === runFn) ? [ctx] : [input, ctx];
 
         // Race against timeout
         const result = await Promise.race([
-          runFn(input, { signal: controller.signal, env: envBag }),
+          runFn(...args),
           new Promise((_, reject) => {
             controller.signal.addEventListener('abort', () =>
               reject(new Error('timeout'))
