@@ -3,12 +3,14 @@
  * 1. serverHandler (ESM string)
  * 2. clientBundle (ESM string for browser)
  * 3. probes (JSON object)
+ * (PLANET-1435: React externalized → esm.sh CDN, no resolveDir needed)
  */
 
 import { buildSync, transformSync } from 'esbuild';
 import { extractExports } from './extract-exports.js';
 import { injectGlue } from './inject-glue.js';
 import { distillProbes } from './distill-probes.js';
+import { rewriteReactImports } from './rewrite-react-imports.js';
 
 // process.cwd() = monorepo root where node_modules lives
 
@@ -43,16 +45,16 @@ const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] ent
     stdin: {
       contents: clientWithGlue,
       loader: 'tsx',
-      resolveDir: process.cwd(),
     },
     bundle: true,
     format: 'esm',
     target: 'es2020',
     minify: false,
     jsx: 'automatic',
+    external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
     write: false,
   });
-  const clientBundle = clientBuildResult.outputFiles[0].text;
+  const clientBundle = rewriteReactImports(clientBuildResult.outputFiles[0].text);
 
   // Extract probes
   const probes = distillProbes(source);
