@@ -12,7 +12,8 @@ export interface FrontendCompileResult {
 }
 
 export function compileFrontend(source: string, _componentId: string): FrontendCompileResult {
-  // FRONTEND code is pure client — just transpile TSX → ESM
+  // FRONTEND code is pure client — transpile TSX → ESM
+  // Same jsx strategy as fullstack compiler for consistency
   const result = transformSync(source, {
     loader: 'tsx',
     format: 'esm',
