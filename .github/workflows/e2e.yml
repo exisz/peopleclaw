@@ -71,8 +71,17 @@ jobs:
       - name: Prepare report for Pages
         if: always()
         run: |
-          mkdir -p public
-          cp -r apps/admin/playwright-report/* public/ 2>/dev/null || true
+          REPORT_DIR="apps/admin/playwright-report"
+          if [ -f "$REPORT_DIR/index.html" ]; then
+            echo "✅ Playwright report found"
+            cp -r "$REPORT_DIR" public
+          else
+            echo "⚠️ No playwright report generated — creating placeholder"
+            mkdir -p public
+            echo '<!DOCTYPE html><html><body><h1>No Playwright report</h1><p>Tests may have been skipped or report generation failed.</p><p>Check the <a href="https://github.com/exisz/peopleclaw/actions">Actions tab</a> for details.</p></body></html>' > public/index.html
+          fi
+          # Verify we have something to publish
+          ls public/index.html || (echo "❌ FATAL: no index.html to publish" && exit 1)
 
       - name: Deploy to GitHub Pages
         if: always()

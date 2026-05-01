@@ -9,6 +9,33 @@ import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
 import { TID } from '../helpers/test-ids';
 
+// PLANET-1436: Also catch hooks errors when navigating to /app/:id
+test.describe('PLANET-1436: /app/:id hooks guard', () => {
+  test('No hooks violation navigating to existing /app/:id', async ({ authedPage }) => {
+    const page = authedPage;
+    test.setTimeout(60_000);
+
+    const hookErrors: string[] = [];
+    page.on('pageerror', (err) => {
+      if (/hook|rendered more|rendered fewer/i.test(err.message)) {
+        hookErrors.push(err.message);
+      }
+    });
+
+    await page.goto('/apps', { waitUntil: 'networkidle', timeout: 30_000 });
+    const appLink = page.locator('a[href^="/app/"]').first();
+    if (!(await appLink.isVisible({ timeout: 10_000 }).catch(() => false))) {
+      test.skip(true, 'No apps to navigate to');
+      return;
+    }
+    await appLink.click();
+    await page.waitForURL(/\/app\//, { timeout: 15_000 });
+    await page.waitForTimeout(2000);
+
+    expect(hookErrors, `Hooks violation: ${hookErrors.join('; ')}`).toHaveLength(0);
+  });
+});
+
 test.describe('PLANET-1432: Starter-app prod bug regression', () => {
   test('No console errors when previewing FRONTEND and FULLSTACK components', async ({ authedPage }) => {
     const page = authedPage;
