@@ -15,9 +15,7 @@ import ComponentNode, { type ComponentNodeData } from '../components/canvas/Comp
 import ComponentDetail from '../components/canvas/ComponentDetail';
 import { useComponentRun } from '../components/canvas/useComponentRun';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import TenantSwitcher from '../components/TenantSwitcher';
-import UserMenu from '../components/UserMenu';
-import CreditsBadge from '../components/CreditsBadge';
+
 import { apiFetch, apiClient } from '../lib/api';
 
 // Types
@@ -57,22 +55,10 @@ export default function AppPlaceholder() {
       .catch(() => navigate('/signin'));
   }, [navigate]);
 
-  if (!user) return <div className="flex items-center justify-center h-screen text-muted-foreground">Loading...</div>;
+  if (!user) return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Top bar */}
-      <header data-testid="top-bar" className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background">
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-lg">PeopleClaw</span>
-          <TenantSwitcher />
-        </div>
-        <div className="flex items-center gap-3">
-          <CreditsBadge />
-          <UserMenu />
-        </div>
-      </header>
-
+    <div className="flex flex-col h-full">
       {/* Dual pane with resizable panels */}
       <PanelGroup direction="horizontal" className="flex-1">
         <Panel defaultSize={50} minSize={25}>

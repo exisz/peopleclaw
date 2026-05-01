@@ -13,9 +13,7 @@ import AppPlaceholder from './pages/AppPlaceholder';
 import AppsList from './pages/AppsList';
 import PlaceholderPage from './pages/PlaceholderPage';
 import Settings from './pages/Settings';
-import SettingsBilling from './pages/SettingsBilling';
-import SettingsConnections from './pages/SettingsConnections';
-import SettingsTeam from './pages/SettingsTeam';
+import AppShell from './components/layout/AppShell';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,15 +23,14 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/callback" element={<Callback />} />
-          <Route path="/apps" element={<ErrorBoundary><AppsList /></ErrorBoundary>} />
-          <Route path="/published" element={<ErrorBoundary><PlaceholderPage title="Published Apps" /></ErrorBoundary>} />
-          <Route path="/security" element={<ErrorBoundary><PlaceholderPage title="Security" /></ErrorBoundary>} />
-          <Route path="/app" element={<ErrorBoundary><AppPlaceholder /></ErrorBoundary>} />
-          <Route path="/app/:id" element={<ErrorBoundary><AppPlaceholder /></ErrorBoundary>} />
-          <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
-          <Route path="/settings/billing" element={<ErrorBoundary><SettingsBilling /></ErrorBoundary>} />
-          <Route path="/settings/connections" element={<ErrorBoundary><SettingsConnections /></ErrorBoundary>} />
-          <Route path="/settings/team" element={<ErrorBoundary><SettingsTeam /></ErrorBoundary>} />
+          {/* All internal pages use AppShell */}
+          <Route path="/apps" element={<ErrorBoundary><AppShell title="Apps"><AppsList /></AppShell></ErrorBoundary>} />
+          <Route path="/published" element={<ErrorBoundary><AppShell title="Published"><PlaceholderPage title="Published Apps" /></AppShell></ErrorBoundary>} />
+          <Route path="/security" element={<ErrorBoundary><AppShell title="Security"><PlaceholderPage title="Security" /></AppShell></ErrorBoundary>} />
+          <Route path="/app" element={<ErrorBoundary><AppShell><AppPlaceholder /></AppShell></ErrorBoundary>} />
+          <Route path="/app/:id" element={<ErrorBoundary><AppShell><AppPlaceholder /></AppShell></ErrorBoundary>} />
+          <Route path="/settings" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
+          <Route path="/settings/:tab" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
           {/* All old workflow/case/step URLs redirect to /app */}
           <Route path="/app/workflow/*" element={<Navigate to="/app" replace />} />
           <Route path="/app/task/*" element={<Navigate to="/app" replace />} />
