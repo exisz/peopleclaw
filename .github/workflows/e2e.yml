@@ -58,30 +58,120 @@ jobs:
 
       - name: Run e2e tests
         id: tests
-        run: pnpm --filter @peopleclaw/admin exec playwright test
+        run: pnpm --filter @peopleclaw/admin exec playwright test --reporter=github,html,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: apps/admin/test-results/results.json
 
       - name: Upload Playwright report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: apps/admin/playwright-report/
+          path: |
+            apps/admin/playwright-report/
+            apps/admin/test-results/
           retention-days: 30
+
+      - name: Embed failed screenshots in Job Summary
+        if: failure()
+        run: |
+          RESULTS="apps/admin/test-results/results.json"
+          if [ ! -f "$RESULTS" ]; then
+            echo "No results.json found" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "## ❌ Failed E2E Tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          # Extract failed test names and find their screenshots
+          jq -r '.suites[].suites[]?.specs[]? | select(.ok == false) | .title' "$RESULTS" 2>/dev/null | while read -r title; do
+            echo "### $title" >> "$GITHUB_STEP_SUMMARY"
+            # Find the last screenshot for this test in test-results
+            SCREENSHOT=$(find apps/admin/test-results -name "*.png" -path "*$(echo "$title" | tr ' ' '-' | head -c 50)*" | sort | tail -1)
+            if [ -z "$SCREENSHOT" ]; then
+              # Fallback: grab any recent screenshot
+              SCREENSHOT=$(find apps/admin/test-results -name "*.png" | sort | tail -1)
+            fi
+            if [ -n "$SCREENSHOT" ] && [ -f "$SCREENSHOT" ]; then
+              B64=$(base64 -w0 "$SCREENSHOT" 2>/dev/null || base64 "$SCREENSHOT")
+              echo "![failure](data:image/png;base64,$B64)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Prepare report for Pages
         if: always()
         run: |
+          mkdir -p public
           REPORT_DIR="apps/admin/playwright-report"
           if [ -f "$REPORT_DIR/index.html" ]; then
             echo "✅ Playwright report found"
-            cp -r "$REPORT_DIR" public
+            cp -r "$REPORT_DIR"/* public/
           else
             echo "⚠️ No playwright report generated — creating placeholder"
-            mkdir -p public
-            echo '<!DOCTYPE html><html><body><h1>No Playwright report</h1><p>Tests may have been skipped or report generation failed.</p><p>Check the <a href="https://github.com/exisz/peopleclaw/actions">Actions tab</a> for details.</p></body></html>' > public/index.html
+            echo '<!DOCTYPE html><html><body><h1>No Playwright report</h1><p>Check <a href="https://github.com/exisz/peopleclaw/actions">Actions</a>.</p></body></html>' > public/index.html
           fi
-          # Verify we have something to publish
-          ls public/index.html || (echo "❌ FATAL: no index.html to publish" && exit 1)
+
+          # Copy test-results (traces, videos, screenshots) into public/
+          TEST_RESULTS="apps/admin/test-results"
+          if [ -d "$TEST_RESULTS" ]; then
+            cp -r "$TEST_RESULTS" public/test-results
+            echo "✅ test-results copied to public/"
+          fi
+
+          # Add trends link to index.html
+          if [ -f public/index.html ]; then
+            sed -i 's|</body>|<div style="position:fixed;top:10px;right:10px;z-index:9999"><a href="trends.html" style="padding:8px 16px;background:#4CAF50;color:white;text-decoration:none;border-radius:4px;font-weight:bold">📈 Trends</a></div></body>|' public/index.html
+          fi
+
+          ls public/index.html || (echo "❌ FATAL: no index.html" && exit 1)
+
+      - name: Append to results.csv (trends data)
+        if: always()
+        run: |
+          RESULTS="apps/admin/test-results/results.json"
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          SHA="${{ github.sha }}"
+          if [ -f "$RESULTS" ]; then
+            DURATION=$(jq '.stats.duration // 0' "$RESULTS")
+            TOTAL=$(jq '.stats.expected // 0' "$RESULTS")
+            PASSED=$(jq '.stats.expected // 0' "$RESULTS")
+            FAILED=$(jq '.stats.unexpected // 0' "$RESULTS")
+            TOTAL=$((PASSED + FAILED))
+          else
+            DURATION=0; TOTAL=0; PASSED=0; FAILED=0
+          fi
+          # Fetch existing CSV from gh-pages
+          git fetch origin gh-pages --depth=1 2>/dev/null || true
+          git show origin/gh-pages:results.csv > public/results.csv 2>/dev/null || echo "timestamp,sha,duration,total,passed,failed" > public/results.csv
+          echo "$TIMESTAMP,$SHA,$DURATION,$TOTAL,$PASSED,$FAILED" >> public/results.csv
+
+      - name: Generate trends.html
+        if: always()
+        run: |
+          cat > public/trends.html << 'TRENDSEOF'
+          <!DOCTYPE html>
+          <html><head>
+          <title>E2E Trends — PeopleClaw</title>
+          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+          <style>body{font-family:system-ui;max-width:1200px;margin:0 auto;padding:20px}canvas{max-height:400px}.back{margin-bottom:20px;display:inline-block}</style>
+          </head><body>
+          <a class="back" href="index.html">← Back to Report</a>
+          <h1>📈 E2E Trends</h1>
+          <h2>Pass Rate</h2><canvas id="passRate"></canvas>
+          <h2>Duration (ms)</h2><canvas id="duration"></canvas>
+          <script>
+          fetch('results.csv').then(r=>r.text()).then(csv=>{
+            const rows=csv.trim().split('\n').slice(1).map(r=>{const c=r.split(',');return{ts:c[0],sha:c[1],duration:+c[2],total:+c[3],passed:+c[4],failed:+c[5]}});
+            const last30=rows.slice(-30);
+            const labels=last30.map(r=>r.ts.slice(5,10));
+            const passRates=last30.map(r=>r.total?Math.round(r.passed/r.total*100):0);
+            const durations=last30.map(r=>Math.round(r.duration/1000));
+            new Chart(document.getElementById('passRate'),{type:'line',data:{labels,datasets:[{label:'Pass %',data:passRates,borderColor:'#4CAF50',tension:0.3}]},options:{scales:{y:{min:0,max:100}}}});
+            new Chart(document.getElementById('duration'),{type:'line',data:{labels,datasets:[{label:'Duration (s)',data:durations,borderColor:'#2196F3',tension:0.3}]},options:{scales:{y:{min:0}}}});
+          });
+          </script>
+          </body></html>
+          TRENDSEOF
 
       - name: Deploy to GitHub Pages
         if: always()
@@ -91,11 +181,34 @@ jobs:
           publish_dir: ./public
           force_orphan: true
 
-      - name: Notify Discord on failure
-        if: failure() && env.DISCORD_WEBHOOK_E2E_FAIL != ''
+      - name: Notify Discord on failure (detailed)
+        if: failure()
         env:
-          DISCORD_WEBHOOK_E2E_FAIL: ${{ secrets.DISCORD_WEBHOOK_E2E_FAIL }}
+          WEBHOOK_URL: https://linux.queue-musical.ts.net/webhook/hook/peopleclaw-e2e
         run: |
-          curl -X POST "$DISCORD_WEBHOOK_E2E_FAIL?thread_id=1499265524851540089" \
+          RESULTS="apps/admin/test-results/results.json"
+          DASHBOARD="https://exisz.github.io/peopleclaw"
+
+          # Build embeds from failed tests
+          EMBEDS="[]"
+          if [ -f "$RESULTS" ]; then
+            EMBEDS=$(jq -r '[
+              .suites[].suites[]?.specs[]? | select(.ok == false) |
+              {
+                title: ("❌ " + .title),
+                description: (.tests[0].results[0].error.message // "Unknown error" | .[0:200]),
+                color: 16711680,
+                image: { url: ("'"$DASHBOARD"'/test-results/" + (.tests[0].results[0].attachments[]? | select(.name == "screenshot") | .path // "" | split("/")[-1])) },
+                footer: { text: "'"${{ github.sha }}"'" }
+              }
+            ] | .[0:10]' "$RESULTS" 2>/dev/null || echo "[]")
+          fi
+
+          # Fallback if no structured embeds
+          if [ "$EMBEDS" = "[]" ] || [ -z "$EMBEDS" ]; then
+            EMBEDS='[{"title":"🚨 E2E Failed","description":"Tests failed but could not parse details. See dashboard.","color":16711680,"url":"'"$DASHBOARD"'"}]'
+          fi
+
+          curl -s -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d '{"content":"🚨 e2e failed on '${{ github.sha }}' — see https://exisz.github.io/peopleclaw/"}'
+            -d "{\"thread_id\":\"1499265524851540089\",\"embeds\":$EMBEDS}"
