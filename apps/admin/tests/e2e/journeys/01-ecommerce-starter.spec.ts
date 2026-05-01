@@ -58,12 +58,15 @@ test.describe('TC1: 电商预制 App 全流程', () => {
     await expect(fullstackNode).toBeVisible();
     const fullstackId = await app.canvas.getNodeId(fullstackNode);
 
-    // Step: 点 FULLSTACK ▶ Run
-    await app.canvas.runNode(fullstackId);
-
-    // Step: 点节点 → 看 detail
+    // Step: 点 FULLSTACK 节点 → 打开 detail panel
     await fullstackNode.click();
-    await app.switchToDetail();
+
+    // Step: 点 detail panel 里的 "▶ Run" 按钮 (更可靠于 canvas run btn)
+    await page.getByRole('button', { name: /Run/ }).click();
+
+    // Step: 等 probe steps (FULLSTACK server 调 Shopify API)
+    await expect(page.getByTestId(TID.detailProbeStep('fetchProducts'))).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByTestId(TID.detailProbeStep('done'))).toBeVisible({ timeout: 45_000 });
 
     // Step: 等 fullstack preview 出现 (compile + mount)
     const preview = app.fullstackPreview();
