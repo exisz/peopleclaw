@@ -4,7 +4,13 @@
  * (PLANET-1428)
  */
 
-import { transformSync } from 'esbuild';
+import { buildSync } from 'esbuild';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// Resolve node_modules from the admin app root
+const NODE_MODULES = resolve(__dirname, '..', '..', '..', '..', 'node_modules');
 
 export interface FrontendCompileResult {
   clientBundle: string;
@@ -12,18 +18,24 @@ export interface FrontendCompileResult {
 }
 
 export function compileFrontend(source: string, _componentId: string): FrontendCompileResult {
-  // FRONTEND code is pure client — transpile TSX → ESM
-  // Same jsx strategy as fullstack compiler for consistency
-  const result = transformSync(source, {
-    loader: 'tsx',
+  // FRONTEND code is pure client — bundle with React inlined so browser can execute standalone ESM
+  const result = buildSync({
+    stdin: {
+      contents: source,
+      loader: 'tsx',
+      resolveDir: NODE_MODULES,
+    },
+    bundle: true,
     format: 'esm',
     target: 'es2020',
     minify: false,
     jsx: 'automatic',
+    write: false,
+    nodePaths: [NODE_MODULES],
   });
 
   return {
-    clientBundle: result.code,
+    clientBundle: result.outputFiles[0].text,
     compiledAt: new Date().toISOString(),
   };
 }

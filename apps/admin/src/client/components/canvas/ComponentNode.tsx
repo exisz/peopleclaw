@@ -2,7 +2,6 @@
  * Custom xyflow node: icon + name + type badge + status light + Run button
  * (PLANET-1421)
  */
-import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 
 export interface ComponentNodeData {
@@ -65,4 +64,4 @@ function ComponentNode({ data, id }: NodeProps) {
   );
 }
 
-export default memo(ComponentNode);
+export default ComponentNode;

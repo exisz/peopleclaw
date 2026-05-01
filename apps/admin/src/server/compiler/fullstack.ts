@@ -5,10 +5,15 @@
  * 3. probes (JSON object)
  */
 
-import { transformSync } from 'esbuild';
+import { buildSync, transformSync } from 'esbuild';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { extractExports } from './extract-exports.js';
 import { injectGlue } from './inject-glue.js';
 import { distillProbes } from './distill-probes.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const NODE_MODULES = resolve(__dirname, '..', '..', '..', '..', 'node_modules');
 
 export interface CompileResult {
   serverHandler: string;
@@ -35,17 +40,23 @@ const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] ent
   });
   const serverHandler = serverResult.code;
 
-  // Build client bundle with glue
+  // Build client bundle with glue — bundled so React is inlined for browser
   const clientWithGlue = injectGlue(clientBody, componentId);
-  const clientResult = transformSync(clientWithGlue, {
-    loader: 'tsx',
+  const clientBuildResult = buildSync({
+    stdin: {
+      contents: clientWithGlue,
+      loader: 'tsx',
+      resolveDir: NODE_MODULES,
+    },
+    bundle: true,
     format: 'esm',
     target: 'es2020',
     minify: false,
-    // React JSX preserved — consumer must have React available
     jsx: 'automatic',
+    write: false,
+    nodePaths: [NODE_MODULES],
   });
-  const clientBundle = clientResult.code;
+  const clientBundle = clientBuildResult.outputFiles[0].text;
 
   // Extract probes
   const probes = distillProbes(source);

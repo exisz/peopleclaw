@@ -20,21 +20,31 @@ export function extractExports(source: string): ExtractedExports {
   }
   const imports = importLines.join('\n');
 
-  // Extract `export const server = ...` block
-  const serverMatch = source.match(
+  // Extract `export const server = ...` (arrow) or `export [async] function server(...)` (declaration)
+  const serverArrowMatch = source.match(
     /export\s+const\s+server\s*=\s*(async\s*)?\([^)]*\)\s*(?::\s*[^=>{]+)?\s*=>\s*\{/
   );
-  if (!serverMatch) throw new Error('Could not find `export const server` in fullstack source');
+  const serverFnMatch = source.match(
+    /export\s+(async\s+)?function\s+server\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/
+  );
+  const serverMatch = serverArrowMatch ?? serverFnMatch;
+  if (!serverMatch) throw new Error('Could not find `export const server` or `export function server` in fullstack source');
   const serverStart = source.indexOf(serverMatch[0]);
   const serverBody = extractBlock(source, serverStart + serverMatch[0].length - 1);
 
-  // Extract `export const Client = ...` block
-  const clientMatch = source.match(
+  // Extract `export const Client = ...` (arrow) or `export function Client(...)` (declaration)
+  const clientArrowMatch = source.match(
     /export\s+const\s+Client\s*=\s*\([^)]*\)\s*(?::\s*[^=>{]+)?\s*=>\s*[\s\S]*?(?=\{)/
   );
-  if (!clientMatch) throw new Error('Could not find `export const Client` in fullstack source');
+  const clientFnMatch = source.match(
+    /export\s+function\s+Client\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/
+  );
+  const clientMatch = clientArrowMatch ?? clientFnMatch;
+  if (!clientMatch) throw new Error('Could not find `export const Client` or `export function Client` in fullstack source');
   const clientStart = source.indexOf(clientMatch[0]);
-  const clientFnStart = source.indexOf('{', clientStart + clientMatch[0].length - 1);
+  const clientFnStart = clientArrowMatch
+    ? source.indexOf('{', clientStart + clientMatch[0].length - 1)
+    : clientStart + clientMatch[0].length - 1;
   const clientBody = extractBlock(source, clientFnStart);
 
   return {
