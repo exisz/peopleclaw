@@ -22,6 +22,11 @@ export class AppPage {
     await this.page.getByTestId(TID.templateBtn('ecommerce-starter')).click();
   }
 
+  async createFromStarterTemplate() {
+    await this.openTemplatePicker();
+    await this.page.getByTestId(TID.templateBtn('starter-app')).click();
+  }
+
   async openTemplatePicker() {
     await this.page.getByTestId(TID.newAppBtn).click();
   }

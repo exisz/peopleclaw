@@ -2,19 +2,14 @@ import { Router } from 'express';
 import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
-import { ecommerceStarterTemplate, type AppTemplate } from '../seed/templates/ecommerce-starter.js';
-import { genericTableTemplate } from '../seed/templates/generic-table.js';
-import { formStarterTemplate } from '../seed/templates/form-starter.js';
-import { aiFaceSwapTemplate } from '../seed/templates/ai-face-swap.js';
+import { type AppTemplate } from '../seed/templates/ecommerce-starter.js';
+import { starterAppTemplate } from '../seed/templates/starter-app.js';
 import { distillProbes } from '../compiler/distill-probes.js';
 
 export const templatesRouter = Router();
 
 const TEMPLATES: Record<string, AppTemplate> = {
-  'ecommerce-starter': ecommerceStarterTemplate,
-  'generic-table': genericTableTemplate,
-  'form-starter': formStarterTemplate,
-  'ai-face-swap-starter': aiFaceSwapTemplate,
+  'starter-app': starterAppTemplate,
 };
 
 // GET /api/apps/templates — list available templates (no auth needed, static data)
@@ -60,7 +55,7 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
     // Create components
     const componentIds: string[] = [];
     for (const comp of template.components) {
-      // Auto-distill probes for BACKEND/FULLSTACK components (PLANET-1424)
+      // Auto-distill probes for BACKEND/FULLSTACK components
       const probes = (comp.type === 'BACKEND' || comp.type === 'FULLSTACK')
         ? JSON.stringify(distillProbes(comp.code))
         : null;

@@ -1,6 +1,11 @@
 /**
- * Component Detail Panel — meta info + probe timeline + fullstack preview
- * (PLANET-1421)
+ * Component Detail Panel — sub-tabs: flow (probes+run) / preview (client render)
+ * (PLANET-1421, PLANET-1428)
+ *
+ * Behavior:
+ * - BACKEND click → defaults to 'flow' tab (probe timeline + last result + ▶ rerun)
+ * - FRONTEND click → defaults to 'preview' tab (renders client export; skips server)
+ * - FULLSTACK click → defaults to 'flow' tab (has both)
  */
 import { useEffect, useRef, useState } from 'react';
 import type { RunState, ProbeStep } from './useComponentRun';
@@ -17,9 +22,20 @@ interface Props {
   component: Component;
   runState: RunState;
   onRun: () => void;
+  defaultTab?: 'flow' | 'preview';
 }
 
-export default function ComponentDetail({ component, runState, onRun }: Props) {
+export default function ComponentDetail({ component, runState, onRun, defaultTab }: Props) {
+  const [subTab, setSubTab] = useState<'flow' | 'preview'>(defaultTab ?? 'flow');
+
+  // Sync when component changes (user clicks different node)
+  useEffect(() => {
+    if (defaultTab) setSubTab(defaultTab);
+  }, [component.id, defaultTab]);
+
+  const hasFlow = component.type === 'BACKEND' || component.type === 'FULLSTACK';
+  const hasPreview = component.type === 'FRONTEND' || component.type === 'FULLSTACK';
+
   return (
     <div className="p-4 overflow-auto h-full space-y-4">
       {/* Meta */}
@@ -31,48 +47,68 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
           <span className="text-muted-foreground">Runtime</span><span>{component.runtime ?? '-'}</span>
           <span className="text-muted-foreground">ID</span><span className="font-mono truncate">{component.id}</span>
         </div>
-        <button disabled className="mt-2 text-xs px-2 py-1 rounded border border-border text-muted-foreground opacity-50 cursor-not-allowed">
-          编辑代码
-        </button>
       </section>
 
-      {/* Run button */}
-      {component.type !== 'FRONTEND' && (
-        <button
-          data-testid="detail-run-btn"
-          onClick={onRun}
-          disabled={runState.status === 'running'}
-          className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {runState.status === 'running' ? '运行中...' : '▶ Run'}
-        </button>
+      {/* Sub-tabs */}
+      {(hasFlow || hasPreview) && (
+        <div className="flex gap-1 text-xs border-b border-border pb-1">
+          {hasFlow && (
+            <button
+              data-testid="detail-sub-tab-flow"
+              onClick={() => setSubTab('flow')}
+              className={`px-2 py-1 rounded-t ${subTab === 'flow' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            >流程图</button>
+          )}
+          {hasPreview && (
+            <button
+              data-testid="detail-sub-tab-preview"
+              onClick={() => setSubTab('preview')}
+              className={`px-2 py-1 rounded-t ${subTab === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            >预览</button>
+          )}
+        </div>
       )}
 
-      {/* Probe Timeline */}
-      <section>
-        <h3 className="font-medium text-sm mb-2">探针 Timeline</h3>
-        <ProbeTimeline probes={runState.probes} status={runState.status} componentId={component.id} />
-      </section>
+      {/* Flow sub-tab content */}
+      {subTab === 'flow' && hasFlow && (
+        <>
+          {/* Run button */}
+          <button
+            data-testid="detail-run-btn"
+            onClick={onRun}
+            disabled={runState.status === 'running'}
+            className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {runState.status === 'running' ? '运行中...' : '▶ Run'}
+          </button>
 
-      {/* Result / Error */}
-      {runState.error && (
-        <section className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-2">
-          <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">{runState.error}</p>
-        </section>
-      )}
-      {runState.result !== null && runState.result !== undefined && (
-        <section>
-          <details className="text-xs">
-            <summary className="cursor-pointer font-medium text-sm mb-1">上次结果</summary>
-            <pre data-testid="detail-result-json" className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
-              {JSON.stringify(runState.result, null, 2)}
-            </pre>
-          </details>
-        </section>
+          {/* Probe Timeline */}
+          <section>
+            <h3 className="font-medium text-sm mb-2">探针 Timeline</h3>
+            <ProbeTimeline probes={runState.probes} status={runState.status} componentId={component.id} />
+          </section>
+
+          {/* Result / Error */}
+          {runState.error && (
+            <section className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-2">
+              <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">{runState.error}</p>
+            </section>
+          )}
+          {runState.result !== null && runState.result !== undefined && (
+            <section>
+              <details className="text-xs">
+                <summary className="cursor-pointer font-medium text-sm mb-1">上次结果</summary>
+                <pre data-testid="detail-result-json" className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
+                  {JSON.stringify(runState.result, null, 2)}
+                </pre>
+              </details>
+            </section>
+          )}
+        </>
       )}
 
-      {/* Fullstack Preview */}
-      {component.type === 'FULLSTACK' && (
+      {/* Preview sub-tab content */}
+      {subTab === 'preview' && hasPreview && (
         <section>
           <h3 className="font-medium text-sm mb-2">预览</h3>
           <FullstackPreview componentId={component.id} status={runState.status} />
@@ -85,7 +121,6 @@ export default function ComponentDetail({ component, runState, onRun }: Props) {
 function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; status: string; componentId: string }) {
   const [expectedProbes, setExpectedProbes] = useState<string[]>([]);
 
-  // Fetch expected probes from component.probes field when not yet run (PLANET-1424)
   useEffect(() => {
     if (status === 'idle' && probes.length === 0) {
       apiFetch(`/api/components/${componentId}`)
@@ -119,17 +154,6 @@ function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; s
     return <p className="text-xs text-muted-foreground">{status === 'running' ? '等待探针...' : '尚未运行'}</p>;
   }
 
-  // Group enter/exit pairs
-  const steps: { node: string; duration_ms?: number; phase: 'enter' | 'exit' }[] = [];
-  for (const p of probes) {
-    if (p.phase === 'exit') {
-      steps.push({ node: p.node, duration_ms: p.duration_ms, phase: 'exit' });
-    } else if (p.phase === 'enter' && !steps.find(s => s.node === p.node)) {
-      steps.push({ node: p.node, phase: 'enter' });
-    }
-  }
-
-  // Merge: prefer exit (has duration)
   const merged = new Map<string, { node: string; duration_ms?: number; done: boolean }>();
   for (const p of probes) {
     if (p.phase === 'exit') {
@@ -166,7 +190,6 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
     setLoading(true);
     setCompileError(null);
     try {
-      // Compile first
       const compileRes = await apiFetch(`/api/components/${componentId}/compile`, { method: 'POST' });
       if (!compileRes.ok) {
         const err = await compileRes.json().catch(() => ({ error: 'Compile failed' }));
@@ -175,7 +198,6 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         return;
       }
 
-      // Dynamic import client bundle
       const url = `/api/components/${componentId}/client.js?t=${Date.now()}`;
       const mod = await import(/* @vite-ignore */ url);
       const Client = mod.default ?? mod.Client;
@@ -185,7 +207,6 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         return;
       }
 
-      // Mount React component
       if (containerRef.current) {
         const ReactDOM = await import('react-dom/client');
         const React = await import('react');
@@ -204,11 +225,11 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
   };
 
   useEffect(() => {
-    // Auto-load when status becomes done or on first render if already done
-    if (status === 'done' && !mounted) {
+    // Auto-load preview when entering preview tab
+    if (!mounted && !loading) {
       loadPreview();
     }
-  }, [status]);
+  }, [componentId]);
 
   return (
     <div>

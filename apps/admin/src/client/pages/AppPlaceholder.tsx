@@ -198,6 +198,7 @@ function CanvasPane() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'flow' | 'detail'>('flow');
   const [selectedNode, setSelectedNode] = useState<Component | null>(null);
+  const [detailTab, setDetailTab] = useState<'flow' | 'preview'>('flow');
   const { getState, runComponent, runs } = useComponentRun();
 
   // Load apps
@@ -261,13 +262,19 @@ function CanvasPane() {
     } satisfies ComponentNodeData,
   })), [components, runs]);
 
-  const edges: Edge[] = useMemo(() => connections.map(conn => ({
-    id: conn.id,
-    source: conn.fromComponentId,
-    target: conn.toComponentId,
-    label: conn.type ?? '',
-    animated: true,
-  })), [connections]);
+  const edges: Edge[] = useMemo(() => connections.map(conn => {
+    // PLANET-1428: TRIGGER edges animate only when target is running
+    const targetState = getState(conn.toComponentId);
+    const isTriggered = conn.type === 'TRIGGER' && targetState.status === 'running';
+    return {
+      id: conn.id,
+      source: conn.fromComponentId,
+      target: conn.toComponentId,
+      label: conn.type ?? '',
+      animated: isTriggered,
+      style: conn.type === 'TRIGGER' ? { stroke: isTriggered ? '#f59e0b' : '#94a3b8' } : undefined,
+    };
+  }), [connections, runs]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -350,7 +357,12 @@ function CanvasPane() {
               nodeTypes={nodeTypes}
               onNodeClick={(_e, node) => {
                 const comp = components.find(c => c.id === node.id);
-                if (comp) { setSelectedNode(comp); setActiveTab('detail'); }
+                if (comp) {
+                  setSelectedNode(comp);
+                  setActiveTab('detail');
+                  // PLANET-1428: set default detail sub-tab based on type
+                  setDetailTab(comp.type === 'FRONTEND' ? 'preview' : 'flow');
+                }
               }}
               fitView
             >
@@ -364,6 +376,7 @@ function CanvasPane() {
               component={selectedNode}
               runState={getState(selectedNode.id)}
               onRun={() => runComponent(selectedNode.id)}
+              defaultTab={detailTab}
             />
           ) : (
             <div className="p-4">

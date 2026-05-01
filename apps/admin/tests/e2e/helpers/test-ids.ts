@@ -34,6 +34,8 @@ export const TID = {
   // Detail panel
   detailMetaName: 'detail-meta-name',
   detailRunBtn: 'detail-run-btn',
+  detailSubTabFlow: 'detail-sub-tab-flow',
+  detailSubTabPreview: 'detail-sub-tab-preview',
   detailProbeStep: (nodeName: string) => `detail-probe-step-${nodeName}`,
   detailProbeExpected: (nodeName: string) => `detail-probe-expected-${nodeName}`,
   detailResultJson: 'detail-result-json',
