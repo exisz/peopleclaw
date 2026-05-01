@@ -13,10 +13,12 @@ import type { AppTemplate } from './ecommerce-starter.js';
 
 const FRONTEND_CODE = `import { useState } from 'react';
 
-export function Client({ onSubmit }: { onSubmit?: (data: any) => void }) {
+export function Client({ onSubmit }: { onSubmit?: (data: any) => Promise<any> | void }) {
   const [file, setFile] = useState<string | null>(null);
   const [targetFace, setTargetFace] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = (e: any) => {
     const f = e.target.files?.[0];
@@ -26,14 +28,28 @@ export function Client({ onSubmit }: { onSubmit?: (data: any) => void }) {
     reader.readAsDataURL(f);
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (!file) return;
-    if (onSubmit) onSubmit({ imageUrl: file, targetFace });
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = onSubmit ? await onSubmit({ imageUrl: file, targetFace }) : null;
+      if (res) setResult(res);
+    } catch (err: any) {
+      setError(err.message ?? '处理失败');
+    }
+    setLoading(false);
   };
 
-  if (submitted) return <p style={{ color: 'green' }}>✅ 已提交，等待后端处理...</p>;
+  if (result) return (
+    <div style={{ padding: '1rem', fontFamily: 'system-ui' }}>
+      <h2>🎭 处理完成</h2>
+      {result.swappedUrl && <img src={result.swappedUrl} alt="swapped" data-testid="face-swap-result" style={{ width: 240, borderRadius: 8, marginTop: '0.5rem' }} />}
+      <p style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.5rem' }}>provider: {result.provider ?? 'unknown'}</p>
+      <button onClick={() => { setResult(null); setFile(null); }} style={{ marginTop: '0.5rem', padding: '0.25rem 0.75rem', border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}>重新开始</button>
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} style={{ padding: '1rem', fontFamily: 'system-ui', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 360 }}>
@@ -49,13 +65,14 @@ export function Client({ onSubmit }: { onSubmit?: (data: any) => void }) {
         onChange={e => setTargetFace(e.target.value)}
         style={{ padding: '0.5rem', border: '1px solid #ccc', borderRadius: 4 }}
       />
+      {error && <p style={{ color: 'red', fontSize: '0.875rem' }}>{error}</p>}
       <button
         type="submit"
-        disabled={!file}
+        disabled={!file || loading}
         data-testid="face-swap-submit-btn"
-        style={{ padding: '0.5rem 1rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', opacity: file ? 1 : 0.5 }}
+        style={{ padding: '0.5rem 1rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', opacity: file && !loading ? 1 : 0.5 }}
       >
-        提交换脸
+        {loading ? '处理中...' : '提交换脸'}
       </button>
     </form>
   );

@@ -14,3 +14,21 @@ componentDetailRouter.get('/components/:id', async (req, res) => {
     res.status(500).json({ error: err.message ?? 'Failed to fetch component' });
   }
 });
+
+// GET /api/components/:id/connections — get component connections (PLANET-1440)
+componentDetailRouter.get('/components/:id/connections', async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const connections = await prisma.componentConnection.findMany({
+      where: {
+        OR: [
+          { fromComponentId: req.params.id },
+          { toComponentId: req.params.id },
+        ],
+      },
+    });
+    res.json({ connections });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? 'Failed to fetch connections' });
+  }
+});
