@@ -20,8 +20,13 @@ export interface CompileResult {
 export function compileFullstack(source: string, componentId: string): CompileResult {
   const { serverBody, clientBody, imports } = extractExports(source);
 
-  // Build server handler
-  const serverSource = `${imports}\n${serverBody}\nexport default server;`;
+  // Build server handler — strip SDK import, inline peopleClaw stub
+  const sdkStub = `
+const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] enter ' + node + ' @ ' + Date.now()); } };
+`;
+  // Remove import lines that reference @peopleclaw/sdk
+  const serverImports = imports.split('\n').filter(l => !l.includes('@peopleclaw/sdk')).join('\n');
+  const serverSource = `${serverImports}\n${sdkStub}\n${serverBody}\nexport default server;`;
   const serverResult = transformSync(serverSource, {
     loader: 'tsx',
     format: 'esm',
