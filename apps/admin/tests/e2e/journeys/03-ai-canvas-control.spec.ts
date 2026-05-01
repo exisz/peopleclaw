@@ -15,7 +15,7 @@ import { TID } from '../helpers/test-ids';
 test.describe('TC3: AI tool-calling 改画布', () => {
   test('chat 指令操纵画布 — apply template + delete component', async ({ authedPage }) => {
     const page = authedPage;
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     // Collect console errors
     const consoleErrors: string[] = [];
@@ -31,19 +31,18 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     // Dialog handler must be registered BEFORE the click that triggers prompt()
     page.once('dialog', d => d.accept('AI Canvas Test App'));
     await page.getByTestId(TID.templateBlankBtn).click();
-    await page.waitForTimeout(1000);
 
-    // Wait for empty canvas (new blank app should have 0 nodes)
-    await expect(page.getByTestId(TID.canvasPane)).toBeVisible({ timeout: 10_000 });
+    // Wait for empty canvas (new blank app selected, 0 nodes)
+    await expect(page.getByTestId(TID.canvasPane)).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('[data-testid^="canvas-node-"]')).toHaveCount(0, { timeout: 10_000 });
 
     // Step 1: Chat "apply starter-app template"
-    await page.getByTestId(TID.chatInput).fill('apply starter-app template');
+    await page.getByTestId(TID.chatInput).fill('套用 starter-app 模板（只调一次 apply_template）');
     await page.getByTestId(TID.chatSendBtn).click();
 
-    // Wait for 3 nodes to appear on canvas (tool-call triggers canvas update)
+    // Wait for 3 nodes to appear on canvas (LLM tool-call + SSE)
     const nodeLocator = page.locator('[data-testid^="canvas-node-"]');
-    await expect(nodeLocator).toHaveCount(3, { timeout: 30_000 });
+    await expect(nodeLocator).toHaveCount(3, { timeout: 90_000 });
 
     // Verify tool-call card is shown (not raw JSON)
     const assistantMsg = page.locator('[data-testid^="chat-message-"]').last();
@@ -55,7 +54,7 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     await page.getByTestId(TID.chatSendBtn).click();
 
     // Wait for canvas to have 2 nodes
-    await expect(nodeLocator).toHaveCount(2, { timeout: 30_000 });
+    await expect(nodeLocator).toHaveCount(2, { timeout: 90_000 });
 
     // No console errors
     expect(consoleErrors).toHaveLength(0);
