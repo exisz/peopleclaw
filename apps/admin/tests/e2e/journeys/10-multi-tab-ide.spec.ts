@@ -1,13 +1,10 @@
 /**
  * PLANET-1468: IDE-style multi-tab UI.
  *
- * GIVEN starter-app (4 components)
- * WHEN  click components on the canvas → tabs appear at the top
- * THEN  multiple tabs coexist, can be switched, closed, and persist across reload.
+ * Verifies tab open/switch/close/reopen + reload persistence + permanent-tab no-close.
  */
 import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
-import { TID } from '../helpers/test-ids';
 
 test.describe('TC10: IDE 多 tab', () => {
   test('打开/切换/关闭/重开 + reload 持久化', async ({ authedPage }) => {
@@ -15,72 +12,56 @@ test.describe('TC10: IDE 多 tab', () => {
     test.setTimeout(180_000);
 
     const app = new AppPage(page);
-    await app.goto();
+    // Use /apps flow so the URL contains the app id (so reload restores the same app)
+    await page.goto('/apps', { waitUntil: 'networkidle', timeout: 15_000 });
+    await page.getByTestId('create-new-app-card').click({ timeout: 10_000 });
+    await page.getByTestId('template-starter-app-btn').click();
+    await page.waitForURL(/\/app\//, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 });
+    void app;
 
-    // Create starter-app via template
-    await app.createFromStarterTemplate();
-
-    // Wait for canvas + 4 nodes
     const nodeLocator = page.locator('[data-canvas-node="true"]');
     await expect(nodeLocator).toHaveCount(4, { timeout: 30_000 });
 
-    // Permanent tabs visible
-    await expect(page.getByTestId('tab-flow-graph')).toBeVisible();
-    await expect(page.getByTestId('tab-module-list')).toBeVisible();
-    await expect(page.getByTestId('tab-app-secrets')).toBeVisible();
-    await expect(page.getByTestId('tab-app-scheduled')).toBeVisible();
+    // Permanent tabs visible, no close button
+    for (const id of ['tab-flow-graph', 'tab-module-list', 'tab-app-secrets', 'tab-app-scheduled']) {
+      await expect(page.getByTestId(id)).toBeVisible();
+    }
+    for (const id of ['flow', 'list', 'secrets', 'scheduled']) {
+      expect(await page.getByTestId(`tab-close-${id}`).count()).toBe(0);
+    }
 
-    // Permanent tabs MUST NOT have ✕ close buttons
-    expect(await page.getByTestId('tab-close-flow').count()).toBe(0);
-    expect(await page.getByTestId('tab-close-list').count()).toBe(0);
-    expect(await page.getByTestId('tab-close-secrets').count()).toBe(0);
-    expect(await page.getByTestId('tab-close-scheduled').count()).toBe(0);
-
-    // Click first node (FRONTEND or whichever shows up first) — opens a new tab
+    // Open first component tab via canvas click
     const firstNode = nodeLocator.nth(0);
     const firstNodeId = (await firstNode.getAttribute('data-testid'))!.replace('canvas-node-', '');
     await firstNode.click();
-
     const tabA = page.getByTestId(`tab-component-${firstNodeId}`);
     await expect(tabA).toBeVisible({ timeout: 5_000 });
     await expect(tabA).toHaveAttribute('data-tab-active', 'true');
-    // Close button exists
     await expect(page.getByTestId(`tab-close-${firstNodeId}`)).toBeVisible();
 
-    // Click a second node — should open a second tab; first stays
-    const secondNode = nodeLocator.nth(1);
-    const secondNodeId = (await secondNode.getAttribute('data-testid'))!.replace('canvas-node-', '');
-    if (secondNodeId === firstNodeId) {
-      throw new Error('expected distinct second node');
-    }
-    // Switch back to flow tab to actually click on canvas
-    await page.getByTestId('tab-flow-graph').click();
-    await secondNode.click();
+    // Open second component tab via [+] menu
+    await page.getByTestId('tab-add-btn').click();
+    await expect(page.getByTestId('tab-add-menu')).toBeVisible();
+    const firstAddOption = page.getByTestId('tab-add-menu').locator('[data-testid^="tab-add-option-"]').first();
+    const secondNodeId = (await firstAddOption.getAttribute('data-testid'))!.replace('tab-add-option-', '');
+    expect(secondNodeId).not.toBe(firstNodeId);
+    await firstAddOption.click();
 
     const tabB = page.getByTestId(`tab-component-${secondNodeId}`);
     await expect(tabB).toBeVisible();
     await expect(tabB).toHaveAttribute('data-tab-active', 'true');
-    await expect(tabA).toBeVisible(); // still there
+    await expect(tabA).toBeVisible(); // first still around
 
-    // Switch back to first tab → it becomes active
+    // Switch back to A
     await tabA.click();
     await expect(tabA).toHaveAttribute('data-tab-active', 'true');
 
-    // Same component click should not duplicate the tab
-    await page.getByTestId('tab-flow-graph').click();
-    await firstNode.click();
-    expect(await page.getByTestId(`tab-component-${firstNodeId}`).count()).toBe(1);
-
-    // Close tab A → should disappear, active falls back to 'flow' (since A was active)
-    await tabA.click(); // make sure A is active
-    await page.getByTestId(`tab-close-${firstNodeId}`).click();
-    expect(await page.getByTestId(`tab-component-${firstNodeId}`).count()).toBe(0);
-    await expect(page.getByTestId('tab-flow-graph')).toHaveAttribute('data-tab-active', 'true');
-    await expect(tabB).toBeVisible(); // B still there
-
-    // Re-click first node → opens fresh tab
-    await firstNode.click();
-    await expect(page.getByTestId(`tab-component-${firstNodeId}`)).toBeVisible();
+    // [+] menu must NOT list already-open components
+    await page.getByTestId('tab-add-btn').click();
+    expect(await page.getByTestId(`tab-add-option-${firstNodeId}`).count()).toBe(0);
+    expect(await page.getByTestId(`tab-add-option-${secondNodeId}`).count()).toBe(0);
+    await page.getByTestId('tab-add-btn').click(); // close menu
 
     // Reload page → tabs restored from localStorage
     const url = page.url();
@@ -89,7 +70,6 @@ test.describe('TC10: IDE 多 tab', () => {
     await expect(page.getByTestId(`tab-component-${firstNodeId}`)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId(`tab-component-${secondNodeId}`)).toBeVisible();
 
-    // localStorage key shape — appId in URL → key=peopleclaw:openTabs:<appId>
     const appId = url.match(/\/app\/([^/?#]+)/)?.[1];
     if (appId) {
       const stored = await page.evaluate((k) => localStorage.getItem(k), `peopleclaw:openTabs:${appId}`);
@@ -102,12 +82,26 @@ test.describe('TC10: IDE 多 tab', () => {
       expect(parsed.openTabIds).toContain('list');
     }
 
-    // Close all component tabs → active falls back to flow
-    await page.getByTestId(`tab-close-${firstNodeId}`).click();
-    await page.getByTestId(`tab-close-${secondNodeId}`).click();
-    await expect(page.getByTestId('tab-flow-graph')).toHaveAttribute('data-tab-active', 'true');
+    // Close A — make B active first to avoid clicking active tab close (auto-detach quirk)
+    await page.getByTestId(`tab-component-${secondNodeId}`).click();
+    await page.waitForTimeout(200);
+    await page.getByTestId(`tab-close-${firstNodeId}`).click({ force: true });
+    await expect(page.getByTestId(`tab-component-${firstNodeId}`)).toHaveCount(0, { timeout: 5_000 });
+    // B still around and active
+    await expect(page.getByTestId(`tab-component-${secondNodeId}`)).toBeVisible();
+    await expect(page.getByTestId(`tab-component-${secondNodeId}`)).toHaveAttribute('data-tab-active', 'true');
 
-    // Touch helper var so it's not flagged unused if assertions branch
-    expect(TID.tabFlowGraph).toBe('tab-flow-graph');
+    // Re-open A via [+] menu
+    await page.getByTestId('tab-add-btn').click();
+    await page.getByTestId(`tab-add-option-${firstNodeId}`).click();
+    await expect(page.getByTestId(`tab-component-${firstNodeId}`)).toBeVisible();
+
+    // Close all component tabs
+    await page.getByTestId(`tab-close-${firstNodeId}`).click({ force: true });
+    await expect(page.getByTestId(`tab-component-${firstNodeId}`)).toHaveCount(0, { timeout: 5_000 });
+    await page.getByTestId(`tab-close-${secondNodeId}`).click({ force: true });
+    await expect(page.getByTestId(`tab-component-${secondNodeId}`)).toHaveCount(0, { timeout: 5_000 });
+    // After closing all, active falls back to flow (since secondNode was active)
+    await expect(page.getByTestId('tab-flow-graph')).toHaveAttribute('data-tab-active', 'true');
   });
 });

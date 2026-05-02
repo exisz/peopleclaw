@@ -656,7 +656,7 @@ function ModuleListPanel({
         className="text-xs text-muted-foreground mb-2"
         type="button"
       >
-        模块列表 ({components.length})
+        全部模块 ({components.length})
       </button>
       {components.length === 0 ? (
         <p className="text-xs text-muted-foreground py-2">无组件</p>
