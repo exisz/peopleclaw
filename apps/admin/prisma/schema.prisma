@@ -104,6 +104,7 @@ model Component {
   canvasY      Int              @default(0)
   icon         String?
   compiledArtifacts String?
+  isExported   Boolean          @default(false)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   app          App              @relation(fields: [appId], references: [id], onDelete: Cascade)

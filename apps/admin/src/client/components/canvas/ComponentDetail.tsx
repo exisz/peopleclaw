@@ -7,13 +7,57 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { RunState, ProbeStep } from './useComponentRun';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, apiClient } from '../../lib/api';
 
 interface Component {
   id: string;
   name: string;
   type: string;
   runtime?: string;
+  isExported?: boolean;
+}
+
+// PLANET-1459: Export toggle — lets a component be invoked from other Apps via ctx.callApp
+function ExportToggle({ component }: { component: Component }) {
+  const [exported, setExported] = useState(!!component.isExported);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => { setExported(!!component.isExported); }, [component.id, component.isExported]);
+
+  async function toggle() {
+    setBusy(true);
+    setErr(null);
+    const next = !exported;
+    try {
+      await apiClient.patch(`/api/components/${component.id}/export`, { isExported: next });
+      setExported(next);
+    } catch (e: any) {
+      setErr(e?.message ?? 'failed to update');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 p-3 border border-border rounded" data-testid="component-export-toggle">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={exported}
+          onChange={toggle}
+          disabled={busy}
+          data-testid="component-export-checkbox"
+          className="checkbox checkbox-sm"
+        />
+        <span className="text-sm font-medium">🔗 公开此组件 (允许其他 App 调用)</span>
+      </label>
+      <p className="text-xs text-muted-foreground mt-1">
+        开启后同 tenant 的其他 App 可通过 <code className="bg-muted px-1 rounded">ctx.callApp(appId, '{component.id}', input)</code> 调用.
+      </p>
+      {err && <p className="text-xs text-error mt-1">{err}</p>}
+    </div>
+  );
 }
 
 type SubTab = 'run' | 'code' | 'flow';
@@ -79,6 +123,7 @@ export default function ComponentDetail({ component, runState, onRun, defaultTab
               <span className="text-muted-foreground">Runtime</span><span>{component.runtime ?? '-'}</span>
               <span className="text-muted-foreground">ID</span><span className="font-mono truncate">{component.id}</span>
             </div>
+            <ExportToggle component={component} />
           </section>
         )}
 
@@ -117,8 +162,7 @@ export default function ComponentDetail({ component, runState, onRun, defaultTab
   );
 }
 
-function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; status: string; componentId: string }) {
-  const [expectedProbes, setExpectedProbes] = useState<string[]>([]);
+function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; status: string; componentId: string }) {  const [expectedProbes, setExpectedProbes] = useState<string[]>([]);
 
   useEffect(() => {
     if (status === 'idle' && probes.length === 0) {
