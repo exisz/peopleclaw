@@ -276,8 +276,14 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
 
   // Load tabs from localStorage when app changes
   const lsKey = selectedAppId ? `peopleclaw:openTabs:${selectedAppId}` : null;
+  const lastLoadedLsKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!lsKey) return;
+    // Guard: only reload tabs when lsKey actually transitioned to a NEW value.
+    // Without this guard, React StrictMode double-invoke or any spurious effect re-run
+    // could clobber freshly opened component tabs (PLANET-1468 race fix).
+    if (lastLoadedLsKeyRef.current === lsKey) return;
+    lastLoadedLsKeyRef.current = lsKey;
     try {
       const raw = localStorage.getItem(lsKey);
       if (raw) {
