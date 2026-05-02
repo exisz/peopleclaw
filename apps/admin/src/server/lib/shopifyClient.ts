@@ -1,52 +1,18 @@
-import { getPrisma } from './prisma.js';
-
-interface ShopifyConfig {
-  shop_domain?: string;
-  admin_token?: string;
-}
+/**
+ * Lightweight Shopify Admin API fetcher (PLANET-1461).
+ *
+ * Originally this file also exposed `resolveShopifyCreds` which mounted creds
+ * from the Connection table into the component sandbox. That special path was
+ * removed under PLANET-1463 — Shopify is now a regular App-level connector
+ * driven by App.secrets, identical to any third-party API. The only remaining
+ * caller is the tenant-facing connection-test endpoint, which still needs a
+ * tiny REST helper to ping `shop.json` during setup.
+ */
 
 export interface ShopifyCreds {
   shop: string;
   token: string;
   source: string;
-}
-
-function normalizeShopDomain(s: string): string {
-  let v = s.trim();
-  if (!v) return v;
-  if (!v.includes('.')) v = `${v}.myshopify.com`;
-  return v;
-}
-
-export async function resolveShopifyCreds(tenantId: string): Promise<ShopifyCreds | null> {
-  const prisma = getPrisma();
-  if (tenantId) {
-    const conn = await prisma.connection.findUnique({
-      where: { tenantId_type: { tenantId, type: 'shopify' } },
-    });
-    if (conn?.enabled) {
-      try {
-        const cfg = JSON.parse(conn.config) as ShopifyConfig;
-        if (cfg.shop_domain && cfg.admin_token) {
-          return {
-            shop: normalizeShopDomain(cfg.shop_domain),
-            token: cfg.admin_token,
-            source: 'connection',
-          };
-        }
-      } catch {/* fall through */}
-    }
-  }
-  if (process.env.NODE_ENV !== 'production'
-    && process.env.SHOPIFY_DEV_SHOP
-    && process.env.SHOPIFY_DEV_ADMIN_TOKEN) {
-    return {
-      shop: normalizeShopDomain(process.env.SHOPIFY_DEV_SHOP),
-      token: process.env.SHOPIFY_DEV_ADMIN_TOKEN,
-      source: 'env-fallback',
-    };
-  }
-  return null;
 }
 
 export async function shopifyFetch(

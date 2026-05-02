@@ -6,7 +6,11 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 import { getPrisma } from '../lib/prisma.js';
 import { type AppTemplate } from '../seed/templates/ecommerce-starter.js';
-import { starterAppTemplate } from '../seed/templates/starter-app.js';
+import {
+  starterAppTemplate,
+  STARTER_APP_CONNECTOR_NAME,
+  STARTER_APP_FULLSTACK_NAME,
+} from '../seed/templates/starter-app.js';
 import { distillProbes } from '../compiler/distill-probes.js';
 
 export const chatRouter = Router();
@@ -168,8 +172,13 @@ chatRouter.post('/chat', requireAuth, requireTenant, async (req, res) => {
         }
 
         const componentIds: string[] = [];
-        for (const comp of template.components) {
-          const probes = (comp.type === 'BACKEND' || comp.type === 'FULLSTACK')
+        // Two-pass to allow FULLSTACK to reference the connector id (PLANET-1461).
+        const componentIdByIndex: (string | null)[] = template.components.map(() => null);
+        let connectorId: string | null = null;
+        for (let i = 0; i < template.components.length; i++) {
+          const comp = template.components[i]!;
+          if (comp.type === 'FULLSTACK') continue;
+          const probes = comp.type === 'BACKEND'
             ? JSON.stringify(distillProbes(comp.code))
             : null;
           const created = await prisma.component.create({
@@ -183,24 +192,58 @@ chatRouter.post('/chat', requireAuth, requireTenant, async (req, res) => {
               canvasX: comp.canvasX,
               canvasY: comp.canvasY,
               probes,
+              isExported: Boolean((comp as any).isExported),
             },
           });
-          componentIds.push(created.id);
+          componentIdByIndex[i] = created.id;
+          if (comp.name === STARTER_APP_CONNECTOR_NAME) connectorId = created.id;
           sendEvent('component_added', { id: created.id, name: created.name, type: created.type, canvasX: created.canvasX, canvasY: created.canvasY });
+        }
+        for (let i = 0; i < template.components.length; i++) {
+          const comp = template.components[i]!;
+          if (comp.type !== 'FULLSTACK') continue;
+          let code = comp.code;
+          if (templateId === 'starter-app' && comp.name === STARTER_APP_FULLSTACK_NAME) {
+            code = code
+              .replace(/__APP_ID__/g, appId)
+              .replace(/__CONNECTOR_ID__/g, connectorId ?? '');
+          }
+          const probes = JSON.stringify(distillProbes(code));
+          const created = await prisma.component.create({
+            data: {
+              appId,
+              name: comp.name,
+              type: comp.type as any,
+              runtime: 'PEOPLECLAW_CLOUD',
+              icon: comp.icon,
+              code,
+              canvasX: comp.canvasX,
+              canvasY: comp.canvasY,
+              probes,
+              isExported: Boolean((comp as any).isExported),
+            },
+          });
+          componentIdByIndex[i] = created.id;
+          sendEvent('component_added', { id: created.id, name: created.name, type: created.type, canvasX: created.canvasX, canvasY: created.canvasY });
+        }
+        for (const id of componentIdByIndex) {
+          if (id) componentIds.push(id);
         }
 
         const connections: string[] = [];
         for (const conn of template.connections) {
+          const fromId = componentIdByIndex[conn.fromIndex]!;
+          const toId = componentIdByIndex[conn.toIndex]!;
           const created = await prisma.componentConnection.create({
             data: {
               appId,
-              fromComponentId: componentIds[conn.fromIndex]!,
-              toComponentId: componentIds[conn.toIndex]!,
+              fromComponentId: fromId,
+              toComponentId: toId,
               type: conn.type as any,
             },
           });
           connections.push(created.id);
-          sendEvent('connection_added', { id: created.id, fromComponentId: componentIds[conn.fromIndex]!, toComponentId: componentIds[conn.toIndex]!, type: conn.type });
+          sendEvent('connection_added', { id: created.id, fromComponentId: fromId, toComponentId: toId, type: conn.type });
         }
 
         return { applied: templateId, components: componentIds.length, connections: connections.length };

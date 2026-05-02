@@ -16,7 +16,6 @@
  */
 import { transformSync } from 'esbuild';
 import type { SSEProbe } from '@peopleclaw/sdk/sse';
-import { resolveShopifyCreds } from './shopifyClient.js';
 import { decryptSecretsBag } from './secretCrypto.js';
 import type { Component, App } from '../generated/prisma/index.js';
 
@@ -90,19 +89,10 @@ function compileComponent(component: ComponentWithApp): CompiledRun {
   return { factory };
 }
 
-async function buildEnvBag(tenantId: string): Promise<Record<string, string>> {
-  const envBag: Record<string, string> = {};
-  const shopifyCreds = await resolveShopifyCreds(tenantId);
-  if (shopifyCreds) {
-    envBag.SHOPIFY_DEV_SHOP = shopifyCreds.shop;
-    envBag.SHOPIFY_DEV_ADMIN_TOKEN = shopifyCreds.token;
-  } else {
-    const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
-    for (const key of ENV_WHITELIST) {
-      if (process.env[key]) envBag[key] = process.env[key]!.replace(/\\n$/, '');
-    }
-  }
-  return envBag;
+async function buildEnvBag(_tenantId: string): Promise<Record<string, string>> {
+  // PLANET-1463: core no longer injects Shopify-specific env. ctx.env stays
+  // available as a generic injection point for future use; today it's empty.
+  return {};
 }
 
 function buildSecretsBag(component: ComponentWithApp): Record<string, string> {

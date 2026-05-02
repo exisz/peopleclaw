@@ -3,8 +3,13 @@ import { getPrisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 import { type AppTemplate } from '../seed/templates/ecommerce-starter.js';
-import { starterAppTemplate } from '../seed/templates/starter-app.js';
+import {
+  starterAppTemplate,
+  STARTER_APP_CONNECTOR_NAME,
+  STARTER_APP_FULLSTACK_NAME,
+} from '../seed/templates/starter-app.js';
 import { distillProbes } from '../compiler/distill-probes.js';
+import { encryptSecretsBag } from '../lib/secretCrypto.js';
 
 export const templatesRouter = Router();
 
@@ -41,22 +46,40 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
 
   const prisma = getPrisma();
 
+  // PLANET-1461: optionally auto-seed dev Shopify creds for the starter app so
+  // the demo works out-of-the-box. Skip silently if env not set (e.g. local).
+  const devShop = process.env.SHOPIFY_DEV_SHOP?.replace(/\\n$/, '').trim();
+  const devToken = process.env.SHOPIFY_DEV_ADMIN_TOKEN?.replace(/\\n$/, '').trim();
+
   // Create app + components + connections in a transaction
   const app = await prisma.$transaction(async (tx) => {
+    const seededSecrets =
+      template.id === 'starter-app' && devShop && devToken
+        ? encryptSecretsBag({
+            SHOPIFY_SHOP_DOMAIN: devShop,
+            SHOPIFY_ADMIN_TOKEN: devToken,
+          })
+        : null;
+
     const newApp = await tx.app.create({
       data: {
         tenantId: r.tenant.id,
         name: template.name,
         description: template.description,
         updatedAt: new Date(),
+        secrets: seededSecrets,
       },
     });
 
-    // Create components
-    const componentIds: string[] = [];
-    for (const comp of template.components) {
-      // Auto-distill probes for BACKEND/FULLSTACK components
-      const probes = (comp.type === 'BACKEND' || comp.type === 'FULLSTACK')
+    // First pass: create non-FULLSTACK components so we know the connector id
+    // before we patch the FULLSTACK code.
+    const componentIds: (string | null)[] = template.components.map(() => null);
+    let connectorId: string | null = null;
+
+    for (let i = 0; i < template.components.length; i++) {
+      const comp = template.components[i]!;
+      if (comp.type === 'FULLSTACK') continue; // defer
+      const probes = comp.type === 'BACKEND'
         ? JSON.stringify(distillProbes(comp.code))
         : null;
       const created = await tx.component.create({
@@ -70,9 +93,42 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
           canvasX: comp.canvasX,
           canvasY: comp.canvasY,
           probes,
+          isExported: Boolean(comp.isExported),
         },
       });
-      componentIds.push(created.id);
+      componentIds[i] = created.id;
+      if (comp.name === STARTER_APP_CONNECTOR_NAME) connectorId = created.id;
+    }
+
+    // Second pass: FULLSTACK components, patching __APP_ID__/__CONNECTOR_ID__.
+    for (let i = 0; i < template.components.length; i++) {
+      const comp = template.components[i]!;
+      if (comp.type !== 'FULLSTACK') continue;
+      let code = comp.code;
+      if (
+        template.id === 'starter-app'
+        && comp.name === STARTER_APP_FULLSTACK_NAME
+      ) {
+        code = code
+          .replace(/__APP_ID__/g, newApp.id)
+          .replace(/__CONNECTOR_ID__/g, connectorId ?? '');
+      }
+      const probes = JSON.stringify(distillProbes(code));
+      const created = await tx.component.create({
+        data: {
+          appId: newApp.id,
+          name: comp.name,
+          type: comp.type,
+          runtime: 'PEOPLECLAW_CLOUD',
+          icon: comp.icon,
+          code,
+          canvasX: comp.canvasX,
+          canvasY: comp.canvasY,
+          probes,
+          isExported: Boolean(comp.isExported),
+        },
+      });
+      componentIds[i] = created.id;
     }
 
     // Create connections

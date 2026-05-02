@@ -1,13 +1,20 @@
 /**
- * Starter App — 起步示例 (PLANET-1428)
+ * Starter App — 起步示例 (PLANET-1428, refactored under PLANET-1461)
  *
- * 3 components on one canvas:
- * 1. FRONTEND 'AI 换脸-表单' (file + fields + submit)
- * 2. BACKEND 'AI 换脸-处理' (3-step probe stub)
- * 3. FULLSTACK 'Shopify 商品列表' (server fetch + client grid)
+ * 4 components on one canvas:
+ * 1. FRONTEND  'AI 换脸-表单' (file + fields + submit)
+ * 2. BACKEND   'AI 换脸-处理' (3-step probe stub)
+ * 3. BACKEND   'Shopify Connector' (PLANET-1461 — exported, secret-driven)
+ * 4. FULLSTACK 'Shopify 商品列表' (server fetch via ctx.callApp + client grid / setup CTA)
  *
- * Connection: 1→2 TRIGGER (submit triggers backend)
- * No connection to/from 3 — independent on same canvas.
+ * Connections: 1→2 TRIGGER, 4→3 DATA_FLOW (商品列表 calls connector at runtime).
+ *
+ * The Shopify connector reads SHOPIFY_ADMIN_TOKEN + SHOPIFY_SHOP_DOMAIN from
+ * App.secrets (PLANET-1458). When secrets are missing it returns
+ * { ok: false, error: 'NEED_SETUP' } so the FULLSTACK component can render a
+ * setup CTA instead of the broken empty state (PLANET-1465).
+ *
+ * Core no longer has any Shopify-specific code path (PLANET-1463).
  */
 import type { AppTemplate } from './ecommerce-starter.js';
 
@@ -105,36 +112,156 @@ export default async function run(input: any, ctx: any) {
 }
 `;
 
-const FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
+/**
+ * Shopify Connector (BACKEND, isExported=true) — PLANET-1461.
+ * Reads creds from ctx.secrets, talks to Shopify Admin REST.
+ * input.method: 'listProducts' | 'createProduct' | 'updateProduct'
+ */
+const SHOPIFY_CONNECTOR_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
+
+function normalizeShopDomain(s: string): string {
+  let v = (s || '').trim();
+  if (!v) return v;
+  if (!v.includes('.')) v = v + '.myshopify.com';
+  return v;
+}
+
+async function shopifyFetch(shop: string, token: string, path: string, init: any = {}) {
+  const url = 'https://' + shop + '/admin/api/2024-10/' + String(path).replace(/^\\//, '');
+  const headers = Object.assign(
+    { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token },
+    init.headers || {},
+  );
+  return fetch(url, Object.assign({}, init, { headers }));
+}
+
+export default async function run(input: any, ctx: any) {
+  await peopleClaw.nodeEntry('readSecrets');
+  const rawShop = ctx?.secrets?.SHOPIFY_SHOP_DOMAIN || '';
+  const token = ctx?.secrets?.SHOPIFY_ADMIN_TOKEN || '';
+  if (!rawShop || !token) {
+    return {
+      ok: false,
+      error: 'NEED_SETUP',
+      message: '请去 🔐 Secrets tab 配置 SHOPIFY_ADMIN_TOKEN 和 SHOPIFY_SHOP_DOMAIN',
+    };
+  }
+  const shop = normalizeShopDomain(rawShop);
+  const method = (input && input.method) || 'listProducts';
+
+  await peopleClaw.nodeEntry('callShopify');
+  try {
+    if (method === 'listProducts') {
+      const limit = (input && input.limit) || 20;
+      const r = await shopifyFetch(shop, token, 'products.json?limit=' + limit);
+      if (!r.ok) {
+        const body = await r.text();
+        return { ok: false, error: 'SHOPIFY_HTTP_' + r.status, message: body.slice(0, 300) };
+      }
+      const data: any = await r.json();
+      const products = (data.products || []).map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        image: (p.images && p.images[0] && p.images[0].src) || null,
+        price: (p.variants && p.variants[0] && p.variants[0].price) || '0.00',
+      }));
+      await peopleClaw.nodeEntry('done');
+      return { ok: true, products };
+    }
+    if (method === 'createProduct') {
+      const product = (input && input.product) || {};
+      const r = await shopifyFetch(shop, token, 'products.json', {
+        method: 'POST',
+        body: JSON.stringify({ product }),
+      });
+      const data: any = await r.json();
+      await peopleClaw.nodeEntry('done');
+      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
+    }
+    if (method === 'updateProduct') {
+      const id = input && input.id;
+      const product = (input && input.product) || {};
+      if (!id) return { ok: false, error: 'BAD_INPUT', message: 'id required for updateProduct' };
+      const r = await shopifyFetch(shop, token, 'products/' + id + '.json', {
+        method: 'PUT',
+        body: JSON.stringify({ product: Object.assign({ id }, product) }),
+      });
+      const data: any = await r.json();
+      await peopleClaw.nodeEntry('done');
+      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
+    }
+    return { ok: false, error: 'UNKNOWN_METHOD', message: 'method must be listProducts|createProduct|updateProduct' };
+  } catch (e: any) {
+    return { ok: false, error: 'EXCEPTION', message: e?.message || String(e) };
+  }
+}
+`;
+
+/**
+ * 'Shopify 商品列表' — FULLSTACK. Calls the Shopify Connector via ctx.callApp
+ * and renders either a product grid (ok:true) or a setup CTA (NEED_SETUP).
+ *
+ * The connector component id is injected via ctx.input.connectorComponentId so
+ * we don't have to hardcode anything. The starter-app provisioner stamps both
+ * IDs into a per-template `code` placeholder __CONNECTOR_ID__ at create time.
+ */
+const FULLSTACK_CODE_TEMPLATE = `import { peopleClaw } from '@peopleclaw/sdk';
 
 // --- SERVER ---
 export async function server(ctx: any) {
-  await peopleClaw.nodeEntry('fetchProducts');
-  const shop = ctx.env.SHOPIFY_DEV_SHOP;
-  const token = ctx.env.SHOPIFY_DEV_ADMIN_TOKEN;
-  const url = \`https://\${shop}/admin/api/2024-10/products.json?limit=20\`;
-  const res = await fetch(url, {
-    headers: { 'X-Shopify-Access-Token': token },
-  });
-  const data = await res.json();
+  await peopleClaw.nodeEntry('callConnector');
+  const appId = ctx?.app?.id || ctx?.appId || '__APP_ID__';
+  const connectorId = '__CONNECTOR_ID__';
+  let result: any = null;
+  try {
+    if (typeof ctx.callApp === 'function') {
+      result = await ctx.callApp(appId, connectorId, { method: 'listProducts' });
+    } else {
+      result = { ok: false, error: 'NO_CALLAPP', message: 'ctx.callApp not available' };
+    }
+  } catch (e: any) {
+    result = { ok: false, error: 'CALLAPP_THREW', message: e?.message || String(e) };
+  }
   await peopleClaw.nodeEntry('done');
-  return {
-    products: (data.products ?? []).map((p: any) => ({
-      id: p.id,
-      title: p.title,
-      image: p.images?.[0]?.src ?? null,
-      price: p.variants?.[0]?.price ?? '0.00',
-    })),
-  };
+  if (result && result.ok) {
+    return { ok: true, products: result.products || [] };
+  }
+  return { ok: false, error: result?.error || 'UNKNOWN', message: result?.message || '' };
 }
 
 // --- CLIENT ---
 export function Client({ data }: { data: any }) {
-  const products = data?.products ?? [];
+  if (data && data.ok === false) {
+    const isSetup = data.error === 'NEED_SETUP';
+    return (
+      <div data-testid="shopify-list-state" data-state={isSetup ? 'need-setup' : 'error'} style={{ padding: '1.5rem', fontFamily: 'system-ui', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+        <h2>🛍️ Shopify 商品列表</h2>
+        {isSetup ? (
+          <>
+            <p style={{ color: '#444', margin: '1rem 0' }}>需要先配置 Shopify 凭证才能拉取商品。</p>
+            <button
+              data-testid="shopify-setup-cta"
+              onClick={() => { try { window.parent.postMessage({ type: 'open-secrets-tab' }, '*'); } catch {} }}
+              style={{ padding: '0.75rem 1.5rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 6, fontSize: '1rem', cursor: 'pointer' }}
+            >
+              🔐 配置 Shopify (去 Secrets tab)
+            </button>
+            <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '1rem' }}>
+              在 🔐 Secrets tab 配置 <code>SHOPIFY_ADMIN_TOKEN</code> 和 <code>SHOPIFY_SHOP_DOMAIN</code>，刷新即可。
+            </p>
+          </>
+        ) : (
+          <p style={{ color: '#c00', margin: '1rem 0' }}>调用 Shopify 失败：{data.error}{data.message ? ' — ' + data.message : ''}</p>
+        )}
+      </div>
+    );
+  }
+
+  const products = (data && data.products) || [];
   return (
-    <div style={{ padding: '1rem', fontFamily: 'system-ui' }}>
+    <div data-testid="shopify-list-state" data-state="ok" style={{ padding: '1rem', fontFamily: 'system-ui' }}>
       <h2>🛍️ Shopify 商品列表</h2>
-      {products.length === 0 && <p>无商品数据</p>}
+      {products.length === 0 && <p>商品列表为空</p>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
         {products.map((p: any) => (
           <div key={p.id} style={{ border: '1px solid #eee', borderRadius: 8, padding: '0.75rem', textAlign: 'center' }}>
@@ -149,10 +276,15 @@ export function Client({ data }: { data: any }) {
 }
 `;
 
+export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
+export const STARTER_APP_CONNECTOR_NAME = 'Shopify Connector';
+export const STARTER_APP_FULLSTACK_NAME = 'Shopify 商品列表';
+
 export const starterAppTemplate: AppTemplate = {
   id: 'starter-app',
   name: '起步示例 App',
-  description: 'AI 换脸 (表单→后端) + Shopify 商品列表，3 组件演示',
+  description:
+    'AI 换脸 (表单→后端) + Shopify Connector (secret-driven, exported) + Shopify 商品列表 (调 connector)',
   components: [
     {
       name: 'AI 换脸-表单',
@@ -171,15 +303,27 @@ export const starterAppTemplate: AppTemplate = {
       canvasY: 200,
     },
     {
-      name: 'Shopify 商品列表',
+      name: STARTER_APP_CONNECTOR_NAME,
+      type: 'BACKEND',
+      icon: '🔌',
+      code: SHOPIFY_CONNECTOR_CODE,
+      canvasX: 100,
+      canvasY: 450,
+      isExported: true,
+    },
+    {
+      name: STARTER_APP_FULLSTACK_NAME,
       type: 'FULLSTACK',
       icon: '🛍️',
-      code: FULLSTACK_CODE,
-      canvasX: 350,
+      // Will be patched at create time with real {appId, connectorId}.
+      code: FULLSTACK_CODE_TEMPLATE,
+      canvasX: 450,
       canvasY: 450,
     },
   ],
   connections: [
     { fromIndex: 0, toIndex: 1, type: 'TRIGGER' },
+    // FULLSTACK (3) DATA_FLOW from connector (2) — visualizes the runtime call.
+    { fromIndex: 2, toIndex: 3, type: 'DATA_FLOW' },
   ],
 };

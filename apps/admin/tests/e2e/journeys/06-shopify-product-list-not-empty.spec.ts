@@ -1,17 +1,17 @@
 /**
- * PLANET-1464: Shopify 商品列表 — prod 回归锁定
+ * PLANET-1464 → updated under PLANET-1461: Shopify 商品列表 — prod 回归锁定
  *
- * 陛下在 prod 看到「🛍️ Shopify 商品列表 / 无商品数据」。
- * 这不应该发生，因为 PLANET-1441 fixed Shopify creds 从 Connection 表读 +
- * 12h cron 自动 refresh shopify token。
+ * 旧逻辑 (1464): 期望 ≥1 商品 card，否则 fail.
+ * 新逻辑 (1461): 老的 'Shopify 商品列表' FULLSTACK 现在通过 ctx.callApp 调
+ *   App-scoped Shopify Connector 组件。Connector 从 App.secrets 读 creds:
+ *     - 拿到真 creds → render 商品 grid (≥1 product)
+ *     - 缺 creds → render setup CTA (data-testid="shopify-setup-cta")
+ *   两种状态都视为 PASS。出现 raw 「无商品数据」 (旧空状态文本) 才视为 FAIL,
+ *   因为那意味着回归到 PLANET-1465 的破败默认。
  *
- * GIVEN 已登录 (e2e mint), 创建 starter-app
- * WHEN  在画布上找到 FULLSTACK + name 含「Shopify 商品列表」的组件，进入 preview
- * THEN  preview 区域含 ≥1 个商品 card，且不含「无商品数据」
- *
- * 失败时打印诊断:
- *   - tenant 的 shopify Connection.config (admin_token 是否在)
- *   - 该组件 server 代码 inline (用于排查)
+ * 当 SHOPIFY_DEV_SHOP / SHOPIFY_DEV_ADMIN_TOKEN 在 prod env 设置时,
+ * starter-app provisioner (templates.ts) 会自动把它们写进新 App 的 secrets,
+ * 因此 prod 上应该看到商品 grid; setup CTA 只会在 env 缺失时出现.
  */
 import { test, expect } from '../fixtures/auth';
 import { AppPage } from '../pages/AppPage';
@@ -19,8 +19,8 @@ import { TID } from '../helpers/test-ids';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://app.peopleclaw.rollersoft.com.au';
 
-test.describe('TC6.1 (PLANET-1464): Shopify 商品列表 不能是空状态', () => {
-  test('FULLSTACK 「Shopify 商品列表」 preview 显示 ≥ 1 商品 (不是「无商品数据」)', async ({ authedPage }) => {
+test.describe('TC6.1 (PLANET-1464 → PLANET-1461): Shopify 商品列表 不能是旧的「无商品数据」空状态', () => {
+  test('FULLSTACK 「Shopify 商品列表」 显示商品 grid 或 setup CTA (绝不是 raw 「无商品数据」)', async ({ authedPage }) => {
     const page = authedPage;
     test.setTimeout(180_000);
 
@@ -65,16 +65,17 @@ test.describe('TC6.1 (PLANET-1464): Shopify 商品列表 不能是空状态', ()
     const preview = page.getByTestId(TID.detailFullstackPreview);
     await expect(preview, 'fullstack preview container should mount').toBeVisible({ timeout: 10_000 });
 
-    // Wait until either products render OR empty-state appears (whichever first)
-    // so we can assert deterministically.
+    // Wait until either products render OR setup CTA appears OR old empty-state text
+    // appears (which we then fail on) — whichever first.
     await page.waitForFunction(
       () => {
         const root = document.querySelector('[data-testid="detail-fullstack-preview"]');
         if (!root) return false;
         const text = root.textContent || '';
-        const hasEmpty = text.includes('无商品数据');
+        const hasOldEmpty = text.includes('无商品数据');
         const hasImg = !!root.querySelector('img');
-        return hasEmpty || hasImg;
+        const hasSetupCta = !!root.querySelector('[data-testid="shopify-setup-cta"]');
+        return hasOldEmpty || hasImg || hasSetupCta;
       },
       { timeout: 30_000 },
     ).catch(() => { /* fall through to assertions */ });
@@ -137,16 +138,23 @@ test.describe('TC6.1 (PLANET-1464): Shopify 商品列表 不能是空状态', ()
 
     // ---- assertions ----
     const previewText = await preview.innerText().catch(() => '');
-    const hasEmptyText = previewText.includes('无商品数据');
+    const hasOldEmptyText = previewText.includes('无商品数据');
     const productImg = preview.locator('div[style*="border"] img').first();
     const hasProductImg = await productImg.isVisible({ timeout: 1_000 }).catch(() => false);
+    const setupCta = preview.getByTestId('shopify-setup-cta');
+    const hasSetupCta = await setupCta.isVisible({ timeout: 1_000 }).catch(() => false);
 
-    if (hasEmptyText || !hasProductImg) {
-      await dumpDiagnostics(hasEmptyText ? '「无商品数据」 EMPTY STATE RENDERED' : 'NO PRODUCT IMG FOUND');
+    if (hasOldEmptyText) {
+      await dumpDiagnostics('OLD 「无商品数据」 EMPTY STATE RENDERED — regression to PLANET-1465');
+    } else if (!hasProductImg && !hasSetupCta) {
+      await dumpDiagnostics('NEITHER PRODUCT GRID NOR SETUP CTA — unexpected state');
     }
 
-    // Hard assertions — the test FAILS if either is true:
-    expect(hasEmptyText, 'preview must NOT contain 「无商品数据」 empty-state text').toBe(false);
-    await expect(productImg, 'preview must show ≥1 product card with <img>').toBeVisible({ timeout: 5_000 });
+    // Hard assertions:
+    expect(hasOldEmptyText, 'preview must NOT contain raw 「无商品数据」 (PLANET-1465 regression)').toBe(false);
+    expect(
+      hasProductImg || hasSetupCta,
+      'preview must show either product grid OR setup CTA (PLANET-1461)',
+    ).toBe(true);
   });
 });

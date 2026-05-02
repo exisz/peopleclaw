@@ -14,6 +14,8 @@ export interface TemplateComponent {
   code: string;
   canvasX: number;
   canvasY: number;
+  /** PLANET-1461: when true, component is callable via ctx.callApp from sibling components. */
+  isExported?: boolean;
 }
 
 export interface TemplateConnection {
