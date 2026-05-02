@@ -90,8 +90,10 @@ test.describe('PLANET-1460: scheduled tasks', () => {
       method: 'POST',
       headers: { Authorization: `Bearer ${CRON_SECRET}`, 'Content-Type': 'application/json' },
     });
-    expect(dispatch1.status, await dispatch1.text().catch(() => '')).toBe(200);
-    const d1 = await dispatch1.clone().json().catch(() => ({}));
+    const dispatch1Text = await dispatch1.text();
+    expect(dispatch1.status, dispatch1Text).toBe(200);
+    let d1: any = {};
+    try { d1 = JSON.parse(dispatch1Text); } catch {}
     expect(d1.ran).toBeGreaterThanOrEqual(1);
 
     // Dispatch unauthorized
