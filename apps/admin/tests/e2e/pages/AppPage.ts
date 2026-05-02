@@ -37,7 +37,9 @@ export class AppPage {
   }
 
   async openModuleList() {
-    await this.page.getByTestId(TID.moduleListDrawerToggle).click();
+    // PLANET-1468: Module list is now a top-level tab; the count is in the tab label.
+    // Just hover/no-op — the assertion checks the tab label text which is always visible.
+    return;
   }
 
   async expectModuleStatus(componentId: string, status: string) {

@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import ComponentNode, { type ComponentNodeData } from '../components/canvas/ComponentNode';
-import ComponentDetail from '../components/canvas/ComponentDetail';
+import ComponentTabContent from '../components/canvas/ComponentTabContent';
 import { AppSecretsPanel } from '../components/AppSecretsPanel';
 import { AppScheduledTasksPanel } from '../components/AppScheduledTasksPanel';
 import { useComponentRun } from '../components/canvas/useComponentRun';
@@ -241,6 +241,23 @@ function ChatPane({ appId, onCanvasChange }: { appId: string | null; onCanvasCha
 // ─── Canvas Pane ─────────────────────────────────────────────────
 const nodeTypes = { component: ComponentNode };
 
+const PERMANENT_TAB_IDS = ['flow', 'list', 'secrets', 'scheduled'] as const;
+type PermanentTabId = typeof PERMANENT_TAB_IDS[number];
+function isPermanentTab(id: string): id is PermanentTabId {
+  return (PERMANENT_TAB_IDS as readonly string[]).includes(id);
+}
+
+const PERMANENT_TAB_LABELS: Record<PermanentTabId, { label: string; icon: string; testId: string }> = {
+  flow: { label: '模块流程图', icon: '📊', testId: 'tab-flow-graph' },
+  list: { label: '模块列表', icon: '📋', testId: 'tab-module-list' },
+  secrets: { label: 'Secrets', icon: '🔐', testId: 'tab-app-secrets' },
+  scheduled: { label: '定时任务', icon: '⏰', testId: 'tab-app-scheduled' },
+};
+
+function componentIcon(type: string): string {
+  return type === 'BACKEND' ? '⚙️' : type === 'FULLSTACK' ? '🔗' : '🎨';
+}
+
 function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?: string; onAppSelected?: (id: string | null) => void; refreshKey?: number }) {
   // PLANET-1442: When route provides an app id, lock to that app (no switcher)
   const isLocked = !!initialAppId;
@@ -248,11 +265,64 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   const [selectedAppId, setSelectedAppId] = useState<string | null>(initialAppId ?? null);
   const [components, setComponents] = useState<Component[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'flow' | 'detail' | 'secrets' | 'scheduled'>('flow');
-  const [selectedNode, setSelectedNode] = useState<Component | null>(null);
   const [detailTab, setDetailTab] = useState<'flow' | 'preview'>('preview');
   const { getState, runComponent, runs } = useComponentRun();
+
+  // PLANET-1468: IDE-style multi-tab state
+  const [openTabIds, setOpenTabIds] = useState<string[]>(['flow', 'list', 'secrets', 'scheduled']);
+  const [activeTabId, setActiveTabId] = useState<string>('flow');
+  const [showAddTabMenu, setShowAddTabMenu] = useState(false);
+  const dragSrcRef = useRef<string | null>(null);
+
+  // Load tabs from localStorage when app changes
+  const lsKey = selectedAppId ? `peopleclaw:openTabs:${selectedAppId}` : null;
+  useEffect(() => {
+    if (!lsKey) return;
+    try {
+      const raw = localStorage.getItem(lsKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.openTabIds)) {
+          // Always ensure permanent tabs are present
+          const ids = [...parsed.openTabIds];
+          for (const p of PERMANENT_TAB_IDS) if (!ids.includes(p)) ids.push(p);
+          setOpenTabIds(ids);
+        }
+        if (typeof parsed.activeTabId === 'string') {
+          setActiveTabId(parsed.activeTabId);
+        }
+      } else {
+        setOpenTabIds(['flow', 'list', 'secrets', 'scheduled']);
+        setActiveTabId('flow');
+      }
+    } catch {
+      setOpenTabIds(['flow', 'list', 'secrets', 'scheduled']);
+      setActiveTabId('flow');
+    }
+  }, [lsKey]);
+
+  // Persist tabs
+  useEffect(() => {
+    if (!lsKey) return;
+    try {
+      localStorage.setItem(lsKey, JSON.stringify({ openTabIds, activeTabId }));
+    } catch {}
+  }, [lsKey, openTabIds, activeTabId]);
+
+  const openComponentTab = useCallback((compId: string, compType?: string) => {
+    setOpenTabIds(prev => prev.includes(compId) ? prev : [...prev, compId]);
+    setActiveTabId(compId);
+    if (compType) setDetailTab(compType === 'FRONTEND' ? 'preview' : 'flow');
+  }, []);
+
+  const closeTab = useCallback((tabId: string) => {
+    if (isPermanentTab(tabId)) return;
+    setOpenTabIds(prev => {
+      const next = prev.filter(id => id !== tabId);
+      return next;
+    });
+    setActiveTabId(prev => prev === tabId ? 'flow' : prev);
+  }, []);
 
   // Load apps
   useEffect(() => {
@@ -362,28 +432,93 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
             {apps.find(a => a.id === selectedAppId)?.name ?? 'App'}
           </span>
         )}
-        {/* Right-side tabs */}
-        <div className="ml-auto flex gap-1 text-xs">
+      </div>
+
+      {/* PLANET-1468: IDE-style top tab bar */}
+      <div data-testid="ide-tab-bar" className="flex items-center border-b border-border bg-muted/30 overflow-x-auto shrink-0">
+        {openTabIds.map(tabId => {
+          const isActive = activeTabId === tabId;
+          const perm = isPermanentTab(tabId) ? PERMANENT_TAB_LABELS[tabId] : null;
+          const comp = !perm ? components.find(c => c.id === tabId) : null;
+          const label = perm
+            ? (tabId === 'list' ? `${perm.label} (${components.length})` : perm.label)
+            : (comp?.name ?? tabId);
+          const icon = perm ? perm.icon : (comp ? componentIcon(comp.type) : '📦');
+          const testId = perm ? perm.testId : `tab-component-${tabId}`;
+          const closeable = !perm;
+          return (
+            <div
+              key={tabId}
+              data-testid={testId}
+              data-tab-id={tabId}
+              data-tab-active={isActive ? 'true' : 'false'}
+              draggable
+              onDragStart={() => { dragSrcRef.current = tabId; }}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.preventDefault();
+                const src = dragSrcRef.current;
+                dragSrcRef.current = null;
+                if (!src || src === tabId) return;
+                setOpenTabIds(prev => {
+                  const arr = [...prev];
+                  const fromIdx = arr.indexOf(src);
+                  const toIdx = arr.indexOf(tabId);
+                  if (fromIdx < 0 || toIdx < 0) return prev;
+                  arr.splice(fromIdx, 1);
+                  arr.splice(toIdx, 0, src);
+                  return arr;
+                });
+              }}
+              onClick={() => setActiveTabId(tabId)}
+              className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs border-r border-border cursor-pointer select-none whitespace-nowrap ${
+                isActive
+                  ? 'bg-background text-foreground border-b-2 border-b-primary'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <span>{icon}</span>
+              <span className="max-w-[160px] truncate">{label}</span>
+              {closeable && (
+                <button
+                  data-testid={`tab-close-${tabId}`}
+                  onClick={e => { e.stopPropagation(); closeTab(tabId); }}
+                  className="ml-1 opacity-50 hover:opacity-100 hover:bg-destructive/10 rounded px-1"
+                  aria-label="close tab"
+                >✕</button>
+              )}
+            </div>
+          );
+        })}
+        <div className="relative">
           <button
-            onClick={() => setActiveTab('flow')}
-            data-testid="tab-flow-graph"
-            className={`px-2 py-1 rounded ${activeTab === 'flow' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-          >模块流程图</button>
-          <button
-            onClick={() => setActiveTab('detail')}
-            data-testid="tab-component-detail"
-            className={`px-2 py-1 rounded ${activeTab === 'detail' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-          >组件详情</button>
-          <button
-            onClick={() => setActiveTab('secrets')}
-            data-testid="tab-app-secrets"
-            className={`px-2 py-1 rounded ${activeTab === 'secrets' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-          >🔐 Secrets</button>
-          <button
-            onClick={() => setActiveTab('scheduled')}
-            data-testid="tab-app-scheduled"
-            className={`px-2 py-1 rounded ${activeTab === 'scheduled' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-          >⏰ 定时任务</button>
+            data-testid="tab-add-btn"
+            onClick={() => setShowAddTabMenu(v => !v)}
+            className="px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+            aria-label="add tab"
+          >+</button>
+          {showAddTabMenu && (
+            <div
+              data-testid="tab-add-menu"
+              className="absolute top-full left-0 mt-1 z-40 bg-popover border border-border rounded shadow-md min-w-[180px] max-h-64 overflow-auto"
+            >
+              {components.filter(c => !openTabIds.includes(c.id)).length === 0 ? (
+                <div className="px-3 py-2 text-xs text-muted-foreground">所有组件都已打开</div>
+              ) : (
+                components.filter(c => !openTabIds.includes(c.id)).map(c => (
+                  <button
+                    key={c.id}
+                    data-testid={`tab-add-option-${c.id}`}
+                    onClick={() => { setShowAddTabMenu(false); openComponentTab(c.id, c.type); }}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted flex items-center gap-2"
+                  >
+                    <span>{componentIcon(c.type)}</span>
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -417,110 +552,159 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
         </div>
       )}
 
-      {/* Main canvas area */}
-      <div data-testid="canvas-pane" className="flex-1 relative">
-        {activeTab === 'secrets' ? (
-          selectedAppId ? (
-            <AppSecretsPanel appId={selectedAppId} />
-          ) : (
-            <div className="p-4"><p className="text-muted-foreground text-sm">先选一个 App</p></div>
-          )
-        ) : activeTab === 'scheduled' ? (
-          selectedAppId ? (
-            <AppScheduledTasksPanel appId={selectedAppId} components={components.map(c => ({ id: c.id, name: c.name, type: c.type }))} />
-          ) : (
-            <div className="p-4"><p className="text-muted-foreground text-sm">先选一个 App</p></div>
-          )
-        ) : activeTab === 'flow' ? (
-          components.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center">
-                <p className="text-2xl mb-2">📦</p>
-                <p>此 App 还没有组件</p>
+      {/* Main canvas area — all tab panels mounted, hidden via display:none for keepalive */}
+      <div data-testid="canvas-pane" className="flex-1 relative overflow-hidden">
+        {openTabIds.map(tabId => {
+          const isActive = activeTabId === tabId;
+          // Permanent tabs always rendered; component tabs only mounted while in openTabIds
+          if (tabId === 'flow') {
+            return (
+              <div key="flow" data-testid="tab-panel-flow" hidden={!isActive} className="h-full w-full">
+                {components.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <div className="text-center">
+                      <p className="text-2xl mb-2">📦</p>
+                      <p>此 App 还没有组件</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodeClick={(_e, node) => {
+                      const comp = components.find(c => c.id === node.id);
+                      if (comp) openComponentTab(comp.id, comp.type);
+                    }}
+                    fitView
+                  >
+                    <Background />
+                    <Controls />
+                  </ReactFlow>
+                )}
               </div>
+            );
+          }
+          if (tabId === 'list') {
+            return (
+              <div key="list" data-testid="tab-panel-list" hidden={!isActive} className="h-full w-full overflow-auto">
+                <ModuleListPanel components={components} getState={getState} onOpenComponent={openComponentTab} />
+              </div>
+            );
+          }
+          if (tabId === 'secrets') {
+            return (
+              <div key="secrets" data-testid="tab-panel-secrets" hidden={!isActive} className="h-full w-full overflow-auto">
+                {selectedAppId ? (
+                  <AppSecretsPanel appId={selectedAppId} />
+                ) : (
+                  <div className="p-4"><p className="text-muted-foreground text-sm">先选一个 App</p></div>
+                )}
+              </div>
+            );
+          }
+          if (tabId === 'scheduled') {
+            return (
+              <div key="scheduled" data-testid="tab-panel-scheduled" hidden={!isActive} className="h-full w-full overflow-auto">
+                {selectedAppId ? (
+                  <AppScheduledTasksPanel appId={selectedAppId} components={components.map(c => ({ id: c.id, name: c.name, type: c.type }))} />
+                ) : (
+                  <div className="p-4"><p className="text-muted-foreground text-sm">先选一个 App</p></div>
+                )}
+              </div>
+            );
+          }
+          // Component tab
+          const comp = components.find(c => c.id === tabId);
+          if (!comp) {
+            return (
+              <div key={tabId} data-testid={`tab-panel-${tabId}`} hidden={!isActive} className="h-full w-full p-4">
+                <p className="text-xs text-muted-foreground">组件已删除或不存在</p>
+              </div>
+            );
+          }
+          return (
+            <div key={tabId} data-testid={`tab-panel-${tabId}`} hidden={!isActive} className="h-full w-full overflow-auto">
+              <ComponentTabContent
+                component={comp}
+                runState={getState(comp.id)}
+                onRun={() => runComponent(comp.id)}
+                defaultTab={detailTab}
+              />
             </div>
-          ) : (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onNodeClick={(_e, node) => {
-                const comp = components.find(c => c.id === node.id);
-                if (comp) {
-                  setSelectedNode(comp);
-                  setActiveTab('detail');
-                  // PLANET-1428: set default detail sub-tab based on type
-                  setDetailTab(comp.type === 'FRONTEND' ? 'preview' : 'flow');
-                }
-              }}
-              fitView
-            >
-              <Background />
-              <Controls />
-            </ReactFlow>
-          )
-        ) : (
-          selectedNode ? (
-            <ComponentDetail
-              component={selectedNode}
-              runState={getState(selectedNode.id)}
-              onRun={() => runComponent(selectedNode.id)}
-              defaultTab={detailTab}
-            />
-          ) : (
-            <div className="p-4">
-              <p className="text-muted-foreground text-sm">点击流程图中的节点查看详情</p>
-            </div>
-          )
-        )}
+          );
+        })}
       </div>
+    </div>
+  );
+}
 
-      {/* Bottom drawer — module list */}
-      <div className="border-t border-border">
-        <button
-          data-testid="module-list-drawer-toggle"
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className="w-full text-xs text-muted-foreground hover:bg-muted px-3 py-1.5 text-left flex items-center gap-1"
-        >
-          <span>{drawerOpen ? '▼' : '▶'}</span>
-          <span>模块列表 ({components.length})</span>
-        </button>
-        {drawerOpen && (
-          <div className="max-h-40 overflow-auto px-3 pb-2">
-            {components.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">无组件</p>
-            ) : (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-muted-foreground border-b">
-                    <th className="text-left py-1">名称</th>
-                    <th className="text-left py-1">类型</th>
-                    <th className="text-left py-1">Runtime</th>
-                    <th className="text-left py-1">状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {components.map(c => {
-                    const st = getState(c.id);
-                    return (
-                      <tr key={c.id} data-testid={`module-list-row-${c.id}`} className="border-b border-border/50">
-                        <td className="py-1">{c.name}</td>
-                        <td className="py-1">{c.type}</td>
-                        <td className="py-1">{c.runtime ?? '-'}</td>
-                        <td className="py-1">
-                          <span data-testid={`module-list-status-${c.id}`} className={st.status === 'running' ? 'text-yellow-600' : st.status === 'done' ? 'text-green-600' : st.status === 'error' ? 'text-red-600' : 'text-muted-foreground'}>
-                            {st.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-      </div>
+// Module list panel — was previously the bottom drawer; now a first-class tab.
+function ModuleListPanel({
+  components,
+  getState,
+  onOpenComponent,
+}: {
+  components: Component[];
+  getState: (id: string) => { status: string };
+  onOpenComponent: (id: string, type?: string) => void;
+}) {
+  return (
+    <div className="p-4">
+      <button
+        data-testid="module-list-drawer-toggle"
+        className="text-xs text-muted-foreground mb-2"
+        type="button"
+      >
+        模块列表 ({components.length})
+      </button>
+      {components.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2">无组件</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-muted-foreground border-b">
+              <th className="text-left py-1">名称</th>
+              <th className="text-left py-1">类型</th>
+              <th className="text-left py-1">Runtime</th>
+              <th className="text-left py-1">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {components.map(c => {
+              const st = getState(c.id);
+              return (
+                <tr
+                  key={c.id}
+                  data-testid={`module-list-row-${c.id}`}
+                  onClick={() => onOpenComponent(c.id, c.type)}
+                  className="border-b border-border/50 hover:bg-muted cursor-pointer"
+                >
+                  <td className="py-1">{c.name}</td>
+                  <td className="py-1">{c.type}</td>
+                  <td className="py-1">{c.runtime ?? '-'}</td>
+                  <td className="py-1">
+                    <span
+                      data-testid={`module-list-status-${c.id}`}
+                      className={
+                        st.status === 'running'
+                          ? 'text-yellow-600'
+                          : st.status === 'done'
+                          ? 'text-green-600'
+                          : st.status === 'error'
+                          ? 'text-red-600'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {st.status}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
