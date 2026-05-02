@@ -26,9 +26,9 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     await page.waitForURL(/\/app\//, { timeout: 15_000 });
     await page.waitForLoadState('networkidle', { timeout: 10_000 });
 
-    // The starter template has exactly 3 components
+    // The starter template has exactly 4 components after PLANET-1461 (added Shopify Connector)
     const nodeLocator = page.locator('[data-canvas-node="true"]');
-    await expect(nodeLocator).toHaveCount(3, { timeout: 30_000 });
+    await expect(nodeLocator).toHaveCount(4, { timeout: 30_000 });
   });
 
   // LLM-dependent: DeepSeek tool-calling unreliable in CI.
@@ -50,11 +50,11 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     await page.getByTestId(TID.chatSendBtn).click();
 
     const nodeLocator = page.locator('[data-canvas-node="true"]');
-    await expect(nodeLocator).toHaveCount(3, { timeout: 90_000 });
+    await expect(nodeLocator).toHaveCount(4, { timeout: 90_000 });
 
     await page.getByTestId(TID.chatInput).fill('再套用一次 starter-app 模板');
     await page.getByTestId(TID.chatSendBtn).click();
     await page.waitForTimeout(15_000);
-    await expect(nodeLocator).toHaveCount(3);
+    await expect(nodeLocator).toHaveCount(4);
   });
 });

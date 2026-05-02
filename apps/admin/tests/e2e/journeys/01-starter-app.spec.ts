@@ -1,5 +1,5 @@
 /**
- * USER STORY: 起步示例 App — 3 组件 + TRIGGER 全流程 (PLANET-1428)
+ * USER STORY: 起步示例 App — 4 组件 + TRIGGER 全流程 (PLANET-1428, +Shopify Connector PLANET-1461)
  *
  * GIVEN 已登录
  * WHEN  选 starter-app 模板
@@ -13,7 +13,7 @@ import { AppPage } from '../pages/AppPage';
 import { TID } from '../helpers/test-ids';
 
 test.describe('TC1: 起步示例 App 全流程', () => {
-  test('创建 starter-app → 验证 3 组件 + TRIGGER → 运行全流程', async ({ authedPage }) => {
+  test('创建 starter-app → 验证 4 组件 + TRIGGER → 运行全流程', async ({ authedPage }) => {
     const page = authedPage;
     test.setTimeout(180_000);
 
@@ -31,9 +31,9 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     await expect(backendNode).toBeVisible({ timeout: 15_000 });
     await expect(fullstackNode).toBeVisible({ timeout: 15_000 });
 
-    // Step 3: 验证模块列表有 3 项
+    // Step 3: 验证模块列表有 4 项 (PLANET-1461 加了 Shopify Connector)
     await app.openModuleList();
-    await expect(page.locator('text=模块列表 (3)')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('text=模块列表 (4)')).toBeVisible({ timeout: 5_000 });
 
     // Step 4: 点 BACKEND → 进入 detail (default flow tab) → Run → 验证探针
     await backendNode.click();
@@ -53,7 +53,8 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     await fullstackNode.click();
     await expect(page.getByTestId(TID.detailSubTabFlow)).toBeVisible({ timeout: 5_000 });
     await page.getByTestId(TID.detailRunBtn).click();
-    await expect(page.getByTestId(TID.detailProbeStep('fetchProducts'))).toBeVisible({ timeout: 45_000 });
+    // PLANET-1461: FULLSTACK now calls connector via ctx.callApp; probe steps changed
+    await expect(page.getByTestId(TID.detailProbeStep('callConnector'))).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTestId(TID.detailProbeStep('done'))).toBeVisible({ timeout: 45_000 });
 
     // Switch to preview tab — container visible
