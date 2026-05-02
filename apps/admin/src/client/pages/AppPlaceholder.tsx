@@ -283,7 +283,6 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
     // Without this guard, React StrictMode double-invoke or any spurious effect re-run
     // could clobber freshly opened component tabs (PLANET-1468 race fix).
     if (lastLoadedLsKeyRef.current === lsKey) return;
-    console.log('[DBG lsKey load effect FIRED]', { lsKey, prev: lastLoadedLsKeyRef.current });
     lastLoadedLsKeyRef.current = lsKey;
     try {
       const raw = localStorage.getItem(lsKey);
@@ -317,8 +316,7 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   }, [lsKey, openTabIds, activeTabId]);
 
   const openComponentTab = useCallback((compId: string, compType?: string) => {
-    console.log('[DBG openComponentTab]', { compId, compType });
-    setOpenTabIds(prev => { console.log('[DBG setOpenTabIds]', prev, '->', prev.includes(compId) ? prev : [...prev, compId]); return prev.includes(compId) ? prev : [...prev, compId]; });
+    setOpenTabIds(prev => prev.includes(compId) ? prev : [...prev, compId]);
     setActiveTabId(compId);
     if (compType) setDetailTab(compType === 'FRONTEND' ? 'preview' : 'flow');
   }, []);
@@ -336,7 +334,10 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   useEffect(() => {
     apiClient.get<{ apps: App[] }>('/api/apps').then(d => {
       setApps(d.apps);
-      if (d.apps.length > 0 && !selectedAppId) setSelectedAppId(d.apps[0].id);
+      // Use functional setState to read fresh selectedAppId, not the stale closure value.
+      // (Bug: empty-deps closure saw selectedAppId=null even after createFromTemplate set it,
+      //  causing selectedAppId to be overridden to apps[0] on slow fetches — PLANET-1468.)
+      setSelectedAppId(prev => prev ?? (d.apps.length > 0 ? d.apps[0].id : null));
     }).catch(() => {});
   }, []);
 
