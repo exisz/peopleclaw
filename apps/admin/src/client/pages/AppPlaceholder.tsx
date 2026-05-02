@@ -283,6 +283,7 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
     // Without this guard, React StrictMode double-invoke or any spurious effect re-run
     // could clobber freshly opened component tabs (PLANET-1468 race fix).
     if (lastLoadedLsKeyRef.current === lsKey) return;
+    console.log('[DBG lsKey load effect FIRED]', { lsKey, prev: lastLoadedLsKeyRef.current });
     lastLoadedLsKeyRef.current = lsKey;
     try {
       const raw = localStorage.getItem(lsKey);
@@ -316,7 +317,8 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   }, [lsKey, openTabIds, activeTabId]);
 
   const openComponentTab = useCallback((compId: string, compType?: string) => {
-    setOpenTabIds(prev => prev.includes(compId) ? prev : [...prev, compId]);
+    console.log('[DBG openComponentTab]', { compId, compType });
+    setOpenTabIds(prev => { console.log('[DBG setOpenTabIds]', prev, '->', prev.includes(compId) ? prev : [...prev, compId]); return prev.includes(compId) ? prev : [...prev, compId]; });
     setActiveTabId(compId);
     if (compType) setDetailTab(compType === 'FRONTEND' ? 'preview' : 'flow');
   }, []);
