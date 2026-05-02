@@ -24,28 +24,17 @@ export class AppPage {
 
   async createFromStarterTemplate() {
     await this.openTemplatePicker();
-    // Capture pre-click selectedAppId to wait for it to actually change to the new one.
-    const preId = await this.page.locator('[data-testid="app-selector"]').inputValue().catch(() => '');
     const tplResp = this.page.waitForResponse(r => r.url().includes('/api/apps/from-template') && r.request().method() === 'POST');
     await this.page.getByTestId(TID.templateBtn('starter-app')).click();
     const resp = await tplResp;
     const body = await resp.json().catch(() => null) as { app?: { id?: string } } | null;
     const newId = body?.app?.id;
     if (newId) {
-      // Wait for the dropdown's selected value to flip to the new app, then for its components to load.
-      await this.page.locator('[data-testid="app-selector"]').filter({ hasText: '' }).first().waitFor({ timeout: 10_000 }).catch(() => {});
-      await this.page.waitForFunction(
-        (id) => (document.querySelector('[data-testid="app-selector"]') as HTMLSelectElement | null)?.value === id,
-        newId,
-        { timeout: 10_000 },
-      );
-    } else if (preId) {
-      // Fallback: wait for selector to change at all.
-      await this.page.waitForFunction(
-        (prev) => (document.querySelector('[data-testid="app-selector"]') as HTMLSelectElement | null)?.value !== prev,
-        preId,
-        { timeout: 10_000 },
-      );
+      // Wait for /api/apps/<newId> to be fetched (this is what populates components for the new app).
+      await this.page.waitForResponse(
+        r => r.url().includes(`/api/apps/${newId}`) && !r.url().endsWith('/secrets') && !r.url().endsWith('/scheduled-tasks') && r.request().method() === 'GET',
+        { timeout: 15_000 },
+      ).catch(() => {});
     }
   }
 
