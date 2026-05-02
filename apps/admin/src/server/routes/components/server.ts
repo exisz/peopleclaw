@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { getPrisma } from '../../lib/prisma.js';
+import { decryptSecretsBag } from '../../lib/secretCrypto.js';
+import { buildCallAppCtx } from '../../lib/callAppCtx.js';
 
 export const componentServerRouter = Router();
 
@@ -7,23 +9,36 @@ export const componentServerRouter = Router();
 componentServerRouter.get('/components/:id/server', async (req, res) => {
   try {
     const prisma = getPrisma();
-    const component = await prisma.component.findUnique({ where: { id: req.params.id } });
+    const component = await prisma.component.findUnique({
+      where: { id: req.params.id },
+      include: { app: true },
+    });
     if (!component) return res.status(404).json({ error: 'Component not found' });
 
-    const artifacts = typeof component.compiledArtifacts === 'string' 
-      ? JSON.parse(component.compiledArtifacts) 
+    const artifacts = typeof component.compiledArtifacts === 'string'
+      ? JSON.parse(component.compiledArtifacts)
       : component.compiledArtifacts as any;
     if (!artifacts?.serverHandler) {
       return res.status(400).json({ error: 'Component not compiled. POST /compile first.' });
     }
 
-    // Env whitelist for fullstack server handlers (PLANET-1422)
-    const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
+    // PLANET-1463: core no longer injects Shopify-specific env. ctx.env stays
+    // available as a generic empty bag for back-compat with old serverHandlers.
     const envBag: Record<string, string> = {};
-    for (const key of ENV_WHITELIST) {
-      if (process.env[key]) envBag[key] = process.env[key]!;
+
+    // PLANET-1458: decrypt App.secrets so server handlers can read ctx.secrets.X
+    let secretsBag: Record<string, string> = {};
+    try {
+      secretsBag = decryptSecretsBag(component.app?.secrets);
+    } catch (err) {
+      console.error('[component/server] failed to decrypt secrets', err);
     }
-    console.log('[component/server] env keys available:', Object.keys(envBag));
+
+    // PLANET-1459/1461: inject callApp so FULLSTACK server() can fan out to
+    // sibling components (e.g. shopify connector) inside the same App.
+    const callApp = component.app
+      ? buildCallAppCtx(component.app.tenantId)
+      : undefined;
 
     // Execute server handler via Function sandbox (data: URL import unreliable on Vercel)
     // Strip import/export statements and run as a function body
@@ -54,8 +69,13 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       return res.status(500).json({ error: 'Compiled server handler is not a function' });
     }
 
-    // Provide ctx with env for server handler
-    const result = await serverFn({ env: envBag });
+    const result = await serverFn({
+      env: envBag,
+      secrets: secretsBag,
+      callApp,
+      app: component.app ? { id: component.app.id, tenantId: component.app.tenantId } : undefined,
+      appId: component.app?.id,
+    });
     res.json(result);
   } catch (err: any) {
     console.error('[component/server] error:', err);
