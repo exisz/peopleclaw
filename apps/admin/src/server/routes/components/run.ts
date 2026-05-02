@@ -4,6 +4,7 @@ import { requireAuth } from '../../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../../middleware/tenant.js';
 import { transformSync } from 'esbuild';
 import { createSSEStream } from '@peopleclaw/sdk/sse';
+import { resolveShopifyCreds } from '../../lib/shopifyClient.js';
 
 export const componentRunRouter = Router();
 
@@ -89,11 +90,19 @@ componentRunRouter.post(
 
     const input = req.body ?? {};
 
-    // Env whitelist — expose approved env vars via ctx.env (PLANET-1422)
-    const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
+    // Env whitelist — expose approved env vars via ctx.env (PLANET-1422, PLANET-1441)
+    // Prefer Connection table (auto-refreshed) over stale env vars
     const envBag: Record<string, string> = {};
-    for (const key of ENV_WHITELIST) {
-      if (process.env[key]) envBag[key] = process.env[key]!;
+    const shopifyCreds = await resolveShopifyCreds(r.tenant.id);
+    if (shopifyCreds) {
+      envBag.SHOPIFY_DEV_SHOP = shopifyCreds.shop;
+      envBag.SHOPIFY_DEV_ADMIN_TOKEN = shopifyCreds.token;
+    } else {
+      // Fallback to process.env for dev
+      const ENV_WHITELIST = ['SHOPIFY_DEV_SHOP', 'SHOPIFY_DEV_ADMIN_TOKEN'];
+      for (const key of ENV_WHITELIST) {
+        if (process.env[key]) envBag[key] = process.env[key]!.replace(/\\n$/, '');
+      }
     }
 
     // Stream the execution via createSSEStream
