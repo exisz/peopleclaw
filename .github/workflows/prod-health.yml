@@ -2,7 +2,7 @@ name: Prod Health
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 10 * * *'  # daily 10:00 UTC (20:00 Sydney) — was */30 (PLANET-spam-fix)
   workflow_dispatch:
 
 concurrency:
