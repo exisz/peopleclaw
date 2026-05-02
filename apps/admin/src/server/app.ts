@@ -12,6 +12,7 @@ import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { appsRouter } from './routes/apps.js';
 import { appSecretsRouter } from './routes/appSecrets.js';
 import { appInvokeRouter } from './routes/appInvoke.js';
+import { scheduledTasksRouter } from './routes/scheduledTasks.js';
 import { chatRouter } from './routes/chat.js';
 import { probeTestRouter } from './routes/probe-test.js';
 import { componentRunRouter } from './routes/components/run.js';
@@ -46,6 +47,7 @@ export function createApp(): Express {
   app.use('/api', appsRouter);
   app.use('/api', appSecretsRouter);
   app.use('/api', appInvokeRouter);
+  app.use('/api', scheduledTasksRouter);
   app.use('/api', chatRouter);
   app.use('/api', probeTestRouter);
   app.use('/api', componentRunRouter);

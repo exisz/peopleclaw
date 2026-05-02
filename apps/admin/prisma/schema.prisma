@@ -87,6 +87,7 @@ model App {
   tenant      Tenant      @relation(fields: [tenantId], references: [id])
   components  Component[]
   connections ComponentConnection[]
+  scheduledTasks ScheduledTask[]
   @@index([tenantId])
 }
 
@@ -110,6 +111,7 @@ model Component {
   app          App              @relation(fields: [appId], references: [id], onDelete: Cascade)
   connectionsFrom ComponentConnection[] @relation("FromComponent")
   connectionsTo   ComponentConnection[] @relation("ToComponent")
+  scheduledTasks  ScheduledTask[]
   @@index([appId])
 }
 
@@ -125,6 +127,36 @@ model ComponentConnection {
   toComponent     Component      @relation("ToComponent", fields: [toComponentId], references: [id], onDelete: Cascade)
   @@index([appId])
   @@unique([fromComponentId, toComponentId, type])
+}
+
+model ScheduledTask {
+  id          String   @id @default(cuid())
+  appId       String
+  componentId String
+  cron        String
+  enabled     Boolean  @default(true)
+  lastRunAt   DateTime?
+  lastStatus  String?
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  app         App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  component   Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  runs        ScheduledRun[]
+  @@index([appId])
+  @@index([componentId])
+}
+
+model ScheduledRun {
+  id              String   @id @default(cuid())
+  scheduledTaskId String
+  startedAt       DateTime @default(now())
+  finishedAt      DateTime?
+  status          String
+  output          String?
+  error           String?
+  task            ScheduledTask @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
+  @@index([scheduledTaskId])
 }
 
 model UsageLog {

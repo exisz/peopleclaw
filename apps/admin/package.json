@@ -45,6 +45,7 @@
     "ai": "^6.0.172",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
     "esbuild": "^0.28.0",
     "express": "^4.21.0",
     "i18next": "^26.0.5",
