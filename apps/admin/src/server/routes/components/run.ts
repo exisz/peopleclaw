@@ -5,6 +5,7 @@ import { requireTenant, type TenantedRequest } from '../../middleware/tenant.js'
 import { transformSync } from 'esbuild';
 import { createSSEStream } from '@peopleclaw/sdk/sse';
 import { resolveShopifyCreds } from '../../lib/shopifyClient.js';
+import { decryptSecretsBag } from '../../lib/secretCrypto.js';
 
 export const componentRunRouter = Router();
 
@@ -21,12 +22,13 @@ componentRunRouter.post(
     const r = req as unknown as TenantedRequest;
     const prisma = getPrisma();
 
-    // Fetch component scoped to tenant
+    // Fetch component scoped to tenant (include parent App for secrets)
     const component = await prisma.component.findFirst({
       where: {
         id: req.params.id,
         app: { tenantId: r.tenant.id },
       },
+      include: { app: true },
     });
 
     if (!component) {
@@ -103,6 +105,15 @@ componentRunRouter.post(
       for (const key of ENV_WHITELIST) {
         if (process.env[key]) envBag[key] = process.env[key]!.replace(/\\n$/, '');
       }
+    }
+
+    // Per-App secrets (PLANET-1458) — decrypt and inject as ctx.secrets
+    let secretsBag: Record<string, string> = {};
+    try {
+      secretsBag = decryptSecretsBag(component.app?.secrets);
+    } catch (err) {
+      // log but don't fail the run — empty secrets is safer than crash
+      console.error('[run] failed to decrypt App secrets', err);
     }
 
     // Stream the execution via createSSEStream
@@ -185,7 +196,7 @@ componentRunRouter.post(
         }
 
         // FULLSTACK server(ctx) takes single ctx arg; default/run take (input, ctx)
-        const ctx = { signal: controller.signal, env: envBag, ...input };
+        const ctx = { signal: controller.signal, env: envBag, secrets: secretsBag, ...input };
         const args = (exports.server === runFn) ? [ctx] : [input, ctx];
 
         // Race against timeout

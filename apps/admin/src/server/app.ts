@@ -10,6 +10,7 @@ import { e2eMintRouter } from './routes/e2e-mint.js';
 import { uploadRouter, uploadThingHandler } from './routes/upload.js';
 import { logtoEmailWebhookRouter } from './routes/logto-email-webhook.js';
 import { appsRouter } from './routes/apps.js';
+import { appSecretsRouter } from './routes/appSecrets.js';
 import { chatRouter } from './routes/chat.js';
 import { probeTestRouter } from './routes/probe-test.js';
 import { componentRunRouter } from './routes/components/run.js';
@@ -42,6 +43,7 @@ export function createApp(): Express {
   app.use('/api', uploadRouter);
   app.use('/api', templatesRouter);
   app.use('/api', appsRouter);
+  app.use('/api', appSecretsRouter);
   app.use('/api', chatRouter);
   app.use('/api', probeTestRouter);
   app.use('/api', componentRunRouter);

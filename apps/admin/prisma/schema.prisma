@@ -81,6 +81,7 @@ model App {
   tenantId    String
   name        String
   description String?
+  secrets     String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   tenant      Tenant      @relation(fields: [tenantId], references: [id])

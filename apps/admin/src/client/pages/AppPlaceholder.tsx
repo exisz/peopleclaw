@@ -13,6 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import ComponentNode, { type ComponentNodeData } from '../components/canvas/ComponentNode';
 import ComponentDetail from '../components/canvas/ComponentDetail';
+import { AppSecretsPanel } from '../components/AppSecretsPanel';
 import { useComponentRun } from '../components/canvas/useComponentRun';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
@@ -247,7 +248,7 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
   const [components, setComponents] = useState<Component[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'flow' | 'detail'>('flow');
+  const [activeTab, setActiveTab] = useState<'flow' | 'detail' | 'secrets'>('flow');
   const [selectedNode, setSelectedNode] = useState<Component | null>(null);
   const [detailTab, setDetailTab] = useState<'flow' | 'preview'>('preview');
   const { getState, runComponent, runs } = useComponentRun();
@@ -372,6 +373,11 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
             data-testid="tab-component-detail"
             className={`px-2 py-1 rounded ${activeTab === 'detail' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
           >组件详情</button>
+          <button
+            onClick={() => setActiveTab('secrets')}
+            data-testid="tab-app-secrets"
+            className={`px-2 py-1 rounded ${activeTab === 'secrets' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >🔐 Secrets</button>
         </div>
       </div>
 
@@ -407,7 +413,13 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
 
       {/* Main canvas area */}
       <div data-testid="canvas-pane" className="flex-1 relative">
-        {activeTab === 'flow' ? (
+        {activeTab === 'secrets' ? (
+          selectedAppId ? (
+            <AppSecretsPanel appId={selectedAppId} />
+          ) : (
+            <div className="p-4"><p className="text-muted-foreground text-sm">先选一个 App</p></div>
+          )
+        ) : activeTab === 'flow' ? (
           components.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center">
