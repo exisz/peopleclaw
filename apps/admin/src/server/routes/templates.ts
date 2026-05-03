@@ -8,6 +8,7 @@ import {
   STARTER_APP_CONNECTOR_NAME,
   STARTER_APP_FULLSTACK_NAME,
 } from '../seed/templates/starter-app.js';
+import { crmAppTemplate } from '../seed/templates/crm-app.js';
 import { distillProbes } from '../compiler/distill-probes.js';
 import { encryptSecretsBag } from '../lib/secretCrypto.js';
 
@@ -15,6 +16,7 @@ export const templatesRouter = Router();
 
 const TEMPLATES: Record<string, AppTemplate> = {
   'starter-app': starterAppTemplate,
+  'crm-app': crmAppTemplate,
 };
 
 // GET /api/apps/templates — list available templates (no auth needed, static data)

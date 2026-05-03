@@ -7,6 +7,7 @@
  */
 import { getPrisma } from './prisma.js';
 import { runComponentSync, type ComponentWithApp } from './componentInvoker.js';
+import { buildAppStoreCtx } from './appStoreCtx.js';
 
 export type CallAppFn = (
   targetAppId: string,
@@ -41,10 +42,11 @@ export function buildCallAppCtx(callerTenantId: string): CallAppFn {
     }
     // Recursive callApp for nested invocations.
     const nestedCallApp = buildCallAppCtx(callerTenantId);
+    const appStore = buildAppStoreCtx(targetApp.id);
     const { result } = await runComponentSync(
       component as ComponentWithApp,
       input ?? {},
-      { extraCtx: { callApp: nestedCallApp, input: input ?? {} } },
+      { extraCtx: { callApp: nestedCallApp, appStore, input: input ?? {} } },
     );
     return result;
   };

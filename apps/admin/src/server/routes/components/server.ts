@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getPrisma } from '../../lib/prisma.js';
 import { decryptSecretsBag } from '../../lib/secretCrypto.js';
 import { buildCallAppCtx } from '../../lib/callAppCtx.js';
+import { buildAppStoreCtx } from '../../lib/appStoreCtx.js';
 
 export const componentServerRouter = Router();
 
@@ -39,6 +40,9 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
     const callApp = component.app
       ? buildCallAppCtx(component.app.tenantId)
       : undefined;
+    const appStore = component.app
+      ? buildAppStoreCtx(component.app.id)
+      : undefined;
 
     // Execute server handler via Function sandbox (data: URL import unreliable on Vercel)
     // Strip import/export statements and run as a function body
@@ -73,6 +77,7 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       env: envBag,
       secrets: secretsBag,
       callApp,
+      appStore,
       app: component.app ? { id: component.app.id, tenantId: component.app.tenantId } : undefined,
       appId: component.app?.id,
     });

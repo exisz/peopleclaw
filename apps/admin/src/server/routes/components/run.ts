@@ -5,6 +5,7 @@ import { requireTenant, type TenantedRequest } from '../../middleware/tenant.js'
 import { createSSEStream } from '@peopleclaw/sdk/sse';
 import { runComponentWithProbe, type ComponentWithApp } from '../../lib/componentInvoker.js';
 import { buildCallAppCtx } from '../../lib/callAppCtx.js';
+import { buildAppStoreCtx } from '../../lib/appStoreCtx.js';
 
 export const componentRunRouter = Router();
 
@@ -44,13 +45,14 @@ componentRunRouter.post(
 
     const input = req.body ?? {};
     const callApp = buildCallAppCtx(r.tenant.id);
+    const appStore = component.app ? buildAppStoreCtx(component.app.id) : undefined;
 
     const sseResponse = createSSEStream(async (probe) => {
       return runComponentWithProbe(
         component as ComponentWithApp,
         input,
         probe,
-        { extraCtx: { callApp, input } },
+        { extraCtx: { callApp, appStore, input } },
       );
     });
 
