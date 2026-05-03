@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "ignoreCommand": "! git diff HEAD~1 --name-only | grep -q '^apps/admin/'",
+  "ignoreCommand": "! git diff HEAD~1 --name-only | grep -qE '^(apps/admin/|package\\.json|pnpm-lock\\.yaml|pnpm-workspace\\.yaml)'",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile=false",
