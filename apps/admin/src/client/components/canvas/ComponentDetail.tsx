@@ -288,6 +288,18 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         return;
       }
 
+      // PLANET-1555: if the component has a server() export, hit
+      // /api/components/:id/server first so Client receives real `data`.
+      // Otherwise FULLSTACK components like Shopify product list always render
+      // the empty fallback because they expect data.products.
+      let serverData: any = null;
+      try {
+        const srvRes = await apiFetch(`/api/components/${componentId}/server`);
+        if (srvRes.ok) {
+          serverData = await srvRes.json().catch(() => null);
+        }
+      } catch {}
+
       // Fetch outgoing TRIGGER connections to wire onSubmit → backend run
       let triggerTargetId: string | null = null;
       try {
@@ -326,7 +338,7 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         containerRef.current.innerHTML = '';
         const root = ReactDOM.createRoot(containerRef.current);
         root.render(React.createElement(Client, {
-          data: null,
+          data: serverData,
           refresh: () => loadPreview(),
           onSubmit,
         }));
