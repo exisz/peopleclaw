@@ -320,15 +320,22 @@ function FullstackPreview({ componentId, componentType, status }: { componentId:
               body: JSON.stringify(data),
             });
             if (!runRes.ok) throw new Error('Backend run failed');
-            // Parse SSE response to extract result
+            // Parse SSE response to extract result.
+            // Wire format (createSSEStream): blocks separated by \n\n,
+            //   event: <name>\ndata: <json>
+            // We want the payload of the `result` event.
             const text = await runRes.text();
-            const lines = text.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const evt = JSON.parse(line.slice(6));
-                  if (evt.type === 'result') return evt.data;
-                } catch {}
+            const blocks = text.split(/\n\n+/);
+            for (const block of blocks) {
+              const lines = block.split('\n');
+              let eventName: string | null = null;
+              let dataStr: string | null = null;
+              for (const line of lines) {
+                if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+                else if (line.startsWith('data: ')) dataStr = line.slice(6);
+              }
+              if (eventName === 'result' && dataStr) {
+                try { return JSON.parse(dataStr); } catch { return null; }
               }
             }
             return null;
