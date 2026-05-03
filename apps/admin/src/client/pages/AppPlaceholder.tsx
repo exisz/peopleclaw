@@ -640,6 +640,7 @@ function CanvasPane({ initialAppId, onAppSelected, refreshKey }: { initialAppId?
                 runState={getState(comp.id)}
                 onRun={() => runComponent(comp.id)}
                 defaultTab={detailTab}
+                isActive={isActive}
               />
             </div>
           );
