@@ -108,7 +108,7 @@ export default function ComponentDetail({ component, runState, onRun, defaultTab
         {/* 运行 tab — fullscreen preview */}
         {subTab === 'run' && (
           <section className="h-full">
-            <FullstackPreview componentId={component.id} status={runState.status} />
+            <FullstackPreview componentId={component.id} componentType={component.type} status={runState.status} />
           </section>
         )}
 
@@ -223,7 +223,7 @@ function ProbeTimeline({ probes, status, componentId }: { probes: ProbeStep[]; s
   );
 }
 
-function FullstackPreview({ componentId, status }: { componentId: string; status: string }) {
+function FullstackPreview({ componentId, componentType, status }: { componentId: string; componentType: string; status: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
@@ -288,17 +288,18 @@ function FullstackPreview({ componentId, status }: { componentId: string; status
         return;
       }
 
-      // PLANET-1555: if the component has a server() export, hit
-      // /api/components/:id/server first so Client receives real `data`.
-      // Otherwise FULLSTACK components like Shopify product list always render
-      // the empty fallback because they expect data.products.
+      // PLANET-1555: if this is a FULLSTACK component, hit /server first so
+      // Client receives real `data`. Skip for FRONTEND — no server handler
+      // and the 400 would show up as a console error (PLANET-1432).
       let serverData: any = null;
-      try {
-        const srvRes = await apiFetch(`/api/components/${componentId}/server`);
-        if (srvRes.ok) {
-          serverData = await srvRes.json().catch(() => null);
-        }
-      } catch {}
+      if (componentType === 'FULLSTACK') {
+        try {
+          const srvRes = await apiFetch(`/api/components/${componentId}/server`);
+          if (srvRes.ok) {
+            serverData = await srvRes.json().catch(() => null);
+          }
+        } catch {}
+      }
 
       // Fetch outgoing TRIGGER connections to wire onSubmit → backend run
       let triggerTargetId: string | null = null;
