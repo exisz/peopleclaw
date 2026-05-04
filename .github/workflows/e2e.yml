@@ -43,18 +43,29 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @peopleclaw/admin exec playwright install --with-deps chromium
 
-      - name: Wait for Vercel deploy
+      - name: Wait for Vercel deploy (SHA gate)
+        # Hard gate: prod /api/health must report build.sha == github.sha (or send matching x-build-sha header).
+        # Polls up to 10 minutes (60 × 10s). FAILS the workflow on timeout — no "running tests anyway".
         run: |
-          echo "Waiting for starter-app template to be available..."
+          set -u
+          EXPECTED_SHA="${{ github.sha }}"
+          echo "Waiting for prod $PLAYWRIGHT_BASE_URL/api/health to report build.sha=$EXPECTED_SHA ..."
           for i in $(seq 1 60); do
-            if curl -s "$PLAYWRIGHT_BASE_URL/api/apps/templates" | grep -q 'starter-app'; then
-              echo "✅ Deploy detected after ${i}0s"
+            # Capture body + header in one shot.
+            HDR_FILE=$(mktemp)
+            BODY=$(curl -s -D "$HDR_FILE" --max-time 8 "$PLAYWRIGHT_BASE_URL/api/health" || true)
+            HDR_SHA=$(awk -F': *' 'tolower($1)=="x-build-sha"{gsub(/\r/,"",$2); print $2}' "$HDR_FILE" | head -1)
+            BODY_SHA=$(printf '%s' "$BODY" | jq -r '.build.sha // empty' 2>/dev/null || true)
+            rm -f "$HDR_FILE"
+            if [ "$BODY_SHA" = "$EXPECTED_SHA" ] || [ "$HDR_SHA" = "$EXPECTED_SHA" ]; then
+              echo "✅ Prod is on $EXPECTED_SHA after $((i*10))s (body=$BODY_SHA header=$HDR_SHA)"
               exit 0
             fi
-            echo "  attempt $i/60 — not ready yet"
+            echo "  attempt $i/60 — prod sha body=${BODY_SHA:-?} header=${HDR_SHA:-?} (want $EXPECTED_SHA)"
             sleep 10
           done
-          echo "⚠️ Timeout waiting for deploy, running tests anyway"
+          echo "::error::Timeout waiting for prod to deploy $EXPECTED_SHA — failing the gate. NOT running tests against stale prod."
+          exit 1
 
       - name: Run e2e tests
         id: tests
@@ -184,31 +195,55 @@ jobs:
       - name: Notify Discord on failure (detailed)
         if: failure()
         env:
-          WEBHOOK_URL: https://linux.queue-musical.ts.net/webhook/hook/peopleclaw-e2e
+          # Direct Discord webhook for #peopleclaw-e2e (channel 1493222389880717513).
+          # We POST with ?thread_id=1499265524851540089 to land in the #peopleclaw第四进化 thread.
+          # webhook-router was bypassed because it parses payloads via source-specific parsers and
+          # cannot pass arbitrary embeds through (router was returning event:unknown for raw embed posts).
+          DISCORD_WEBHOOK: https://discord.com/api/webhooks/1499741777123610716/21KcSTBn4573F96MRjg-kB6wUAOQvedninqz2lMB-zCzyS47OON07S7sh9DyupPZ7yeR
+          THREAD_ID: "1499265524851540089"
+          DASHBOARD: https://exisz.github.io/peopleclaw
+          ACTION_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          SHORT_SHA: ${{ github.sha }}
         run: |
+          set -u
           RESULTS="apps/admin/test-results/results.json"
-          DASHBOARD="https://exisz.github.io/peopleclaw"
 
-          # Build embeds from failed tests
-          EMBEDS="[]"
+          # Build a single summary embed listing failed tests + actionable links.
+          # One embed > many embeds: avoids per-test rate-limit / payload bloat and keeps router-free format simple.
           if [ -f "$RESULTS" ]; then
-            EMBEDS=$(jq -r '[
-              .suites[].suites[]?.specs[]? | select(.ok == false) |
-              {
-                title: ("❌ " + .title),
-                description: (.tests[0].results[0].error.message // "Unknown error" | .[0:200]),
-                color: 16711680,
-                image: { url: ("'"$DASHBOARD"'/test-results/" + (.tests[0].results[0].attachments[]? | select(.name == "screenshot") | .path // "" | split("/")[-1])) },
-                footer: { text: "'"${{ github.sha }}"'" }
-              }
-            ] | .[0:10]' "$RESULTS" 2>/dev/null || echo "[]")
+            FAILED_LIST=$(jq -r '
+              [ .. | objects | select(has("ok") and has("title") and (.ok == false)) | .title ]
+              | unique
+              | .[0:15]
+              | map("• " + .)
+              | join("\n")
+            ' "$RESULTS" 2>/dev/null || echo "")
+            FAILED_COUNT=$(jq -r '[ .. | objects | select(has("ok") and (.ok == false)) ] | length' "$RESULTS" 2>/dev/null || echo "?")
+          else
+            FAILED_LIST=""
+            FAILED_COUNT="?"
           fi
 
-          # Fallback if no structured embeds
-          if [ "$EMBEDS" = "[]" ] || [ -z "$EMBEDS" ]; then
-            EMBEDS='[{"title":"🚨 E2E Failed","description":"Tests failed but could not parse details. See dashboard.","color":16711680,"url":"'"$DASHBOARD"'"}]'
+          if [ -z "$FAILED_LIST" ]; then
+            FAILED_LIST="(could not parse results.json — see dashboard / action logs)"
           fi
 
-          curl -s -X POST "$WEBHOOK_URL" \
+          SHORT="$(printf '%s' "$SHA" | cut -c1-7)"
+          DESCRIPTION=$(printf '**Failed tests (%s):**\n%s\n\n[📊 Dashboard](%s) · [🛠 Action run](%s)\nCommit: \`%s\`' \
+            "$FAILED_COUNT" "$FAILED_LIST" "$DASHBOARD" "$ACTION_URL" "$SHORT")
+
+          PAYLOAD=$(jq -n \
+            --arg title "🚨 PeopleClaw E2E Failed" \
+            --arg desc "$DESCRIPTION" \
+            --arg url "$ACTION_URL" \
+            --arg footer "sha=$SHORT · run #${{ github.run_number }}" \
+            '{embeds:[{title:$title, description:$desc, url:$url, color:16711680, footer:{text:$footer}, timestamp:(now|todateiso8601)}]}')
+
+          # POST direct to Discord webhook with thread_id — bypasses webhook-router.
+          HTTP_CODE=$(curl -s -o /tmp/discord_resp -w "%{http_code}" -X POST \
+            "${DISCORD_WEBHOOK}?thread_id=${THREAD_ID}" \
             -H "Content-Type: application/json" \
-            -d "{\"thread_id\":\"1499265524851540089\",\"embeds\":$EMBEDS}"
+            -d "$PAYLOAD")
+          echo "Discord webhook HTTP $HTTP_CODE"
+          [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ] || cat /tmp/discord_resp || true
