@@ -45,15 +45,27 @@ componentRunRouter.post(
 
     const input = req.body ?? {};
     const callApp = buildCallAppCtx(r.tenant.id);
-    const appStore = component.app ? buildAppStoreCtx(component.app.id) : undefined;
+    // PLANET-1577: durable per-app store, scoped to caller tenant.
+    const appStore = component.app
+      ? await buildAppStoreCtx({ tenantId: r.tenant.id, appId: component.app.id })
+      : undefined;
 
     const sseResponse = createSSEStream(async (probe) => {
-      return runComponentWithProbe(
-        component as ComponentWithApp,
-        input,
-        probe,
-        { extraCtx: { callApp, appStore, input } },
-      );
+      try {
+        return await runComponentWithProbe(
+          component as ComponentWithApp,
+          input,
+          probe,
+          { extraCtx: { callApp, appStore, input } },
+        );
+      } finally {
+        // Make sure pending appStore writes hit the DB before we close the SSE
+        // stream / send the final response (PLANET-1577).
+        if (appStore) {
+          try { await appStore.flush(); }
+          catch (err) { console.error('[components/run] appStore.flush failed', err); }
+        }
+      }
     });
 
     res.setHeader('Content-Type', 'text/event-stream');

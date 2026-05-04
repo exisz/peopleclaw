@@ -41,7 +41,10 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       ? buildCallAppCtx(component.app.tenantId)
       : undefined;
     const appStore = component.app
-      ? buildAppStoreCtx(component.app.id)
+      ? await buildAppStoreCtx({
+          tenantId: component.app.tenantId,
+          appId: component.app.id,
+        })
       : undefined;
 
     // Execute server handler via Function sandbox (data: URL import unreliable on Vercel)
@@ -81,6 +84,12 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       app: component.app ? { id: component.app.id, tenantId: component.app.tenantId } : undefined,
       appId: component.app?.id,
     });
+    // PLANET-1577: persist queued ctx.appStore writes before responding so
+    // the next request sees them.
+    if (appStore) {
+      try { await appStore.flush(); }
+      catch (err) { console.error('[component/server] appStore.flush failed', err); }
+    }
     res.json(result);
   } catch (err: any) {
     console.error('[component/server] error:', err);

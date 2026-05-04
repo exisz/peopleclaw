@@ -159,6 +159,22 @@ model ScheduledRun {
   @@index([scheduledTaskId])
 }
 
+/// PLANET-1577 — generic durable per-App key/value store backing ctx.appStore.
+/// Scoped by (tenantId, appId, table). Payload is JSON-encoded record body.
+/// Core stays business-agnostic: any App (CRM, todos, polls, ...) shares the
+/// same shape; no domain columns leak into platform schema.
+model AppStoreRecord {
+  id        String   @id @default(cuid())
+  tenantId  String
+  appId     String
+  table     String
+  payload   String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([appId, table])
+  @@index([tenantId, appId, table])
+}
+
 model UsageLog {
   id           Int      @id @default(autoincrement())
   tenantId     String?

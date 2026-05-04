@@ -42,12 +42,23 @@ export function buildCallAppCtx(callerTenantId: string): CallAppFn {
     }
     // Recursive callApp for nested invocations.
     const nestedCallApp = buildCallAppCtx(callerTenantId);
-    const appStore = buildAppStoreCtx(targetApp.id);
-    const { result } = await runComponentSync(
-      component as ComponentWithApp,
-      input ?? {},
-      { extraCtx: { callApp: nestedCallApp, appStore, input: input ?? {} } },
-    );
-    return result;
+    // PLANET-1577: durable per-app store. callApp targets are always inside
+    // the caller's tenant (we filter targetApp by callerTenantId above), so
+    // we reuse it as the store scope.
+    const appStore = await buildAppStoreCtx({
+      tenantId: callerTenantId,
+      appId: targetApp.id,
+    });
+    try {
+      const { result } = await runComponentSync(
+        component as ComponentWithApp,
+        input ?? {},
+        { extraCtx: { callApp: nestedCallApp, appStore, input: input ?? {} } },
+      );
+      return result;
+    } finally {
+      try { await appStore.flush(); }
+      catch (err) { console.error('[callAppCtx] appStore.flush failed', err); }
+    }
   };
 }
