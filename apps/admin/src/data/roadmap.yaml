@@ -2632,11 +2632,11 @@
   title: "P3：Shopify connector 改为 App secrets on-demand token refresh"
   category: "Connector"
   stage: 2
-  status: todo
+  status: done
   description: "新 Shopify connector 读 App.secrets，但旧 cron 刷 Connection table，导致 token 过期后固定 401。改为 connector 调用前按 expires_at/401 刷新 client_credentials 并写回 App.secrets，移除对 core Shopify cron/client 的依赖。"
   prerequisites: [F213]
   jira: "PLANET-1579"
-  completed_at: ""
+  completed_at: "2026-05-04"
   commit_sha: ""
   reject_reason: ""
 

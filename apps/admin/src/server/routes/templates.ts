@@ -48,20 +48,27 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
 
   const prisma = getPrisma();
 
-  // PLANET-1461: optionally auto-seed dev Shopify creds for the starter app so
-  // the demo works out-of-the-box. Skip silently if env not set (e.g. local).
+  // PLANET-1461 / PLANET-1579: optionally auto-seed dev Shopify creds for the
+  // starter app so the demo works out-of-the-box. Skip silently if env not
+  // set (e.g. local). Seed BOTH the access token AND the client_credentials
+  // pair so the connector can refresh on its own when the token expires.
   const devShop = process.env.SHOPIFY_DEV_SHOP?.replace(/\\n$/, '').trim();
   const devToken = process.env.SHOPIFY_DEV_ADMIN_TOKEN?.replace(/\\n$/, '').trim();
+  const devClientId = process.env.SHOPIFY_DEV_CLIENT_ID?.replace(/\\n$/, '').trim();
+  const devClientSecret = process.env.SHOPIFY_DEV_CLIENT_SECRET?.replace(/\\n$/, '').trim();
 
   // Create app + components + connections in a transaction
   const app = await prisma.$transaction(async (tx) => {
-    const seededSecrets =
-      template.id === 'starter-app' && devShop && devToken
-        ? encryptSecretsBag({
-            SHOPIFY_SHOP_DOMAIN: devShop,
-            SHOPIFY_ADMIN_TOKEN: devToken,
-          })
-        : null;
+    const seededBag: Record<string, string> = {};
+    if (template.id === 'starter-app' && devShop) {
+      seededBag.SHOPIFY_SHOP_DOMAIN = devShop;
+      if (devToken) seededBag.SHOPIFY_ADMIN_TOKEN = devToken;
+      if (devClientId) seededBag.SHOPIFY_CLIENT_ID = devClientId;
+      if (devClientSecret) seededBag.SHOPIFY_CLIENT_SECRET = devClientSecret;
+    }
+    const seededSecrets = Object.keys(seededBag).length > 0
+      ? encryptSecretsBag(seededBag)
+      : null;
 
     const newApp = await tx.app.create({
       data: {

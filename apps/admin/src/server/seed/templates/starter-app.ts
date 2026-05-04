@@ -113,8 +113,11 @@ export default async function run(input: any, ctx: any) {
 `;
 
 /**
- * Shopify Connector (BACKEND, isExported=true) — PLANET-1461.
- * Reads creds from ctx.secrets, talks to Shopify Admin REST.
+ * Shopify Connector (BACKEND, isExported=true) — PLANET-1461 / PLANET-1579.
+ * Reads creds from ctx.secrets, talks to Shopify Admin REST. When the access
+ * token is missing/expired or returns 401, refreshes via OAuth
+ * client_credentials and persists the new token through ctx.updateAppSecrets.
+ *
  * input.method: 'listProducts' | 'createProduct' | 'updateProduct'
  */
 const SHOPIFY_CONNECTOR_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
@@ -135,25 +138,124 @@ async function shopifyFetch(shop: string, token: string, path: string, init: any
   return fetch(url, Object.assign({}, init, { headers }));
 }
 
+/**
+ * OAuth client_credentials exchange against Shopify Admin. Returns the new
+ * access token + ISO expiry, or throws on failure. Pure connector logic — no
+ * core dependency. Persistence is the caller's job (via ctx.updateAppSecrets).
+ */
+async function exchangeShopifyToken(shop: string, clientId: string, clientSecret: string) {
+  const r = await fetch('https://' + shop + '/admin/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'client_credentials',
+    }),
+  });
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error('shopify_exchange_failed: ' + r.status + ' ' + body.slice(0, 200));
+  }
+  const data: any = await r.json();
+  if (!data || !data.access_token) {
+    throw new Error('shopify_exchange_failed: missing access_token');
+  }
+  const expiresIn = (typeof data.expires_in === 'number' && data.expires_in > 0) ? data.expires_in : 86400;
+  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+  return { token: data.access_token as string, expiresAt };
+}
+
 export default async function run(input: any, ctx: any) {
   await peopleClaw.nodeEntry('readSecrets');
   const rawShop = ctx?.secrets?.SHOPIFY_SHOP_DOMAIN || '';
-  const token = ctx?.secrets?.SHOPIFY_ADMIN_TOKEN || '';
-  if (!rawShop || !token) {
+  const clientId = ctx?.secrets?.SHOPIFY_CLIENT_ID || '';
+  const clientSecret = ctx?.secrets?.SHOPIFY_CLIENT_SECRET || '';
+  let token = ctx?.secrets?.SHOPIFY_ADMIN_TOKEN || '';
+  const tokenExpiresAt = ctx?.secrets?.SHOPIFY_TOKEN_EXPIRES_AT || '';
+
+  if (!rawShop) {
     return {
       ok: false,
       error: 'NEED_SETUP',
-      message: '请去 🔐 Secrets tab 配置 SHOPIFY_ADMIN_TOKEN 和 SHOPIFY_SHOP_DOMAIN',
+      message: '请去 🔐 Secrets tab 配置 SHOPIFY_SHOP_DOMAIN (+ SHOPIFY_ADMIN_TOKEN 或 SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET)',
     };
   }
+
+  // If no token at all but client creds present → can mint one. If neither
+  // token nor client creds → genuine NEED_SETUP.
+  if (!token && !(clientId && clientSecret)) {
+    return {
+      ok: false,
+      error: 'NEED_SETUP',
+      message: '请去 🔐 Secrets tab 配置 SHOPIFY_ADMIN_TOKEN 或 (SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET)',
+    };
+  }
+
   const shop = normalizeShopDomain(rawShop);
+
+  const canRefresh = Boolean(clientId && clientSecret && typeof ctx?.updateAppSecrets === 'function');
+
+  // Pre-emptive refresh: if the stored expiry is in the past (or within 60s),
+  // mint a new token before making the API call. Only when client creds and
+  // the platform updater are available.
+  if (canRefresh) {
+    const expMs = tokenExpiresAt ? Date.parse(tokenExpiresAt) : NaN;
+    const expired = !token || (Number.isFinite(expMs) && expMs - Date.now() < 60_000);
+    if (expired) {
+      try {
+        await peopleClaw.nodeEntry('refreshToken');
+        const exch = await exchangeShopifyToken(shop, clientId, clientSecret);
+        token = exch.token;
+        await ctx.updateAppSecrets({
+          SHOPIFY_ADMIN_TOKEN: exch.token,
+          SHOPIFY_TOKEN_EXPIRES_AT: exch.expiresAt,
+        });
+      } catch (e: any) {
+        return { ok: false, error: 'SHOPIFY_REFRESH_FAILED', message: e?.message || String(e) };
+      }
+    }
+  }
+
+  if (!token) {
+    // No token, no successful refresh path. Surface NEED_SETUP rather than 401.
+    return {
+      ok: false,
+      error: 'NEED_SETUP',
+      message: 'Shopify access token unavailable; configure SHOPIFY_ADMIN_TOKEN or client_credentials.',
+    };
+  }
+
   const method = (input && input.method) || 'listProducts';
+
+  /**
+   * Run a Shopify call once; if it returns 401 and we have client_credentials,
+   * refresh the token and retry exactly once. Returns the final Response.
+   */
+  async function callWithRetry(doCall: (tok: string) => Promise<Response>): Promise<Response> {
+    let r = await doCall(token);
+    if (r.status === 401 && canRefresh) {
+      try {
+        await peopleClaw.nodeEntry('refreshToken');
+        const exch = await exchangeShopifyToken(shop, clientId, clientSecret);
+        token = exch.token;
+        await ctx.updateAppSecrets({
+          SHOPIFY_ADMIN_TOKEN: exch.token,
+          SHOPIFY_TOKEN_EXPIRES_AT: exch.expiresAt,
+        });
+        r = await doCall(token);
+      } catch (e) {
+        // Fall through with the original 401.
+      }
+    }
+    return r;
+  }
 
   await peopleClaw.nodeEntry('callShopify');
   try {
     if (method === 'listProducts') {
       const limit = (input && input.limit) || 20;
-      const r = await shopifyFetch(shop, token, 'products.json?limit=' + limit);
+      const r = await callWithRetry((tok) => shopifyFetch(shop, tok, 'products.json?limit=' + limit));
       if (!r.ok) {
         const body = await r.text();
         return { ok: false, error: 'SHOPIFY_HTTP_' + r.status, message: body.slice(0, 300) };
@@ -170,10 +272,10 @@ export default async function run(input: any, ctx: any) {
     }
     if (method === 'createProduct') {
       const product = (input && input.product) || {};
-      const r = await shopifyFetch(shop, token, 'products.json', {
+      const r = await callWithRetry((tok) => shopifyFetch(shop, tok, 'products.json', {
         method: 'POST',
         body: JSON.stringify({ product }),
-      });
+      }));
       const data: any = await r.json();
       await peopleClaw.nodeEntry('done');
       return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
@@ -182,10 +284,10 @@ export default async function run(input: any, ctx: any) {
       const id = input && input.id;
       const product = (input && input.product) || {};
       if (!id) return { ok: false, error: 'BAD_INPUT', message: 'id required for updateProduct' };
-      const r = await shopifyFetch(shop, token, 'products/' + id + '.json', {
+      const r = await callWithRetry((tok) => shopifyFetch(shop, tok, 'products/' + id + '.json', {
         method: 'PUT',
         body: JSON.stringify({ product: Object.assign({ id }, product) }),
-      });
+      }));
       const data: any = await r.json();
       await peopleClaw.nodeEntry('done');
       return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };

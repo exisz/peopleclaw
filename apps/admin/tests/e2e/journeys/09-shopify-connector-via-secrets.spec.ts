@@ -19,6 +19,8 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://app.peopleclaw.roll
 const E2E_SECRET = process.env.E2E_SECRET ?? '';
 const DEV_SHOP = (process.env.SHOPIFY_DEV_SHOP ?? '').trim();
 const DEV_TOKEN = (process.env.SHOPIFY_DEV_ADMIN_TOKEN ?? '').replace(/\\n$/, '').trim();
+const DEV_CLIENT_ID = (process.env.SHOPIFY_DEV_CLIENT_ID ?? '').trim();
+const DEV_CLIENT_SECRET = (process.env.SHOPIFY_DEV_CLIENT_SECRET ?? '').trim();
 
 interface MintResult { accessToken: string; sub: string }
 
@@ -149,5 +151,108 @@ test.describe('PLANET-1461: Shopify Connector via App.secrets', () => {
     } else {
       console.warn('[PLANET-1461] SHOPIFY_DEV_SHOP / SHOPIFY_DEV_ADMIN_TOKEN not set on e2e job — skipping live API portion.');
     }
+  });
+
+  test('PLANET-1579: on-demand refresh recovers from expired admin token via client_credentials', async () => {
+    test.skip(!DEV_SHOP || !DEV_CLIENT_ID || !DEV_CLIENT_SECRET, 'live Shopify dev creds (shop + client_id + client_secret) required');
+    test.setTimeout(120_000);
+
+    const email = `planet1579-${Date.now()}@e2e.test`;
+    const t = await mintToken(email);
+
+    const created = await api<{ app: { id: string } }>(
+      t.accessToken,
+      'POST',
+      '/api/apps/from-template',
+      { templateId: 'starter-app' },
+    );
+    expect(created.status, JSON.stringify(created.json)).toBe(200);
+    const appId = created.json.app.id;
+
+    const appResp = await api<{ app: { components: any[] } }>(
+      t.accessToken,
+      'GET',
+      `/api/apps/${appId}`,
+    );
+    const connector = appResp.json.app.components.find((c: any) => c.name === 'Shopify Connector');
+    expect(connector).toBeTruthy();
+
+    // Force shop + bogus admin token + real client creds + an expired stamp.
+    // The connector should detect the expiry, mint a new token via
+    // client_credentials, persist it through ctx.updateAppSecrets, and
+    // successfully list products.
+    for (const [k, v] of [
+      ['SHOPIFY_SHOP_DOMAIN', DEV_SHOP],
+      ['SHOPIFY_ADMIN_TOKEN', 'shpca_obviously_invalid_token_to_force_refresh'],
+      ['SHOPIFY_TOKEN_EXPIRES_AT', new Date(Date.now() - 60_000).toISOString()],
+      ['SHOPIFY_CLIENT_ID', DEV_CLIENT_ID],
+      ['SHOPIFY_CLIENT_SECRET', DEV_CLIENT_SECRET],
+    ] as const) {
+      const put = await api(t.accessToken, 'PUT', `/api/apps/${appId}/secrets`, { key: k, value: v });
+      expect(put.status, JSON.stringify(put.json)).toBe(200);
+    }
+
+    const ran = await runAndCollect(t.accessToken, connector!.id, { method: 'listProducts' });
+    expect(ran.status).toBe(200);
+    expect(ran.result, JSON.stringify(ran)).toBeTruthy();
+    expect(ran.result.ok, JSON.stringify(ran.result)).toBe(true);
+    expect(Array.isArray(ran.result.products)).toBe(true);
+    expect(ran.result.products.length).toBeGreaterThanOrEqual(1);
+
+    // Verify the persisted bag now contains a fresh expiry (sanity: the
+    // GET endpoint only returns key names, but at minimum the secret keys
+    // we set should still exist).
+    const keysResp = await api<{ keys: string[] }>(t.accessToken, 'GET', `/api/apps/${appId}/secrets`);
+    expect(keysResp.status).toBe(200);
+    expect(keysResp.json.keys).toEqual(
+      expect.arrayContaining([
+        'SHOPIFY_ADMIN_TOKEN',
+        'SHOPIFY_CLIENT_ID',
+        'SHOPIFY_CLIENT_SECRET',
+        'SHOPIFY_SHOP_DOMAIN',
+        'SHOPIFY_TOKEN_EXPIRES_AT',
+      ]),
+    );
+  });
+
+  test('PLANET-1579: missing creds still surfaces NEED_SETUP (no permanent 401)', async () => {
+    test.setTimeout(60_000);
+
+    const email = `planet1579-empty-${Date.now()}@e2e.test`;
+    const t = await mintToken(email);
+
+    const created = await api<{ app: { id: string } }>(
+      t.accessToken,
+      'POST',
+      '/api/apps/from-template',
+      { templateId: 'starter-app' },
+    );
+    expect(created.status).toBe(200);
+    const appId = created.json.app.id;
+
+    const appResp = await api<{ app: { components: any[] } }>(
+      t.accessToken,
+      'GET',
+      `/api/apps/${appId}`,
+    );
+    const connector = appResp.json.app.components.find((c: any) => c.name === 'Shopify Connector');
+    expect(connector).toBeTruthy();
+
+    // Wipe whatever was auto-seeded so we genuinely have no creds.
+    for (const k of [
+      'SHOPIFY_SHOP_DOMAIN',
+      'SHOPIFY_ADMIN_TOKEN',
+      'SHOPIFY_CLIENT_ID',
+      'SHOPIFY_CLIENT_SECRET',
+      'SHOPIFY_TOKEN_EXPIRES_AT',
+    ]) {
+      await api(t.accessToken, 'DELETE', `/api/apps/${appId}/secrets/${k}`);
+    }
+
+    const ran = await runAndCollect(t.accessToken, connector!.id, { method: 'listProducts' });
+    expect(ran.status).toBe(200);
+    expect(ran.result, JSON.stringify(ran)).toBeTruthy();
+    expect(ran.result.ok).toBe(false);
+    expect(ran.result.error).toBe('NEED_SETUP');
   });
 });

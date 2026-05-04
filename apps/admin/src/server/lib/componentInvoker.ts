@@ -17,6 +17,7 @@
 import { transformSync } from 'esbuild';
 import type { SSEProbe } from '@peopleclaw/sdk/sse';
 import { decryptSecretsBag } from './secretCrypto.js';
+import { buildUpdateAppSecretsCtx } from './appSecretsCtx.js';
 import type { Component, App } from '../generated/prisma/index.js';
 
 export type ComponentWithApp = Component & { app: App | null };
@@ -159,6 +160,12 @@ export async function runComponentWithProbe(
   const { factory } = compileComponent(component);
   const envBag = await buildEnvBag(component.app!.tenantId);
   const secretsBag = buildSecretsBag(component);
+  // PLANET-1579: inject generic per-App secret updater so connector code can
+  // persist refreshed credentials (OAuth tokens etc.) without core knowing
+  // anything about the specific SaaS. liveSecrets keeps ctx.secrets in sync.
+  const updateAppSecrets = component.app
+    ? buildUpdateAppSecretsCtx({ appId: component.app.id, liveSecrets: secretsBag })
+    : undefined;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -172,6 +179,7 @@ export async function runComponentWithProbe(
       signal: controller.signal,
       env: envBag,
       secrets: secretsBag,
+      updateAppSecrets,
       ...(ext.extraCtx ?? {}),
       ...input,
     };
