@@ -2579,3 +2579,64 @@
   completed_at: "2026-04-24"
   commit_sha: "ca60c10"
   reject_reason: ""
+
+- id: F213
+  title: "PeopleClaw 全量升级计划：per-tenant data / durable appStore / Shopify connector / CI gate"
+  category: "Platform"
+  stage: 2
+  status: todo
+  description: "陛下 2026-05-04 钦定：APP 方向正确，ticket 优先，制定计划后全量升级。总控 ticket 覆盖 P0 CI/CD gate、P1 durable ctx.appStore、P2 per-tenant Turso、P3 Shopify on-demand refresh。"
+  prerequisites: []
+  jira: "PLANET-1575"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F214
+  title: "P0：E2E/CD 等待 /api/health build.sha 匹配当前 GitHub SHA"
+  category: "Ops"
+  stage: 2
+  status: todo
+  description: "修复 E2E Wait for Vercel deploy 只检查 starter-app 存在的假门禁；改为等待 /api/health build.sha == github.sha，超时直接失败，并修复 Discord/webhook 失败摘要。"
+  prerequisites: [F213]
+  jira: "PLANET-1576"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F215
+  title: "P1：ctx.appStore 从 in-memory Map 升级为 durable generic per-app store"
+  category: "Platform"
+  stage: 2
+  status: todo
+  description: "CRM 当前通过进程内 Map 持久化，Vercel lambda 跨请求丢数据。新增通用 app store backing table/API，保持 ctx.appStore list/insert/getById/listWhere 组件接口不变。"
+  prerequisites: [F213]
+  jira: "PLANET-1577"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F216
+  title: "P2：per-tenant Turso database provisioning + registry"
+  category: "Platform"
+  stage: 2
+  status: todo
+  description: "每个 tenant provision/attach 独立 Turso DB；平台主库保留 User/Tenant/App/Component/secrets metadata，tenant app data 通过 TenantDataStore registry 路由到对应 DB，并定义 100 DB 限额行为。"
+  prerequisites: [F215]
+  jira: "PLANET-1578"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
+- id: F217
+  title: "P3：Shopify connector 改为 App secrets on-demand token refresh"
+  category: "Connector"
+  stage: 2
+  status: todo
+  description: "新 Shopify connector 读 App.secrets，但旧 cron 刷 Connection table，导致 token 过期后固定 401。改为 connector 调用前按 expires_at/401 刷新 client_credentials 并写回 App.secrets，移除对 core Shopify cron/client 的依赖。"
+  prerequisites: [F213]
+  jira: "PLANET-1579"
+  completed_at: ""
+  commit_sha: ""
+  reject_reason: ""
+
