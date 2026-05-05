@@ -2640,3 +2640,15 @@
   commit_sha: ""
   reject_reason: ""
 
+- id: F218
+  title: "Living SaaS shell — App-inner sidebar (App + System sections), Chat as a page (presentation slice 1)"
+  category: "UI"
+  stage: 4
+  status: done
+  description: "PLANET-1407: 在 App 内引入 Living SaaS 外壳——左侧 App-level sidebar 分 App (Dashboard/Canvas/Chat) 与 System (Module Flow/Cron/Secrets/Runners/Logs)，Chat 由常驻中栏改为可导航的页面。本 slice 仅做外壳/sidebar/路由表现层：新路由 /app/:id/{dashboard|canvas|chat|system/*}；保留 /app/:id 旧 dual-pane 以维持现有 E2E。Secrets/Cron 复用既有 panel 组件；Module Flow/Runners/Logs 暂为受控 stub，待后续 ticket 拆分实装。"
+  prerequisites: []
+  jira: "PLANET-1407"
+  completed_at: "2026-05-06"
+  commit_sha: ""
+  reject_reason: ""
+

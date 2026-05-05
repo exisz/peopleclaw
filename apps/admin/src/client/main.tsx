@@ -14,6 +14,15 @@ import AppsList from './pages/AppsList';
 import PlaceholderPage from './pages/PlaceholderPage';
 import Settings from './pages/Settings';
 import AppShell from './components/layout/AppShell';
+import AppInnerShell from './components/layout/AppInnerShell';
+import AppDashboardPage from './pages/app/AppDashboardPage';
+import AppCanvasPage from './pages/app/AppCanvasPage';
+import AppChatPage from './pages/app/AppChatPage';
+import AppModuleFlowPage from './pages/app/AppModuleFlowPage';
+import AppCronPage from './pages/app/AppCronPage';
+import AppSecretsPage from './pages/app/AppSecretsPage';
+import AppRunnersPage from './pages/app/AppRunnersPage';
+import AppLogsPage from './pages/app/AppLogsPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,6 +38,15 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/security" element={<ErrorBoundary><AppShell title="Security"><PlaceholderPage title="Security" /></AppShell></ErrorBoundary>} />
           <Route path="/app" element={<ErrorBoundary><AppShell><AppPlaceholder /></AppShell></ErrorBoundary>} />
           <Route path="/app/:id" element={<ErrorBoundary><AppShell><AppPlaceholder /></AppShell></ErrorBoundary>} />
+          {/* PLANET-1407: Living SaaS shell — opt-in routes inside an app */}
+          <Route path="/app/:id/dashboard" element={<ErrorBoundary><AppInnerShell title="Dashboard"><AppDashboardPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/canvas" element={<ErrorBoundary><AppInnerShell title="Canvas"><AppCanvasPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/chat" element={<ErrorBoundary><AppInnerShell title="Chat"><AppChatPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/flow" element={<ErrorBoundary><AppInnerShell title="Module Flow"><AppModuleFlowPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/cron" element={<ErrorBoundary><AppInnerShell title="Cron"><AppCronPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/secrets" element={<ErrorBoundary><AppInnerShell title="Secrets"><AppSecretsPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/runners" element={<ErrorBoundary><AppInnerShell title="Runners"><AppRunnersPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/logs" element={<ErrorBoundary><AppInnerShell title="Logs"><AppLogsPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/settings" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
           <Route path="/settings/:tab" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
           {/* All old workflow/case/step URLs redirect to /app */}
