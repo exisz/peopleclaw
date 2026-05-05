@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html><head>
+<title>E2E Trends — PeopleClaw</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>body{font-family:system-ui;max-width:1200px;margin:0 auto;padding:20px}canvas{max-height:400px}.back{margin-bottom:20px;display:inline-block}</style>
+</head><body>
+<a class="back" href="index.html">← Back to Report</a>
+<h1>📈 E2E Trends</h1>
+<h2>Pass Rate</h2><canvas id="passRate"></canvas>
+<h2>Duration (ms)</h2><canvas id="duration"></canvas>
+<script>
+fetch('results.csv').then(r=>r.text()).then(csv=>{
+  const rows=csv.trim().split('\n').slice(1).map(r=>{const c=r.split(',');return{ts:c[0],sha:c[1],duration:+c[2],total:+c[3],passed:+c[4],failed:+c[5]}});
+  const last30=rows.slice(-30);
+  const labels=last30.map(r=>r.ts.slice(5,10));
+  const passRates=last30.map(r=>r.total?Math.round(r.passed/r.total*100):0);
+  const durations=last30.map(r=>Math.round(r.duration/1000));
+  new Chart(document.getElementById('passRate'),{type:'line',data:{labels,datasets:[{label:'Pass %',data:passRates,borderColor:'#4CAF50',tension:0.3}]},options:{scales:{y:{min:0,max:100}}}});
+  new Chart(document.getElementById('duration'),{type:'line',data:{labels,datasets:[{label:'Duration (s)',data:durations,borderColor:'#2196F3',tension:0.3}]},options:{scales:{y:{min:0}}}});
+});
+</script>
+</body></html>
