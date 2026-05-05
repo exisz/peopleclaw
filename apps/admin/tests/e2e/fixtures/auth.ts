@@ -56,14 +56,14 @@ async function signInViaMint(page: Page) {
     await route.continue({ headers });
   });
 
-  // Navigate to app
-  await page.goto('/app');
+  // Navigate to apps list (PLANET-1407: legacy /app dual-pane removed)
+  await page.goto('/apps');
   await page.waitForLoadState('networkidle', { timeout: 15_000 });
 }
 
 /**
  * Sign in via Logto username/password flow.
- * After sign-in, lands on /app.
+ * After sign-in, lands on /apps.
  */
 export async function signIn(page: Page) {
   if (USE_MINT) {

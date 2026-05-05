@@ -13,7 +13,9 @@ export class AppPage {
   }
 
   async goto() {
-    await this.page.goto('/app');
+    // PLANET-1407: legacy /app dual-pane removed; the canonical entry point
+    // is the Apps list, where the template picker now lives.
+    await this.page.goto('/apps');
     await this.page.waitForLoadState('networkidle');
   }
 

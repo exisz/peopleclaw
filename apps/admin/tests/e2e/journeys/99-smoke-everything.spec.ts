@@ -221,7 +221,12 @@ test.describe('99-smoke-everything: Full discovery', () => {
     await statusDone.first().waitFor({ state: 'visible', timeout: 45_000 }).catch(() => {});
 
     // Chat panel — send "hello"
+    // PLANET-1407: Chat is its own page under the Living SaaS shell. Navigate to it.
     currentStep = 'chat → hello';
+    const appUrlMatch = page.url().match(/\/app\/([^/]+)/);
+    if (appUrlMatch) {
+      await page.goto(`/app/${appUrlMatch[1]}/chat`, { waitUntil: 'networkidle', timeout: 15_000 }).catch(() => {});
+    }
     const chatInput = page.locator('[data-testid="chat-input"]');
     if (await chatInput.isVisible().catch(() => false)) {
       await chatInput.fill('hello');
@@ -232,6 +237,9 @@ test.describe('99-smoke-everything: Full discovery', () => {
 
     // Canvas drag (move FRONTEND node slightly)
     currentStep = 'canvas drag';
+    if (appUrlMatch) {
+      await page.goto(`/app/${appUrlMatch[1]}/canvas`, { waitUntil: 'networkidle', timeout: 15_000 }).catch(() => {});
+    }
     const frontendNode = page.locator('[data-testid="canvas-node-FRONTEND"]');
     if (await frontendNode.isVisible().catch(() => false)) {
       const box = await frontendNode.boundingBox();

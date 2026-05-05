@@ -114,7 +114,7 @@ export default function AppChatPage() {
       </div>
       <div className="border-t border-border p-3 flex gap-2">
         <input
-          data-testid="page-chat-input"
+          data-testid="chat-input"
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           placeholder="Type a message..."
           value={input}
@@ -128,7 +128,7 @@ export default function AppChatPage() {
           disabled={streaming || !appId}
         />
         <button
-          data-testid="page-chat-send-btn"
+          data-testid="chat-send-btn"
           onClick={send}
           disabled={streaming || !input.trim() || !appId}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"

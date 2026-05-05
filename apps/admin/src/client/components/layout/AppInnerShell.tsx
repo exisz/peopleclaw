@@ -64,7 +64,7 @@ export default function AppInnerShell({ title, children }: AppInnerShellProps) {
 
   return (
     <div className="flex flex-col h-screen">
-      <AppTopBar title={title} showBackToApps />
+      <AppTopBar title={title} />
       <div className="flex flex-1 min-h-0">
         <AppInnerSidebar appSection={appSection} systemSection={systemSection} appId={id ?? ''} />
         <main
@@ -96,7 +96,7 @@ function AppInnerSidebar({
       <div className="p-2 border-b border-border">
         <Link
           to="/apps"
-          data-testid="inner-back-to-apps"
+          data-testid="back-to-apps"
           className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />

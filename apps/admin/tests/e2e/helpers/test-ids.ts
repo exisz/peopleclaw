@@ -10,7 +10,7 @@ export const TID = {
 
   // App selector bar
   appSelector: 'app-selector',
-  newAppBtn: 'new-app-btn',
+  newAppBtn: 'create-new-app-card',
   templateEcommerceBtn: 'template-ecommerce-starter-btn',
   templatePickerOverlay: 'template-picker-overlay',
   templateBtn: (id: string) => `template-${id}-btn`,

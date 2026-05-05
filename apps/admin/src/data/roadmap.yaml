@@ -2641,11 +2641,11 @@
   reject_reason: ""
 
 - id: F218
-  title: "Living SaaS shell — App-inner sidebar (App + System sections), Chat as a page (presentation slice 1)"
+  title: "Living SaaS shell — canonical App-inner sidebar (App + System), Chat as a page, legacy dual-pane removed"
   category: "UI"
   stage: 4
   status: done
-  description: "PLANET-1407: 在 App 内引入 Living SaaS 外壳——左侧 App-level sidebar 分 App (Dashboard/Canvas/Chat) 与 System (Module Flow/Cron/Secrets/Runners/Logs)，Chat 由常驻中栏改为可导航的页面。本 slice 仅做外壳/sidebar/路由表现层：新路由 /app/:id/{dashboard|canvas|chat|system/*}；保留 /app/:id 旧 dual-pane 以维持现有 E2E。Secrets/Cron 复用既有 panel 组件；Module Flow/Runners/Logs 暂为受控 stub，待后续 ticket 拆分实装。"
+  description: "PLANET-1407: 以 Living SaaS 为唯一外壳。在 App 内左侧 sidebar 分 App (Dashboard/Canvas/Chat) 与 System (Module Flow/Cron/Secrets/Runners/Logs) 两区；Chat 为可导航页面，Canvas 为 App 工作区。/app/:id 重定向到 /app/:id/canvas。幻灭旧的 Chat/Canvas dual-pane (AppPlaceholder.tsx) 以及 AppShell 对 /app/:id 的特例逻辑；AppCanvasPage 独立接管原有 IDE 页签/xyflow/secrets/scheduled 功能。Auth、租户、模板、API 全部保留不动。"
   prerequisites: []
   jira: "PLANET-1407"
   completed_at: "2026-05-06"
