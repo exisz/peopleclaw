@@ -120,7 +120,7 @@ function formatTimestamp(value?: string) {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export interface AgentChatSurfaceProps {
@@ -153,49 +153,77 @@ export function AgentChatSurface({
     void chat.sendMessage(text);
   };
 
+  const startThread = () => void chat.createSession('New chat');
+
+  const sessionList = (variant: 'desktop' | 'mobile') => (
+    <div className={variant === 'desktop' ? 'flex-1 overflow-y-auto p-2' : 'max-h-44 overflow-y-auto px-3 pb-3'}>
+      {chat.sessions.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+          <div className="font-medium text-foreground">No threads yet</div>
+          <div className="mt-1">Send your first message or create a new thread.</div>
+        </div>
+      ) : chat.sessions.map(session => (
+        <div key={session.id} className="group mb-1 flex items-center gap-1">
+          <button
+            className={`min-w-0 flex-1 rounded-md px-3 py-2 text-left text-xs hover:bg-muted ${chat.activeSession?.id === session.id ? 'bg-muted font-medium' : ''}`}
+            onClick={() => void chat.openSession(session.id)}
+          >
+            <div className="truncate">{session.title || 'New chat'}</div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground">{session.messageCount} msgs · {formatTimestamp(session.updatedAt)}</div>
+          </button>
+          <button
+            className="rounded px-2 py-1 text-xs text-muted-foreground opacity-70 hover:bg-destructive/10 hover:text-destructive md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+            onClick={() => void chat.deleteSession(session.id)}
+            title="Delete thread"
+            aria-label={`Delete thread ${session.title || 'New chat'}`}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="flex h-full min-h-0 bg-muted/10">
-      <aside className="hidden w-72 shrink-0 border-r border-border bg-background/70 md:flex md:flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-muted/10 md:flex-row">
+      <aside className="hidden w-72 shrink-0 border-r border-border bg-background/70 md:flex md:flex-col" aria-label="Chat threads">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
-            <div className="text-sm font-semibold">Sessions</div>
+            <div className="text-sm font-semibold">Threads</div>
             <div className="text-xs text-muted-foreground">PI Codex chat</div>
           </div>
-          <button className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted" onClick={() => void chat.createSession('New chat')} disabled={!appId || chat.streaming}>
+          <button className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted" onClick={startThread} disabled={!appId || chat.streaming}>
+            New Thread
+          </button>
+        </div>
+        {sessionList('desktop')}
+      </aside>
+
+      <div className="shrink-0 border-b border-border bg-background/90 md:hidden" aria-label="Chat threads">
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">Threads</div>
+            <div className="truncate text-[11px] text-muted-foreground">
+              {chat.activeSession?.title || `${chat.sessions.length} saved thread${chat.sessions.length === 1 ? '' : 's'}`}
+            </div>
+          </div>
+          <button className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted" onClick={startThread} disabled={!appId || chat.streaming}>
             New
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2">
-          {chat.sessions.length === 0 ? (
-            <div className="px-3 py-8 text-center text-xs text-muted-foreground">No sessions yet</div>
-          ) : chat.sessions.map(session => (
-            <div key={session.id} className="group mb-1 flex items-center gap-1">
-              <button
-                className={`min-w-0 flex-1 rounded-md px-3 py-2 text-left text-xs hover:bg-muted ${chat.activeSession?.id === session.id ? 'bg-muted font-medium' : ''}`}
-                onClick={() => void chat.openSession(session.id)}
-              >
-                <div className="truncate">{session.title}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{session.messageCount} msgs · {formatTimestamp(session.updatedAt)}</div>
-              </button>
-              <button
-                className="rounded px-2 py-1 text-xs text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                onClick={() => void chat.deleteSession(session.id)}
-                title="Delete session"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      </aside>
+        {sessionList('mobile')}
+      </div>
 
-      <section className="flex min-w-0 flex-1 flex-col">
-        <div ref={scrollerRef} className="flex-1 overflow-y-auto p-6">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div ref={scrollerRef} className="flex-1 overflow-y-auto p-4 md:p-6">
           {chat.messages.length === 0 ? (
-            <div className="mx-auto mt-20 max-w-md text-center text-muted-foreground">
+            <div className="mx-auto mt-12 max-w-md text-center text-muted-foreground md:mt-20">
               <div className="mb-3 text-4xl">💬</div>
               <h2 className="text-base font-semibold text-foreground">{emptyTitle}</h2>
               <p className="mt-1 text-sm">{emptyDescription}</p>
+              <button className="mt-4 rounded-md border border-border px-3 py-2 text-xs text-foreground hover:bg-muted" onClick={startThread} disabled={!appId || chat.streaming}>
+                New Thread
+              </button>
             </div>
           ) : (
             <div className="mx-auto flex max-w-4xl flex-col gap-4">

@@ -1,7 +1,5 @@
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { getPrisma } from './prisma.js';
 
 export type AgentSessionMessageRole = 'user' | 'assistant' | 'tool' | 'system';
 
@@ -30,50 +28,24 @@ export interface AgentSessionDetail extends AgentSessionSummary {
   messages: AgentSessionMessage[];
 }
 
-type JsonlEntry =
-  | { type: 'session'; session: AgentSessionMeta }
-  | { type: 'message'; message: AgentSessionMessage };
+const TABLE = '__agent_chat_sessions';
 
-function rootDir(): string {
-  return process.env.PEOPLECLAW_AGENT_SESSIONS_DIR
-    ?? (process.env.VERCEL ? path.join(os.tmpdir(), 'peopleclaw-agent-sessions') : path.join(process.cwd(), '.peopleclaw-agent-sessions'));
+interface StoredAgentSession extends AgentSessionMeta {
+  messages: AgentSessionMessage[];
 }
 
-function safeSegment(value: string | number): string {
-  return String(value).replace(/[^a-zA-Z0-9._-]/g, '_');
-}
-
-function appDir(tenantId: string, appId: string): string {
-  return path.join(rootDir(), safeSegment(tenantId), safeSegment(appId));
-}
-
-function indexPath(tenantId: string, appId: string): string {
-  return path.join(appDir(tenantId, appId), 'sessions.json');
-}
-
-function sessionFilePath(tenantId: string, appId: string, sessionId: string): string {
-  return path.join(appDir(tenantId, appId), `${safeSegment(sessionId)}.jsonl`);
-}
-
-function ensureDir(dir: string): void {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-function readIndex(tenantId: string, appId: string): AgentSessionMeta[] {
+function parsePayload(payload: string): StoredAgentSession | null {
   try {
-    return JSON.parse(fs.readFileSync(indexPath(tenantId, appId), 'utf8')) as AgentSessionMeta[];
+    const parsed = JSON.parse(payload) as Partial<StoredAgentSession>;
+    if (!parsed.id || !parsed.tenantId || !parsed.appId || !Array.isArray(parsed.messages)) return null;
+    return parsed as StoredAgentSession;
   } catch {
-    return [];
+    return null;
   }
 }
 
-function writeIndex(tenantId: string, appId: string, sessions: AgentSessionMeta[]): void {
-  ensureDir(appDir(tenantId, appId));
-  fs.writeFileSync(indexPath(tenantId, appId), JSON.stringify(sessions, null, 2));
-}
-
-function appendLine(tenantId: string, appId: string, sessionId: string, entry: JsonlEntry): void {
-  fs.appendFileSync(sessionFilePath(tenantId, appId, sessionId), `${JSON.stringify(entry)}\n`);
+function toDetail(stored: StoredAgentSession): AgentSessionDetail {
+  return { ...stored, messageCount: stored.messages.length };
 }
 
 function titleFromMessage(message: string): string {
@@ -81,73 +53,82 @@ function titleFromMessage(message: string): string {
   return firstLine ? firstLine.slice(0, 60) : 'New chat';
 }
 
-export function createAgentSession(params: { tenantId: string; appId: string; title?: string }): AgentSessionDetail {
+async function findStoredSession(tenantId: string, appId: string, sessionId: string): Promise<StoredAgentSession | null> {
+  const record = await getPrisma().appStoreRecord.findFirst({
+    where: { id: sessionId, tenantId, appId, table: TABLE },
+  });
+  return record ? parsePayload(record.payload) : null;
+}
+
+export async function createAgentSession(params: { tenantId: string; appId: string; title?: string }): Promise<AgentSessionDetail> {
   const now = new Date().toISOString();
-  const session: AgentSessionMeta = {
+  const session: StoredAgentSession = {
     id: randomUUID(),
     tenantId: params.tenantId,
     appId: params.appId,
     title: params.title?.trim() || 'New chat',
     createdAt: now,
     updatedAt: now,
+    messages: [],
   };
-  ensureDir(appDir(params.tenantId, params.appId));
-  fs.writeFileSync(sessionFilePath(params.tenantId, params.appId, session.id), `${JSON.stringify({ type: 'session', session } satisfies JsonlEntry)}\n`);
-  const index = readIndex(params.tenantId, params.appId);
-  index.push(session);
-  writeIndex(params.tenantId, params.appId, index);
-  return { ...session, messageCount: 0, messages: [] };
+  await getPrisma().appStoreRecord.create({
+    data: {
+      id: session.id,
+      tenantId: params.tenantId,
+      appId: params.appId,
+      table: TABLE,
+      payload: JSON.stringify(session),
+    },
+  });
+  return toDetail(session);
 }
 
-export function listAgentSessions(tenantId: string, appId: string): AgentSessionSummary[] {
-  return readIndex(tenantId, appId)
-    .map(meta => ({ ...meta, messageCount: readAgentSession(tenantId, appId, meta.id)?.messages.length ?? 0 }))
+export async function listAgentSessions(tenantId: string, appId: string): Promise<AgentSessionSummary[]> {
+  const records = await getPrisma().appStoreRecord.findMany({
+    where: { tenantId, appId, table: TABLE },
+    orderBy: { updatedAt: 'desc' },
+  });
+  return records
+    .map(record => parsePayload(record.payload))
+    .filter((session): session is StoredAgentSession => Boolean(session))
+    .map(session => ({ ...session, messageCount: session.messages.length }))
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
 }
 
-export function readAgentSession(tenantId: string, appId: string, sessionId: string): AgentSessionDetail | null {
-  const file = sessionFilePath(tenantId, appId, sessionId);
-  let meta = readIndex(tenantId, appId).find(s => s.id === sessionId) ?? null;
-  const messages: AgentSessionMessage[] = [];
-  try {
-    const raw = fs.readFileSync(file, 'utf8');
-    for (const line of raw.split('\n')) {
-      if (!line.trim()) continue;
-      const entry = JSON.parse(line) as JsonlEntry;
-      if (entry.type === 'session') meta = entry.session;
-      if (entry.type === 'message') messages.push(entry.message);
-    }
-  } catch {
-    return null;
-  }
-  if (!meta) return null;
-  return { ...meta, messageCount: messages.length, messages };
+export async function readAgentSession(tenantId: string, appId: string, sessionId: string): Promise<AgentSessionDetail | null> {
+  const stored = await findStoredSession(tenantId, appId, sessionId);
+  return stored ? toDetail(stored) : null;
 }
 
-export function appendAgentMessage(tenantId: string, appId: string, sessionId: string, message: Omit<AgentSessionMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }): AgentSessionMessage {
-  const stored: AgentSessionMessage = {
+export async function appendAgentMessage(tenantId: string, appId: string, sessionId: string, message: Omit<AgentSessionMessage, 'id' | 'timestamp'> & { id?: string; timestamp?: string }): Promise<AgentSessionMessage> {
+  const stored = await findStoredSession(tenantId, appId, sessionId);
+  if (!stored) throw new Error('session not found');
+
+  const nextMessage: AgentSessionMessage = {
     id: message.id ?? randomUUID(),
     role: message.role,
     content: message.content,
     timestamp: message.timestamp ?? new Date().toISOString(),
     ...(message.toolName ? { toolName: message.toolName } : {}),
   };
-  appendLine(tenantId, appId, sessionId, { type: 'message', message: stored });
 
-  const index = readIndex(tenantId, appId);
-  const meta = index.find(s => s.id === sessionId);
-  if (meta) {
-    meta.updatedAt = stored.timestamp;
-    if (meta.title === 'New chat' && stored.role === 'user') meta.title = titleFromMessage(stored.content);
-    writeIndex(tenantId, appId, index);
-  }
-  return stored;
+  const next: StoredAgentSession = {
+    ...stored,
+    title: stored.title === 'New chat' && nextMessage.role === 'user' ? titleFromMessage(nextMessage.content) : stored.title,
+    updatedAt: nextMessage.timestamp,
+    messages: [...stored.messages, nextMessage],
+  };
+
+  await getPrisma().appStoreRecord.update({
+    where: { id: sessionId },
+    data: { payload: JSON.stringify(next) },
+  });
+  return nextMessage;
 }
 
-export function deleteAgentSession(tenantId: string, appId: string, sessionId: string): boolean {
-  try { fs.unlinkSync(sessionFilePath(tenantId, appId, sessionId)); } catch { /* ignore */ }
-  const index = readIndex(tenantId, appId);
-  const next = index.filter(s => s.id !== sessionId);
-  writeIndex(tenantId, appId, next);
-  return next.length !== index.length;
+export async function deleteAgentSession(tenantId: string, appId: string, sessionId: string): Promise<boolean> {
+  const result = await getPrisma().appStoreRecord.deleteMany({
+    where: { id: sessionId, tenantId, appId, table: TABLE },
+  });
+  return result.count > 0;
 }
