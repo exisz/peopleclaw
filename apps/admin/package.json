@@ -15,7 +15,8 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "smoke:app-agent-tools": "tsx scripts/smoke-app-agent-tools.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.55",

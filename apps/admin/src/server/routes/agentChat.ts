@@ -91,7 +91,8 @@ agentChatRouter.post('/apps/:appId/agent-sessions/:sessionId/messages', requireA
 
   const storedUserMessage = await appendAgentMessage(checked.tenantId, checked.app.id, session.id, { role: 'user', content: message });
   try {
-    const assistantContent = await streamCodexAgent({
+    const result = await streamCodexAgent({
+      tenantId: checked.tenantId,
       appId: checked.app.id,
       appName: checked.app.name,
       sessionId: session.id,
@@ -99,7 +100,14 @@ agentChatRouter.post('/apps/:appId/agent-sessions/:sessionId/messages', requireA
       userMessage: message,
       onEvent: event => sendSse(res, event.type, event),
     });
-    await appendAgentMessage(checked.tenantId, checked.app.id, session.id, { role: 'assistant', content: assistantContent });
+    for (const toolResult of result.toolResults) {
+      await appendAgentMessage(checked.tenantId, checked.app.id, session.id, {
+        role: 'tool',
+        toolName: toolResult.toolName,
+        content: toolResult.summary,
+      });
+    }
+    await appendAgentMessage(checked.tenantId, checked.app.id, session.id, { role: 'assistant', content: result.content });
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e);
     sendSse(res, 'error', { message: err });
