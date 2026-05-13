@@ -93,3 +93,5 @@ X-Sudo-User-Id: <userId>
 
 In production `E2E_TEST_TOKEN` MUST be unset; the route then 404s and the
 sudo branch in `requireAuth` is inert.
+
+<!-- redeploy: codex env 2026-05-13 -->
