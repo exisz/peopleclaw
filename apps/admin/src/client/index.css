@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* PLANET-1671: include workspace UI package classes in Tailwind v4 generation. */
+@source "../../../../packages/agent-ui-core/src";
+
 /* shadcn/ui — neutral base color, CSS variables (Tailwind v4 format) */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
