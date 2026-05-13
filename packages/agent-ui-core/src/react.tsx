@@ -68,7 +68,11 @@ export function useAgentChat({ appId, transport }: UseAgentChatOptions) {
           assistantText += event.text;
           setMessages(prev => {
             const copy = [...prev];
-            copy[copy.length - 1] = { ...copy[copy.length - 1]!, content: assistantText };
+            let lastAssistant = -1;
+            for (let i = copy.length - 1; i >= 0; i -= 1) {
+              if (copy[i]?.role === 'assistant') { lastAssistant = i; break; }
+            }
+            if (lastAssistant >= 0) copy[lastAssistant] = { ...copy[lastAssistant]!, content: assistantText };
             return copy;
           });
         } else if (event.type === 'tool_start') {
@@ -123,6 +127,13 @@ function formatTimestamp(value?: string) {
   return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function roleLabel(message: AgentChatMessage) {
+  if (message.role === 'user') return 'You';
+  if (message.role === 'tool') return message.toolName || 'Tool';
+  if (message.role === 'system') return 'System';
+  return 'Agent';
+}
+
 export interface AgentChatSurfaceProps {
   appId?: string;
   emptyTitle?: string;
@@ -153,44 +164,51 @@ export function AgentChatSurface({
     void chat.sendMessage(text);
   };
 
-  const startThread = () => void chat.createSession('New chat');
+  const startThread = () => void chat.createSession('New conversation');
 
-  const newThreadButton = (label = 'New Thread') => (
+  const newThreadButton = (label = 'New') => (
     <button
-      className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-primary/30 bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-sm shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary/90 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50"
       onClick={startThread}
       disabled={!appId || chat.streaming}
     >
-      {label}
+      <span aria-hidden>＋</span>{label}
     </button>
   );
 
   const sessionList = (variant: 'desktop' | 'mobile') => (
-    <div className={variant === 'desktop' ? 'flex-1 overflow-y-auto p-3' : 'max-h-48 overflow-y-auto px-3 pb-3'}>
+    <div className={variant === 'desktop' ? 'flex-1 overflow-y-auto px-3 pb-4' : 'max-h-56 overflow-y-auto px-3 pb-3'}>
       {chat.sessions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/80 bg-background/60 px-3 py-5 text-center text-xs text-muted-foreground">
-          <div className="font-semibold text-foreground">No threads yet</div>
-          <div className="mt-1 leading-relaxed">Send your first message or create a new thread.</div>
+        <div className="rounded-[1.4rem] border border-dashed border-border bg-background/55 px-4 py-6 text-center text-xs text-muted-foreground shadow-inner">
+          <div className="mx-auto mb-3 grid h-9 w-9 place-items-center rounded-2xl bg-muted text-base">✦</div>
+          <div className="font-bold text-foreground">No threads yet</div>
+          <div className="mt-1.5 leading-relaxed">Create a thread or send a message to begin.</div>
         </div>
       ) : chat.sessions.map(session => {
         const active = chat.activeSession?.id === session.id;
         return (
-          <div key={session.id} className="group mb-2 flex items-center gap-2">
+          <div key={session.id} className="group relative mb-2.5 flex items-stretch gap-2">
             <button
-              className={`min-w-0 flex-1 rounded-2xl border px-3 py-2.5 text-left text-xs transition ${active ? 'border-primary/25 bg-primary/10 shadow-sm ring-1 ring-primary/10' : 'border-transparent hover:border-border/80 hover:bg-background/80'}`}
+              className={`min-w-0 flex-1 rounded-[1.35rem] border px-3.5 py-3 text-left text-xs transition duration-200 ${active ? 'border-primary/35 bg-primary/10 shadow-sm ring-1 ring-primary/20' : 'border-border/40 bg-background/45 hover:border-border hover:bg-background/85 hover:shadow-sm'}`}
               onClick={() => void chat.openSession(session.id)}
               aria-current={active ? 'page' : undefined}
             >
-              <div className={`truncate ${active ? 'font-semibold text-foreground' : 'font-medium text-foreground/90'}`}>{session.title || 'New chat'}</div>
-              <div className="mt-1 truncate text-[10px] text-muted-foreground">{session.messageCount} msgs · {formatTimestamp(session.updatedAt)}</div>
+              <div className="flex items-center gap-2">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${active ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                <span className={`truncate ${active ? 'font-bold text-foreground' : 'font-semibold text-foreground/90'}`}>{session.title || 'New conversation'}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                <span>{session.messageCount} msgs</span>
+                <span className="truncate">{formatTimestamp(session.updatedAt)}</span>
+              </div>
             </button>
             <button
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-base leading-none text-muted-foreground transition hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive focus-visible:border-destructive/40 focus-visible:bg-destructive/10 focus-visible:text-destructive md:opacity-60 md:group-hover:opacity-100 md:focus:opacity-100"
+              className="my-1 inline-flex w-9 shrink-0 items-center justify-center rounded-2xl border border-transparent text-sm leading-none text-muted-foreground transition hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive focus-visible:border-destructive/40 focus-visible:bg-destructive/10 focus-visible:text-destructive md:opacity-55 md:group-hover:opacity-100 md:focus:opacity-100"
               onClick={() => void chat.deleteSession(session.id)}
               title="Delete thread"
-              aria-label={`Delete thread ${session.title || 'New chat'}`}
+              aria-label={`Delete thread ${session.title || 'New conversation'}`}
             >
-              ×
+              ⌫
             </button>
           </div>
         );
@@ -199,13 +217,14 @@ export function AgentChatSurface({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-background via-background to-muted/35 md:flex-row">
-      <aside className="hidden w-72 shrink-0 border-r border-border/80 bg-muted/30 md:flex md:flex-col" aria-label="Chat threads">
-        <div className="border-b border-border/70 px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold tracking-tight">Threads</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">PeopleClaw App agent</div>
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary/10 via-background to-muted md:flex-row">
+      <aside className="hidden w-80 shrink-0 border-r border-border/70 bg-card/78 shadow-[20px_0_60px_-55px_rgba(0,0,0,0.8)] backdrop-blur md:flex md:flex-col" aria-label="Chat threads">
+        <div className="px-5 py-5">
+          <div className="mb-5 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Live agent</div>
+              <h2 className="mt-3 text-lg font-black tracking-tight text-foreground">Threads</h2>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Persistent context for this App.</p>
             </div>
             {newThreadButton()}
           </div>
@@ -213,10 +232,10 @@ export function AgentChatSurface({
         {sessionList('desktop')}
       </aside>
 
-      <div className="shrink-0 border-b border-border/80 bg-background/90 md:hidden" aria-label="Chat threads">
-        <div className="flex items-center justify-between gap-3 px-3 py-3">
+      <div className="shrink-0 border-b border-border/70 bg-card/88 backdrop-blur md:hidden" aria-label="Chat threads">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold">Threads</div>
+            <div className="text-sm font-black tracking-tight">Threads</div>
             <div className="truncate text-[11px] text-muted-foreground">
               {chat.activeSession?.title || `${chat.sessions.length} saved thread${chat.sessions.length === 1 ? '' : 's'}`}
             </div>
@@ -227,38 +246,59 @@ export function AgentChatSurface({
       </div>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
+        <div className="shrink-0 border-b border-border/60 bg-background/45 px-4 py-3 backdrop-blur sm:px-6">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-black tracking-tight text-foreground">{chat.activeSession?.title || 'New conversation'}</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">{chat.messages.length} messages · streamed responses</div>
+            </div>
+            <div className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${chat.streaming ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'}`}>{chat.streaming ? 'Streaming' : 'Ready'}</div>
+          </div>
+        </div>
+
+        <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-8">
           {chat.messages.length === 0 ? (
-            <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-border/70 bg-card/80 px-6 py-8 text-center text-muted-foreground shadow-sm md:mt-16">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-2xl">💬</div>
-              <h2 className="text-base font-semibold text-foreground">{emptyTitle}</h2>
-              <p className="mt-2 text-sm leading-relaxed">{emptyDescription}</p>
-              <div className="mt-5">{newThreadButton()}</div>
+            <div className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-[2rem] border border-border/70 bg-card/82 text-center shadow-[0_28px_90px_-60px_rgba(0,0,0,0.9)] ring-1 ring-white/40 backdrop-blur dark:ring-white/10 md:mt-16">
+              <div className="bg-gradient-to-br from-primary/15 via-card to-accent/10 px-7 py-8">
+                <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-[1.25rem] border border-border/70 bg-background/80 text-2xl shadow-sm">✺</div>
+                <h2 className="text-xl font-black tracking-tight text-foreground">{emptyTitle}</h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-muted-foreground">{emptyDescription}</p>
+                <div className="mt-6">{newThreadButton('Create thread')}</div>
+              </div>
+              <div className="grid gap-2 border-t border-border/60 bg-background/45 px-5 py-4 text-left text-[11px] text-muted-foreground sm:grid-cols-3">
+                <div className="rounded-2xl bg-card/70 p-3">Ask for a plan</div>
+                <div className="rounded-2xl bg-card/70 p-3">Summarize app state</div>
+                <div className="rounded-2xl bg-card/70 p-3">Find the next action</div>
+              </div>
             </div>
           ) : (
-            <div className="mx-auto flex max-w-4xl flex-col gap-4">
+            <div className="mx-auto flex max-w-5xl flex-col gap-5">
               {chat.messages.map(message => (
-                <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[82%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : message.role === 'tool'
-                        ? 'border border-amber-300/40 bg-amber-500/10 font-mono text-xs text-amber-900 dark:text-amber-200'
-                        : 'border border-border/80 bg-card text-card-foreground'
-                  }`}>
-                    {message.role === 'tool' && <div className="mb-1 font-semibold">Tool · {message.toolName}</div>}
-                    <div className="whitespace-pre-wrap break-words">{message.content || (chat.streaming && message.role === 'assistant' ? '…' : '')}</div>
+                <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {message.role !== 'user' && <div className="mt-1 hidden h-9 w-9 shrink-0 place-items-center rounded-2xl border border-border/70 bg-card text-sm shadow-sm sm:grid">{message.role === 'tool' ? '⌁' : '✦'}</div>}
+                  <div className={`max-w-[88%] sm:max-w-[76%] ${message.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                    <div className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{roleLabel(message)}</div>
+                    <div className={`rounded-[1.45rem] px-4 py-3 text-sm leading-7 shadow-sm ring-1 ${
+                      message.role === 'user'
+                        ? 'rounded-tr-md bg-foreground text-background ring-foreground/10'
+                        : message.role === 'tool'
+                          ? 'border border-amber-300/35 bg-amber-500/10 font-mono text-xs text-amber-950 ring-amber-500/10 dark:text-amber-100'
+                          : 'rounded-tl-md border border-border/70 bg-card/92 text-card-foreground ring-white/45 dark:ring-white/10'
+                    }`}>
+                      <div className="whitespace-pre-wrap break-words">{message.content || (chat.streaming && message.role === 'assistant' ? '…' : '')}</div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          {chat.error && <div className="mx-auto mt-4 max-w-4xl rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{chat.error}</div>}
+          {chat.error && <div className="mx-auto mt-4 max-w-5xl rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{chat.error}</div>}
         </div>
-        <div className="border-t border-border/80 bg-background/85 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-          <div className="mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
+
+        <div className="border-t border-border/70 bg-background/78 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/62 sm:p-4">
+          <div className="mx-auto flex max-w-5xl items-end gap-2 rounded-[1.5rem] border border-border/80 bg-card/94 p-2 shadow-[0_18px_70px_-50px_rgba(0,0,0,0.95)] ring-1 ring-white/45 dark:ring-white/10">
             <textarea
-              className="min-h-11 max-h-40 flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/80 focus:ring-0 disabled:opacity-60"
+              className="min-h-12 max-h-40 flex-1 resize-none rounded-[1rem] border-0 bg-transparent px-3 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground/75 focus:ring-0 disabled:opacity-60"
               rows={1}
               value={input}
               placeholder={inputPlaceholder}
@@ -272,13 +312,14 @@ export function AgentChatSurface({
               }}
             />
             <button
-              className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[1rem] bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-primary/90 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50"
               disabled={!input.trim() || !appId || chat.streaming}
               onClick={submit}
             >
               {chat.streaming ? 'Sending…' : 'Send'}
             </button>
           </div>
+          <div className="mx-auto mt-2 max-w-5xl px-2 text-[10px] text-muted-foreground">Enter sends · Shift+Enter inserts a new line</div>
         </div>
       </section>
     </div>
