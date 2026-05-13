@@ -24,6 +24,7 @@
     "@copilotkit/runtime": "^1.56.4",
     "@libsql/client": "^0.14.0",
     "@logto/browser": "^3.0.13",
+    "@mariozechner/pi-ai": "^0.55.4",
     "@peopleclaw/sdk": "workspace:*",
     "@prisma/adapter-libsql": "^6.1.0",
     "@prisma/client": "^6.1.0",
@@ -67,7 +68,8 @@
     "uploadthing": "^7.7.4",
     "vite-express": "^0.21.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@united-robotics/agent-ui-core": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

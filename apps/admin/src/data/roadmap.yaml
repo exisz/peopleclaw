@@ -2652,3 +2652,15 @@
   commit_sha: ""
   reject_reason: ""
 
+
+- id: F219
+  title: "Native PI Codex agent chat sessions for App Chat page"
+  category: "AI Chat"
+  stage: 4
+  status: done
+  description: "PLANET-1671: App Chat page now uses server-side OpenAI Codex OAuth via the PI provider, JSONL-style per-App chat sessions, streaming SSE text/tool/error/done events, and reusable @united-robotics/agent-ui-core React hooks/components. Tokens remain server-only and Platform Core stays neutral."
+  prerequisites: [F218]
+  jira: "PLANET-1671"
+  completed_at: "2026-05-13"
+  commit_sha: "bd8b82b"
+  reject_reason: ""
