@@ -109,7 +109,7 @@ export async function getCodexAccessToken(): Promise<{ accessToken: string; prof
 
   const explicitPath = explicitAuthProfilesPath();
   if (isProductionRuntime() && !explicitPath) {
-    throw new Error(`Production Codex connection is not configured. Set ${REQUIRED_PROD_ENV} in Vercel production environment variables. Local ~/.openclaw auth profile fallback is disabled in production.`);
+    throw new Error(`Production Codex connection is not configured. Set ${REQUIRED_PROD_ENV} in Vercel production environment variables. Local auth profile fallback is disabled in production.`);
   }
 
   const filePath = authProfilesPath();
