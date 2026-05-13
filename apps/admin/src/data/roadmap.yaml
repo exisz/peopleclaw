@@ -2662,5 +2662,5 @@
   prerequisites: [F218]
   jira: "PLANET-1671"
   completed_at: "2026-05-13"
-  commit_sha: "bd8b82b"
+  commit_sha: "a8b0fd8"
   reject_reason: ""
