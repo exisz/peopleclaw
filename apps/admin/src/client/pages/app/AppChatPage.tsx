@@ -15,21 +15,23 @@ export default function AppChatPage() {
   const transport = useMemo(() => createFetchAgentChatTransport('/api', { fetch: apiFetch }), []);
 
   return (
-    <div data-testid="page-app-chat" className="flex h-full min-h-0 flex-col">
-      <header className="shrink-0 border-b border-border px-6 py-4">
+    <div data-testid="page-app-chat" className="flex h-full min-h-0 flex-col bg-muted/20">
+      <header className="shrink-0 border-b border-border bg-background/85 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <h1 className="text-lg font-semibold tracking-tight">Chat</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Talk to this App. Sessions are preserved and streamed through the native PI Codex adapter.
         </p>
       </header>
-      <div className="min-h-0 flex-1">
-        <AgentChatSurface
-          appId={appId}
-          emptyTitle="Talk to this App"
-          emptyDescription="Ask for product decisions, component plans, implementation notes, or the next safest action."
-          inputPlaceholder="Message this App…"
-          transport={transport}
-        />
+      <div className="min-h-0 flex-1 p-3 sm:p-4 lg:p-6">
+        <div className="h-full min-h-0 overflow-hidden rounded-3xl border border-border/80 bg-background shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+          <AgentChatSurface
+            appId={appId}
+            emptyTitle="Talk to this App"
+            emptyDescription="Ask for product decisions, component plans, implementation notes, or the next safest action."
+            inputPlaceholder="Message this App…"
+            transport={transport}
+          />
+        </div>
       </div>
     </div>
   );
