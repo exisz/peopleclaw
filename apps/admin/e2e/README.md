@@ -48,3 +48,20 @@ pnpm --filter @peopleclaw/admin exec playwright show-report
 
 GitHub Actions workflow: `.github/workflows/e2e.yml` — runs on push to `main`
 against the deployed admin URL.
+
+## App Chat mutation smoke (PLANET-1675)
+
+Full Codex browser E2E is intentionally not required for every local run because it depends on a live Codex credential/session and can be slow/flaky. The server-side smoke below exercises the same `executeAppAgentTool` toolbox used by native App Chat, persists a page/component in a disposable SQLite database, verifies the created page through `list_app_modules`, and verifies the chat session stores the user prompt, tool result, and assistant summary.
+
+```bash
+pnpm --filter @peopleclaw/admin smoke:app-chat-mutation
+```
+
+Manual prod QA, when Codex is connected:
+
+1. Open `https://app.peopleclaw.rollersoft.com.au` and sign in.
+2. Open or create a test App, then go to `/app/<appId>/chat`.
+3. Ask: “Add a new public dashboard page called Smoke Metrics to this App.”
+4. Confirm the chat reports a tool/action completed.
+5. Open the App canvas/modules/API view and confirm `Smoke Metrics` appears as an exported page/component.
+6. Reopen the chat session and confirm the prompt, tool result, and assistant summary remain visible.
