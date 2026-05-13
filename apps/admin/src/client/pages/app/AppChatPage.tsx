@@ -5,11 +5,14 @@
  * JSONL-style session storage, and the reusable @united-robotics/agent-ui-core
  * React/SSE adapter. Tokens never leave the server.
  */
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { AgentChatSurface } from '@united-robotics/agent-ui-core';
+import { AgentChatSurface, createFetchAgentChatTransport } from '@united-robotics/agent-ui-core';
+import { apiFetch } from '../../lib/api';
 
 export default function AppChatPage() {
   const { id: appId } = useParams<{ id: string }>();
+  const transport = useMemo(() => createFetchAgentChatTransport('/api', { fetch: apiFetch }), []);
 
   return (
     <div data-testid="page-app-chat" className="flex h-full min-h-0 flex-col">
@@ -25,6 +28,7 @@ export default function AppChatPage() {
           emptyTitle="Talk to this App"
           emptyDescription="Ask for product decisions, component plans, implementation notes, or the next safest action."
           inputPlaceholder="Message this App…"
+          transport={transport}
         />
       </div>
     </div>

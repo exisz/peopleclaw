@@ -7,7 +7,9 @@ export interface UseAgentChatOptions {
   transport?: AgentChatTransport;
 }
 
-export function useAgentChat({ appId, transport = createFetchAgentChatTransport() }: UseAgentChatOptions) {
+export function useAgentChat({ appId, transport }: UseAgentChatOptions) {
+  const defaultTransport = React.useMemo(() => createFetchAgentChatTransport(), []);
+  const chatTransport = transport ?? defaultTransport;
   const [sessions, setSessions] = React.useState<AgentSessionSummary[]>([]);
   const [activeSession, setActiveSession] = React.useState<AgentSessionDetail | null>(null);
   const [messages, setMessages] = React.useState<AgentChatMessage[]>([]);
@@ -16,35 +18,35 @@ export function useAgentChat({ appId, transport = createFetchAgentChatTransport(
 
   const refreshSessions = React.useCallback(async () => {
     if (!appId) return;
-    const next = await transport.listSessions(appId);
+    const next = await chatTransport.listSessions(appId);
     setSessions(next);
-  }, [appId, transport]);
+  }, [appId, chatTransport]);
 
   const openSession = React.useCallback(async (sessionId: string) => {
     if (!appId) return;
-    const detail = await transport.getSession(appId, sessionId);
+    const detail = await chatTransport.getSession(appId, sessionId);
     setActiveSession(detail);
     setMessages(detail.messages);
-  }, [appId, transport]);
+  }, [appId, chatTransport]);
 
   const createSession = React.useCallback(async (title?: string) => {
     if (!appId) return null;
-    const detail = await transport.createSession(appId, title);
+    const detail = await chatTransport.createSession(appId, title);
     setActiveSession(detail);
     setMessages(detail.messages);
     await refreshSessions();
     return detail;
-  }, [appId, refreshSessions, transport]);
+  }, [appId, refreshSessions, chatTransport]);
 
   const deleteSession = React.useCallback(async (sessionId: string) => {
     if (!appId) return;
-    await transport.deleteSession(appId, sessionId);
+    await chatTransport.deleteSession(appId, sessionId);
     if (activeSession?.id === sessionId) {
       setActiveSession(null);
       setMessages([]);
     }
     await refreshSessions();
-  }, [activeSession?.id, appId, refreshSessions, transport]);
+  }, [activeSession?.id, appId, refreshSessions, chatTransport]);
 
   const sendMessage = React.useCallback(async (content: string) => {
     if (!appId || streaming) return;
@@ -61,7 +63,7 @@ export function useAgentChat({ appId, transport = createFetchAgentChatTransport(
       setMessages(prev => [...prev, userMsg, assistantMsg]);
 
       let assistantText = '';
-      await transport.sendMessage(appId, session.id, text, (event) => {
+      await chatTransport.sendMessage(appId, session.id, text, (event) => {
         if (event.type === 'text_delta' && typeof event.text === 'string') {
           assistantText += event.text;
           setMessages(prev => {
@@ -92,7 +94,7 @@ export function useAgentChat({ appId, transport = createFetchAgentChatTransport(
     } finally {
       setStreaming(false);
     }
-  }, [activeSession, appId, createSession, openSession, refreshSessions, streaming, transport]);
+  }, [activeSession, appId, createSession, openSession, refreshSessions, streaming, chatTransport]);
 
   React.useEffect(() => {
     if (!appId) return;
@@ -126,6 +128,7 @@ export interface AgentChatSurfaceProps {
   emptyTitle?: string;
   emptyDescription?: string;
   inputPlaceholder?: string;
+  transport?: AgentChatTransport;
 }
 
 export function AgentChatSurface({
@@ -133,8 +136,9 @@ export function AgentChatSurface({
   emptyTitle = 'Start a conversation',
   emptyDescription = 'Talk to this app agent. It keeps session context and streams replies live.',
   inputPlaceholder = 'Message this app…',
+  transport,
 }: AgentChatSurfaceProps) {
-  const chat = useAgentChat({ appId });
+  const chat = useAgentChat({ appId, transport });
   const [input, setInput] = React.useState('');
   const scrollerRef = React.useRef<HTMLDivElement>(null);
 
