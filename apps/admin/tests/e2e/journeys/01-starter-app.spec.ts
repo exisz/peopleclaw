@@ -33,16 +33,16 @@ test.describe('TC1: 起步示例 App 全流程', () => {
 
     // Step 3: 验证模块列表有 4 项 (PLANET-1461 加了 Shopify Connector)
     await app.openModuleList();
-    await expect(page.getByTestId('tab-module-list')).toContainText('(4)', { timeout: 5_000 });
+    await expect(page.getByTestId('module-list-count')).toContainText('4', { timeout: 5_000 });
 
     // Step 4: 点模块列表里的 BACKEND (PLANET-1468: tabs 取代 sticky panel)
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-modules').click();
     const backendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'AI 换脸-处理' }).first();
     const backendCompId = (await backendRow.getAttribute('data-testid'))!.replace('module-list-row-', '');
     await backendRow.click({ timeout: 10_000 });
     await page.waitForTimeout(300);
     // Wait for the component tab to actually open (PLANET-1468)
-    await expect(page.getByTestId(`tab-component-${backendCompId}`)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 5_000 });
     const componentPanel = page.getByTestId(`component-tab-content-${backendCompId}`);
     await expect(componentPanel).toBeVisible({ timeout: 5_000 });
     await expect(componentPanel.getByTestId(TID.detailSubTabFlow)).toBeVisible({ timeout: 5_000 });
@@ -54,14 +54,14 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     await expect(componentPanel.getByTestId(TID.detailProbeStep('saveResult'))).toBeVisible({ timeout: 30_000 });
 
     // Step 5: 回到 flow graph
-    await page.getByTestId(TID.tabFlowGraph).click();
+    await page.getByTestId('inner-nav-canvas').click();
 
     // Step 6: 开 FULLSTACK tab → run → 验证商品 probes
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-modules').click();
     const fullstackRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'Shopify 商品列表' }).first();
     const fullstackCompId = (await fullstackRow.getAttribute('data-testid'))!.replace('module-list-row-', '');
     await fullstackRow.click();
-    await expect(page.getByTestId(`tab-component-${fullstackCompId}`)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 5_000 });
     const fullstackPanel = page.getByTestId(`component-tab-content-${fullstackCompId}`);
     await expect(fullstackPanel).toBeVisible({ timeout: 5_000 });
     await expect(fullstackPanel.getByTestId(TID.detailSubTabFlow)).toBeVisible({ timeout: 5_000 });
@@ -74,12 +74,12 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     await expect(fullstackPanel.getByTestId('detail-fullstack-preview')).toBeVisible({ timeout: 30_000 });
 
     // Step 7: 回 flow → 开 FRONTEND → preview tab
-    await page.getByTestId(TID.tabFlowGraph).click();
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-canvas').click();
+    await page.getByTestId('inner-nav-modules').click();
     const frontendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'AI 换脸-表单' }).first();
     const frontendCompId = (await frontendRow.getAttribute('data-testid'))!.replace('module-list-row-', '');
     await frontendRow.click();
-    await expect(page.getByTestId(`tab-component-${frontendCompId}`)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 5_000 });
     const frontendPanel = page.getByTestId(`component-tab-content-${frontendCompId}`);
     await expect(frontendPanel).toBeVisible({ timeout: 5_000 });
     await expect(frontendPanel.getByTestId(TID.detailSubTabPreview)).toBeVisible({ timeout: 5_000 });

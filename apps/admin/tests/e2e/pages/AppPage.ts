@@ -50,9 +50,8 @@ export class AppPage {
   }
 
   async openModuleList() {
-    // PLANET-1468: Module list is now a top-level tab; the count is in the tab label.
-    // Just hover/no-op — the assertion checks the tab label text which is always visible.
-    return;
+    // PLANET-1742: Module list is a sidebar-routed App page, not a content top tab.
+    await this.page.getByTestId('inner-nav-modules').click();
   }
 
   async expectModuleStatus(componentId: string, status: string) {

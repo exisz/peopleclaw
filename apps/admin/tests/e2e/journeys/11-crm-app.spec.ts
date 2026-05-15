@@ -42,10 +42,10 @@ test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
     }
 
     // Step 2: 验证模块列表显示 4 项
-    await expect(page.getByTestId('tab-module-list')).toContainText('(4)', { timeout: 10_000 });
+    await page.getByTestId('inner-nav-modules').click();
+    await expect(page.getByTestId('module-list-count')).toContainText('4', { timeout: 10_000 });
 
     // Step 3: 拿到 4 个 component id (按 name 索引)
-    await page.getByTestId('tab-module-list').click();
     const idOf = async (label: string): Promise<string> => {
       const row = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: label }).first();
       const tid = await row.getAttribute('data-testid');
@@ -62,7 +62,7 @@ test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
 
     // Step 4: 打开联系人表单 → 提交一个联系人
     await page.locator(`[data-testid="module-list-row-${contactFormId}"]`).click();
-    await expect(page.getByTestId(`tab-component-${contactFormId}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 10_000 });
     const formPanel = page.getByTestId(`component-tab-content-${contactFormId}`);
     await expect(formPanel).toBeVisible();
     // FRONTEND default tab = preview (per spec §17 节点点击行为规则)
@@ -76,9 +76,9 @@ test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
     await expect(formPanel.getByTestId('crm-contact-saved')).toBeVisible({ timeout: 30_000 });
 
     // Step 5: 打开联系人列表 (FULLSTACK) → preview tab → 验证表里有该人
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-modules').click();
     await page.locator(`[data-testid="module-list-row-${contactListId}"]`).click();
-    await expect(page.getByTestId(`tab-component-${contactListId}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 10_000 });
     const listPanel = page.getByTestId(`component-tab-content-${contactListId}`);
     await listPanel.getByTestId(TID.detailSubTabPreview).click();
     await expect(listPanel.getByTestId('detail-fullstack-preview')).toBeVisible({ timeout: 30_000 });
@@ -91,9 +91,9 @@ test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
     expect(cId).toBeTruthy();
 
     // Step 6: 打开跟进记录表单 → 提交一条
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-modules').click();
     await page.locator(`[data-testid="module-list-row-${followupFormId}"]`).click();
-    await expect(page.getByTestId(`tab-component-${followupFormId}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 10_000 });
     const followupFormPanel = page.getByTestId(`component-tab-content-${followupFormId}`);
     await expect(followupFormPanel.getByTestId('detail-fullstack-preview')).toBeVisible({ timeout: 30_000 });
 
@@ -105,9 +105,9 @@ test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
     await expect(followupFormPanel.getByTestId('crm-followup-saved')).toBeVisible({ timeout: 30_000 });
 
     // Step 7: 打开跟进时间线 → preview tab → 验证有该条
-    await page.getByTestId('tab-module-list').click();
+    await page.getByTestId('inner-nav-modules').click();
     await page.locator(`[data-testid="module-list-row-${timelineId}"]`).click();
-    await expect(page.getByTestId(`tab-component-${timelineId}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 10_000 });
     const timelinePanel = page.getByTestId(`component-tab-content-${timelineId}`);
     await timelinePanel.getByTestId(TID.detailSubTabPreview).click();
     await expect(timelinePanel.getByTestId('detail-fullstack-preview')).toBeVisible({ timeout: 30_000 });

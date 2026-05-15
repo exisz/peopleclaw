@@ -30,6 +30,8 @@ import AppCronPage from './pages/app/AppCronPage';
 import AppSecretsPage from './pages/app/AppSecretsPage';
 import AppRunnersPage from './pages/app/AppRunnersPage';
 import AppLogsPage from './pages/app/AppLogsPage';
+import AppComponentPage from './pages/app/AppComponentPage';
+import AppModulesPage from './pages/app/AppModulesPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -51,7 +53,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/app/:id" element={<Navigate to="canvas" replace />} />
           <Route path="/app/:id/dashboard" element={<ErrorBoundary><AppInnerShell title="Dashboard"><AppDashboardPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/canvas" element={<ErrorBoundary><AppInnerShell title="Canvas"><AppCanvasPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/modules" element={<ErrorBoundary><AppInnerShell title="Modules"><AppModulesPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/chat" element={<ErrorBoundary><AppInnerShell title="Chat"><AppChatPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/components/:componentId" element={<ErrorBoundary><AppInnerShell title="App Page"><AppComponentPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/flow" element={<ErrorBoundary><AppInnerShell title="Module Flow"><AppModuleFlowPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/cron" element={<ErrorBoundary><AppInnerShell title="Cron"><AppCronPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/secrets" element={<ErrorBoundary><AppInnerShell title="Secrets"><AppSecretsPage /></AppInnerShell></ErrorBoundary>} />

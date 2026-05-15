@@ -1,8 +1,8 @@
 /**
  * PLANET-1407: Living SaaS — System / Module Flow page (stub).
  *
- * Will host the standalone module-flow graph (today still bundled inside the
- * Canvas IDE tabs). Stubbed so the navigation surface is real.
+ * Standalone system route. The route lives in the left App sidebar, not in a
+ * second content-level tab row.
  */
 import { useParams } from 'react-router-dom';
 
@@ -19,9 +19,9 @@ export default function AppModuleFlowPage() {
       <div className="p-6">
         <div className="rounded-lg border border-dashed border-border p-8 text-sm text-muted-foreground">
           <p>
-            The dedicated Module Flow surface is queued for the next slice. For
-            now the live module-flow graph still lives inside the Canvas IDE
-            tabs (<span className="font-mono">/app/{id}</span>).
+            The dedicated Module Flow surface is queued for the next slice.
+            This page is reached from the App sidebar at{' '}
+            <span className="font-mono">/app/{id}/system/flow</span>.
           </p>
         </div>
       </div>
