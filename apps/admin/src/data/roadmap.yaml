@@ -2664,3 +2664,15 @@
   completed_at: "2026-05-13"
   commit_sha: "a8b0fd8"
   reject_reason: ""
+
+- id: F220
+  title: "Flatten Living SaaS App routing into the left sidebar"
+  category: "UI"
+  stage: 4
+  status: done
+  description: "PLANET-1742: Remove the right-content top route/tab layer. Dashboard, Canvas, Modules, Chat, System pages, and user/business component pages are peer routes in the left App sidebar. Canvas remains the graph workspace; module list and component detail pages have direct URLs."
+  prerequisites: [F218]
+  jira: "PLANET-1742"
+  completed_at: "2026-05-16"
+  commit_sha: "58106786b2c3e3cf389ce9937fc71bcde5fb31d7"
+  reject_reason: ""
