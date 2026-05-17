@@ -71,7 +71,23 @@ jobs:
         id: tests
         run: pnpm --filter @peopleclaw/admin exec playwright test --reporter=github,html,json
         env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME: apps/admin/test-results/results.json
+          # pnpm --filter exec runs from apps/admin, so this must be package-relative.
+          # Downstream steps intentionally read the root-relative apps/admin/test-results/results.json.
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+
+      - name: Locate Playwright JSON results
+        if: always()
+        run: |
+          set -u
+          EXPECTED="apps/admin/test-results/results.json"
+          if [ -s "$EXPECTED" ]; then
+            echo "✅ Playwright JSON reporter output found: $EXPECTED"
+            jq -r '.stats // {}' "$EXPECTED" >/dev/null || echo "::warning::$EXPECTED exists but jq could not parse .stats"
+          else
+            echo "::warning::Playwright JSON reporter output missing at $EXPECTED"
+            echo "Nearby test result files:"
+            find apps/admin -maxdepth 4 \( -path '*/test-results/*' -o -path '*/playwright-report/*' \) -type f | sort | head -50 || true
+          fi
 
       - name: Upload Playwright report artifact
         if: always()
@@ -211,22 +227,52 @@ jobs:
 
           # Build a single summary embed listing failed tests + actionable links.
           # One embed > many embeds: avoids per-test rate-limit / payload bloat and keeps router-free format simple.
-          if [ -f "$RESULTS" ]; then
-            FAILED_LIST=$(jq -r '
-              [ .. | objects | select(has("ok") and has("title") and (.ok == false)) | .title ]
-              | unique
-              | .[0:15]
-              | map("• " + .)
-              | join("\n")
-            ' "$RESULTS" 2>/dev/null || echo "")
-            FAILED_COUNT=$(jq -r '[ .. | objects | select(has("ok") and (.ok == false)) ] | length' "$RESULTS" 2>/dev/null || echo "?")
+          if [ -s "$RESULTS" ]; then
+            if jq -e . "$RESULTS" >/dev/null 2>&1; then
+              FAILED_LIST=$(jq -r '
+                def failed_status: . == "failed" or . == "timedOut" or . == "interrupted";
+                [
+                  .. | objects
+                  | select(has("title"))
+                  | select(
+                      (.ok? == false)
+                      or ([ .tests[]?.results[]?.status? | select(failed_status) ] | length > 0)
+                      or ([ .results[]?.status? | select(failed_status) ] | length > 0)
+                    )
+                  | .title
+                  | select(type == "string" and length > 0)
+                ]
+                | unique
+                | .[0:15]
+                | map("• " + .)
+                | join("\n")
+              ' "$RESULTS" 2>/dev/null || echo "")
+              FAILED_COUNT=$(jq -r '
+                def failed_status: . == "failed" or . == "timedOut" or . == "interrupted";
+                ([
+                  .. | objects
+                  | select(has("title"))
+                  | select(
+                      (.ok? == false)
+                      or ([ .tests[]?.results[]?.status? | select(failed_status) ] | length > 0)
+                      or ([ .results[]?.status? | select(failed_status) ] | length > 0)
+                    )
+                  | .title
+                  | select(type == "string" and length > 0)
+                ] | unique | length)
+              ' "$RESULTS" 2>/dev/null || echo "0")
+            else
+              FAILED_LIST="• results.json exists but is invalid JSON; JSON reporter output is corrupt or truncated"
+              FAILED_COUNT="infra"
+            fi
           else
-            FAILED_LIST=""
-            FAILED_COUNT="?"
+            FAILED_LIST="• results.json missing; JSON reporter output path/config is broken"
+            FAILED_COUNT="infra"
           fi
 
           if [ -z "$FAILED_LIST" ]; then
-            FAILED_LIST="(could not parse results.json — see dashboard / action logs)"
+            FAILED_LIST="• results.json parsed, but no failed test titles were found; check dashboard / action logs for setup or reporter errors"
+            FAILED_COUNT="0"
           fi
 
           SHORT="$(printf '%s' "$SHA" | cut -c1-7)"
