@@ -31,7 +31,7 @@ test.describe('TC3: AI tool-calling 改画布', () => {
     await expect(nodeLocator).toHaveCount(4, { timeout: 30_000 });
   });
 
-  // LLM-dependent: DeepSeek tool-calling unreliable in CI.
+  // LLM-dependent: App Chat model/tool-calling is not deterministic in CI.
   test.fixme('chat apply_template is idempotent — no duplicate nodes', async ({ authedPage }) => {
     const page = authedPage;
     test.setTimeout(180_000);

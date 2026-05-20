@@ -19,6 +19,30 @@ Backend: Express + Prisma + Turso (libSQL). Auth: Logto SSO.
 - Workflow canvas: `@xyflow/react` 12.x
 - State: local component state + `localStorage` (`peopleclaw-workflows`) — server persistence is P5.
 
+
+## App Chat model integration
+
+The canonical PeopleClaw App Chat page is `/app/:id/chat`. The frontend uses `@united-robotics/agent-ui-core` (`AgentChatSurface` plus `createFetchAgentChatTransport`) and talks only to the PeopleClaw API under `/api/apps/:appId/agent-sessions` and `/api/apps/:appId/agent-sessions/:sessionId/messages`.
+
+The server route is `src/server/routes/agentChat.ts`. It stores per-App chat sessions, streams SSE events back to the browser, and calls `streamCodexAgent` in `src/server/lib/codexAgent.ts`. `streamCodexAgent` uses PI (`@mariozechner/pi-ai`) `streamSimple` with provider `openai-codex` against the ChatGPT Codex responses endpoint. The default model is `gpt-5.5`; override with `PEOPLECLAW_CODEX_MODEL` only when needed.
+
+Required production env vars:
+
+- `PEOPLECLAW_CODEX_ACCESS_TOKEN`
+- `PEOPLECLAW_CODEX_REFRESH_TOKEN`
+
+Optional metadata / tuning env vars:
+
+- `PEOPLECLAW_CODEX_EXPIRES`
+- `PEOPLECLAW_CODEX_EMAIL`
+- `PEOPLECLAW_CODEX_ACCOUNT_ID`
+- `PEOPLECLAW_CODEX_PLAN_TYPE`
+- `PEOPLECLAW_CODEX_MODEL`
+
+Production must use env-provided OAuth tokens. Local development may instead point at an explicit PI/OpenClaw auth profile store with `PEOPLECLAW_CODEX_AUTH_PROFILES_PATH` (and optionally `PEOPLECLAW_CODEX_AUTH_PROFILE`). Tokens are server-side only; the frontend never receives access or refresh tokens.
+
+DeepSeek is not part of the current App Chat/model path. The old `/api/chat` DeepSeek route has been removed; App Chat should use the agent-session routes above.
+
 ## data-testid Convention (for Playwright e2e)
 
 | Element                   | Pattern                                    |

@@ -2676,3 +2676,15 @@
   completed_at: "2026-05-16"
   commit_sha: "58106786b2c3e3cf389ce9937fc71bcde5fb31d7"
   reject_reason: ""
+
+- id: F221
+  title: "Remove old DeepSeek /api/chat path and document PI Codex setup"
+  category: "AI Chat"
+  stage: 4
+  status: done
+  description: "PLANET-1895: Remove the unused DeepSeek-backed /api/chat runtime path, keep App Chat on agent-session routes backed by PI openai-codex, and document production/local Codex OAuth env setup. DeepSeek is not part of the current App Chat model path."
+  prerequisites: [F219]
+  jira: "PLANET-1895"
+  completed_at: "2026-05-20"
+  commit_sha: ""
+  reject_reason: ""
