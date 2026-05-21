@@ -35,10 +35,27 @@ try {
   assert.equal(me.res.status, 200);
   assert.equal(Array.isArray(me.body.tenants), true);
 
+  const appOne = await json('/apps', {
+    method: 'POST',
+    headers: userAuth,
+    body: JSON.stringify({ name: 'External Agent Test App', description: 'safe m2m coverage' }),
+  });
+  assert.equal(appOne.res.status, 200, JSON.stringify(appOne.body));
+  const appTwo = await json('/apps', {
+    method: 'POST',
+    headers: userAuth,
+    body: JSON.stringify({ name: 'Other App' }),
+  });
+  assert.equal(appTwo.res.status, 200, JSON.stringify(appTwo.body));
+
   const created = await json('/external-agent-keys', {
     method: 'POST',
     headers: userAuth,
-    body: JSON.stringify({ name: 'local codex', scopes: ['agent:read', 'app:read', 'component:write'] }),
+    body: JSON.stringify({
+      name: 'local codex',
+      appId: appOne.body.app.id,
+      scopes: ['agent:read', 'app:read', 'component:read', 'component:write'],
+    }),
   });
   assert.equal(created.res.status, 201, JSON.stringify(created.body));
   assert.match(created.body.token, /^pc_m2m_[a-f0-9]{10}_/);
@@ -56,6 +73,45 @@ try {
   });
   assert.equal(rawSqlDenied.res.status, 403);
   assert.equal(rawSqlDenied.body.decision.reason, 'denylisted_operation');
+
+  const appsList = await json('/external-agent/apps', { headers: tokenAuth });
+  assert.equal(appsList.res.status, 200, JSON.stringify(appsList.body));
+  assert.equal(appsList.body.apps.length, 1, 'app-scoped key may only list its app');
+  assert.equal(appsList.body.apps[0].id, appOne.body.app.id);
+
+  const inspected = await json(`/external-agent/apps/${appOne.body.app.id}`, { headers: tokenAuth });
+  assert.equal(inspected.res.status, 200, JSON.stringify(inspected.body));
+  assert.equal(inspected.body.app.id, appOne.body.app.id);
+  assert.equal(inspected.body.safety.rawSql, false);
+
+  const crossApp = await json(`/external-agent/apps/${appTwo.body.app.id}`, { headers: tokenAuth });
+  assert.equal(crossApp.res.status, 403, 'app-scoped key cannot inspect another tenant app');
+
+  const dryRunCreate = await json(`/external-agent/apps/${appOne.body.app.id}/action`, {
+    method: 'POST',
+    headers: tokenAuth,
+    body: JSON.stringify({ operation: 'create_app_component', args: { kind: 'page', name: 'Dry Run Page' } }),
+  });
+  assert.equal(dryRunCreate.res.status, 200, JSON.stringify(dryRunCreate.body));
+  assert.equal(dryRunCreate.body.action.result.dryRun, true);
+
+  const confirmedCreate = await json(`/external-agent/apps/${appOne.body.app.id}/action`, {
+    method: 'POST',
+    headers: tokenAuth,
+    body: JSON.stringify({ operation: 'create_app_component', dryRun: false, confirmed: true, args: { kind: 'page', name: 'Confirmed Page' } }),
+  });
+  assert.equal(confirmedCreate.res.status, 200, JSON.stringify(confirmedCreate.body));
+  assert.equal(confirmedCreate.body.action.result.component.name, 'Confirmed Page');
+
+  const chatDryRun = await json(`/external-agent/apps/${appOne.body.app.id}/chat`, {
+    method: 'POST',
+    headers: tokenAuth,
+    body: JSON.stringify({ message: 'Add a contacts page' }),
+  });
+  assert.equal(chatDryRun.res.status, 200, JSON.stringify(chatDryRun.body));
+  assert.equal(chatDryRun.body.audit.dryRun, true);
+  assert.equal(chatDryRun.body.actions.length, 0);
+  assert.match(chatDryRun.body.response, /Dry run only/);
 
   const listed = await json('/external-agent-keys', { headers: userAuth });
   assert.equal(listed.res.status, 200);

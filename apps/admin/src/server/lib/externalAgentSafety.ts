@@ -45,6 +45,9 @@ type OperationPolicy = {
 
 export const EXTERNAL_AGENT_OPERATION_POLICIES: Record<string, OperationPolicy> = {
   whoami: { scopes: ['agent:read'] },
+  list_apps: { scopes: ['app:read'] },
+  inspect_app: { scopes: ['app:read'] },
+  external_agent_chat: { scopes: ['agent:read', 'app:read'], confirmRequired: true, dryRunAllowed: true },
   inspect_current_app: { scopes: ['app:read'] },
   list_app_modules: { scopes: ['component:read'] },
   create_app_component: { scopes: ['component:write'], confirmRequired: true, dryRunAllowed: true },

@@ -1,7 +1,7 @@
 import { getModel, streamSimple, type AssistantMessage, type Context, type Message, type Model, type ToolCall } from '@mariozechner/pi-ai';
 import { getCodexAccessToken } from './codexAuth.js';
 import type { AgentSessionMessage } from './agentSessions.js';
-import { appAgentTools, executeAppAgentTool, type AppAgentExecutedTool } from './appAgentTools.js';
+import { appAgentTools, executeAppAgentTool, type AppAgentExecutedTool, type AppAgentToolContext } from './appAgentTools.js';
 
 const CODEX_RESPONSES_BASE_URL = 'https://chatgpt.com/backend-api/codex/responses';
 const DEFAULT_MODEL_ID = 'gpt-5.5';
@@ -69,6 +69,8 @@ export async function streamCodexAgent(params: {
   messages: AgentSessionMessage[];
   userMessage: string;
   onEvent: (event: CodexAgentEvent) => void;
+  systemPromptAddendum?: string;
+  executeTool?: (ctx: AppAgentToolContext, toolCall: ToolCall) => Promise<AppAgentExecutedTool>;
 }): Promise<CodexAgentStreamResult> {
   const auth = await getCodexAccessToken();
   const context: Context = {
@@ -82,7 +84,8 @@ export async function streamCodexAgent(params: {
       'If asked who you are or what you can do, answer directly: you help with this App\'s product decisions, component planning, implementation notes, next actions, and current app mutations.',
       'Be concise, practical, and helpful. Do not be cagey about your app-agent role or normal capabilities.',
       params.appName ? `Current app: ${params.appName}` : `Current app ID: ${params.appId}`,
-    ].join('\n'),
+      params.systemPromptAddendum ?? '',
+    ].filter(Boolean).join('\n'),
     messages: [
       ...toPiMessages(params.messages),
       { role: 'user', content: [{ type: 'text', text: params.userMessage }], timestamp: Date.now() },
@@ -132,7 +135,7 @@ export async function streamCodexAgent(params: {
 
     context.messages.push(doneMessage);
     for (const toolCall of toolCalls) {
-      const executed = await executeAppAgentTool({ tenantId: params.tenantId, appId: params.appId }, toolCall);
+      const executed = await (params.executeTool ?? executeAppAgentTool)({ tenantId: params.tenantId, appId: params.appId }, toolCall);
       toolResults.push(executed);
       context.messages.push(executed.message);
       params.onEvent({

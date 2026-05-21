@@ -246,35 +246,45 @@ export async function executeAppAgentTool(ctx: AppAgentToolContext, toolCall: To
   try {
     const args = validateToolCall(appAgentTools, toolCall) as Record<string, any>;
     const { summary, result } = await runTool(ctx, toolCall.name, args);
-    return {
-      toolName: toolCall.name,
-      summary,
-      result,
-      message: {
-        role: 'toolResult',
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        content: [{ type: 'text', text: JSON.stringify({ ok: true, summary, result }) }],
-        details: result,
-        isError: false,
-        timestamp: Date.now(),
-      },
-    };
+    return buildAppAgentToolResult(toolCall.id, toolCall.name, summary, result, false);
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
-    return {
-      toolName: toolCall.name,
-      summary,
-      result: { ok: false, error: summary },
-      message: {
-        role: 'toolResult',
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        content: [{ type: 'text', text: JSON.stringify({ ok: false, error: summary }) }],
-        details: { error: summary },
-        isError: true,
-        timestamp: Date.now(),
-      },
-    };
+    return buildAppAgentToolResult(toolCall.id, toolCall.name, summary, { ok: false, error: summary }, true);
   }
+}
+
+export async function executeAppAgentOperation(ctx: AppAgentToolContext, operation: string, args: Record<string, unknown> = {}): Promise<AppAgentExecutedTool> {
+  return executeAppAgentTool(ctx, {
+    id: `external-${Date.now()}`,
+    name: operation,
+    arguments: args,
+    type: 'toolCall',
+  } as ToolCall);
+}
+
+export function buildDryRunToolResult(toolName: string, args: Record<string, unknown> = {}): AppAgentExecutedTool {
+  return buildAppAgentToolResult(
+    `external-dry-run-${Date.now()}`,
+    toolName,
+    `Dry run: would execute ${toolName}.`,
+    { ok: true, dryRun: true, wouldExecute: { toolName, args } },
+    false,
+  );
+}
+
+export function buildAppAgentToolResult(toolCallId: string, toolName: string, summary: string, result: unknown, isError: boolean): AppAgentExecutedTool {
+  return {
+    toolName,
+    summary,
+    result,
+    message: {
+      role: 'toolResult',
+      toolCallId,
+      toolName,
+      content: [{ type: 'text', text: JSON.stringify(isError ? { ok: false, error: summary } : { ok: true, summary, result }) }],
+      details: result,
+      isError,
+      timestamp: Date.now(),
+    },
+  };
 }
