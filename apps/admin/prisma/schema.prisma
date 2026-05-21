@@ -9,31 +9,33 @@ datasource db {
 }
 
 model User {
-  id               Int      @id @default(autoincrement())
-  logtoId          String   @unique
-  email            String?
-  visits           Int      @default(0)
-  credits          Int      @default(10)
-  stripeCustomerId String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  usageLogs        UsageLog[]
-  tenants          TenantUser[]
+  id                       Int                @id @default(autoincrement())
+  logtoId                  String             @unique
+  email                    String?
+  visits                   Int                @default(0)
+  credits                  Int                @default(10)
+  stripeCustomerId         String?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  usageLogs                UsageLog[]
+  tenants                  TenantUser[]
+  createdExternalAgentKeys ExternalAgentKey[]
 }
 
 model Tenant {
-  id               String       @id @default(cuid())
-  name             String
-  slug             String       @unique
-  plan             String       @default("free")
-  credits          Int          @default(20)
-  stripeCustomerId String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  members          TenantUser[]
-  connections      Connection[]
-  usageLogs        UsageLog[]
-  apps             App[]
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  plan              String             @default("free")
+  credits           Int                @default(20)
+  stripeCustomerId  String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  members           TenantUser[]
+  connections       Connection[]
+  usageLogs         UsageLog[]
+  apps              App[]
+  externalAgentKeys ExternalAgentKey[]
 }
 
 model TenantUser {
@@ -44,6 +46,7 @@ model TenantUser {
   createdAt DateTime @default(now())
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
   @@unique([tenantId, userId])
 }
 
@@ -56,6 +59,7 @@ model Connection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
   @@unique([tenantId, type])
 }
 
@@ -77,41 +81,69 @@ enum ConnectionType {
 }
 
 model App {
-  id          String      @id @default(cuid())
-  tenantId    String
-  name        String
-  description String?
-  secrets     String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  components  Component[]
-  connections ComponentConnection[]
-  scheduledTasks ScheduledTask[]
+  id                String                @id @default(cuid())
+  tenantId          String
+  name              String
+  description       String?
+  secrets           String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  tenant            Tenant                @relation(fields: [tenantId], references: [id])
+  components        Component[]
+  connections       ComponentConnection[]
+  scheduledTasks    ScheduledTask[]
+  externalAgentKeys ExternalAgentKey[]
+
   @@index([tenantId])
 }
 
+/// PLANET-1937 / PLANET-1941 — user-owned external coding-agent API keys.
+/// Stores only hashed one-time tokens. Keys are tenant-scoped and optionally
+/// app-scoped; external agents must go through low-code/component APIs only.
+model ExternalAgentKey {
+  id              String    @id @default(cuid())
+  tenantId        String
+  appId           String?
+  name            String
+  prefix          String    @unique
+  tokenHash       String    @unique
+  scopes          String    @default("[]")
+  createdByUserId Int?
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  app             App?      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  createdBy       User?     @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([appId])
+  @@index([tenantId, revokedAt])
+}
+
 model Component {
-  id           String           @id @default(cuid())
-  appId        String
-  type         ComponentType
-  name         String
-  runtime      ComponentRuntime @default(PEOPLECLAW_CLOUD)
-  code         String           @default("")
-  inputSchema  String?
-  outputSchema String?
-  probes       String?
-  canvasX      Int              @default(0)
-  canvasY      Int              @default(0)
-  icon         String?
+  id                String                @id @default(cuid())
+  appId             String
+  type              ComponentType
+  name              String
+  runtime           ComponentRuntime      @default(PEOPLECLAW_CLOUD)
+  code              String                @default("")
+  inputSchema       String?
+  outputSchema      String?
+  probes            String?
+  canvasX           Int                   @default(0)
+  canvasY           Int                   @default(0)
+  icon              String?
   compiledArtifacts String?
-  isExported   Boolean          @default(false)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  app          App              @relation(fields: [appId], references: [id], onDelete: Cascade)
-  connectionsFrom ComponentConnection[] @relation("FromComponent")
-  connectionsTo   ComponentConnection[] @relation("ToComponent")
-  scheduledTasks  ScheduledTask[]
+  isExported        Boolean               @default(false)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  app               App                   @relation(fields: [appId], references: [id], onDelete: Cascade)
+  connectionsFrom   ComponentConnection[] @relation("FromComponent")
+  connectionsTo     ComponentConnection[] @relation("ToComponent")
+  scheduledTasks    ScheduledTask[]
+
   @@index([appId])
 }
 
@@ -125,37 +157,40 @@ model ComponentConnection {
   app             App            @relation(fields: [appId], references: [id], onDelete: Cascade)
   fromComponent   Component      @relation("FromComponent", fields: [fromComponentId], references: [id], onDelete: Cascade)
   toComponent     Component      @relation("ToComponent", fields: [toComponentId], references: [id], onDelete: Cascade)
-  @@index([appId])
+
   @@unique([fromComponentId, toComponentId, type])
+  @@index([appId])
 }
 
 model ScheduledTask {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   appId       String
   componentId String
   cron        String
-  enabled     Boolean  @default(true)
+  enabled     Boolean        @default(true)
   lastRunAt   DateTime?
   lastStatus  String?
   lastError   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  app         App      @relation(fields: [appId], references: [id], onDelete: Cascade)
-  component   Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  app         App            @relation(fields: [appId], references: [id], onDelete: Cascade)
+  component   Component      @relation(fields: [componentId], references: [id], onDelete: Cascade)
   runs        ScheduledRun[]
+
   @@index([appId])
   @@index([componentId])
 }
 
 model ScheduledRun {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   scheduledTaskId String
-  startedAt       DateTime @default(now())
+  startedAt       DateTime      @default(now())
   finishedAt      DateTime?
   status          String
   output          String?
   error           String?
   task            ScheduledTask @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
+
   @@index([scheduledTaskId])
 }
 
@@ -171,6 +206,7 @@ model AppStoreRecord {
   payload   String   @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@index([appId, table])
   @@index([tenantId, appId, table])
 }

@@ -21,6 +21,7 @@ import { componentServerRouter } from './routes/components/server.js';
 import { componentClientRouter } from './routes/components/client.js';
 import { componentDetailRouter } from './routes/components/detail.js';
 import { templatesRouter } from './routes/templates.js';
+import { externalAgentsRouter } from './routes/externalAgents.js';
 
 export function createApp(): Express {
   checkEnv();
@@ -44,6 +45,7 @@ export function createApp(): Express {
   app.use('/api', e2eMintRouter);
   app.use('/api', uploadRouter);
   app.use('/api', templatesRouter);
+  app.use('/api', externalAgentsRouter);
   app.use('/api', appsRouter);
   app.use('/api', appSecretsRouter);
   app.use('/api', appInvokeRouter);

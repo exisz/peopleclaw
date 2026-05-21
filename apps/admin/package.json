@@ -17,7 +17,10 @@
     "e2e:headed": "playwright test --headed",
     "e2e:report": "playwright show-report",
     "smoke:app-agent-tools": "tsx scripts/smoke-app-agent-tools.ts",
-    "smoke:app-chat-mutation": "tsx scripts/smoke-app-chat-mutation.ts"
+    "smoke:app-chat-mutation": "tsx scripts/smoke-app-chat-mutation.ts",
+    "test:external-agent": "tsx scripts/test-external-agent-safety.ts",
+    "test:external-agent-api": "tsx scripts/test-external-agent-api.ts",
+    "migrate:external-agent-keys": "node scripts/migrate-add-external-agent-keys.mjs"
   },
   "dependencies": {
     "@copilotkit/react-core": "^1.56.4",
