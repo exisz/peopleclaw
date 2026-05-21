@@ -2688,3 +2688,15 @@
   completed_at: "2026-05-20"
   commit_sha: ""
   reject_reason: ""
+
+- id: F222
+  title: "External agent API keys + safety contract foundation"
+  category: "External Agents"
+  stage: 4
+  status: done
+  description: "PLANET-1937 + PLANET-1941: Add tenant/app-scoped external agent API keys with one-time token reveal, hashed-token-only storage, list/revoke APIs, protected M2M whoami endpoint, and centralized external-agent safety policy for scopes, dry-run/confirm, allowlisted operations, and hard-denied raw SQL/schema migration/secret exfiltration operations."
+  prerequisites: [F219]
+  jira: "PLANET-1937, PLANET-1941"
+  completed_at: "2026-05-21"
+  commit_sha: "1254833d0930b1ac9836f8951fd662b886f0eb13"
+  reject_reason: ""
