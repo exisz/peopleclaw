@@ -2700,3 +2700,15 @@
   completed_at: "2026-05-21"
   commit_sha: "1254833d0930b1ac9836f8951fd662b886f0eb13"
   reject_reason: ""
+
+- id: F223
+  title: "External App Agent M2M API + PeopleClaw CLI v1"
+  category: "External Agents"
+  stage: 4
+  status: done
+  description: "PLANET-1938 + PLANET-1939: Add M2M endpoints for external Codex/BYO agents to list scoped Apps, inspect an App safely, send App Agent chat commands with session/thread IDs, and execute allowlisted app-agent actions with dry-run/confirm/audit enforcement. Add @peopleclaw/cli with configure, whoami, apps list, app inspect, app chat, and app action commands plus --json output."
+  prerequisites: [F222]
+  jira: "PLANET-1938, PLANET-1939"
+  completed_at: "2026-05-22"
+  commit_sha: "5d031a65ba37cb3ae14f4f9dc61503265ee971f6"
+  reject_reason: ""
