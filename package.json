@@ -21,6 +21,7 @@
     "test:e2e": "pnpm --filter @peopleclaw/admin e2e",
     "test:e2e:ui": "pnpm --filter @peopleclaw/admin e2e:ui",
     "test:e2e:headed": "pnpm --filter @peopleclaw/admin e2e:headed",
-    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://app.peopleclaw.rollersoft.com.au pnpm --filter @peopleclaw/admin e2e"
+    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://app.peopleclaw.rollersoft.com.au pnpm --filter @peopleclaw/admin e2e",
+    "smoke:external-cli": "pnpm --filter @peopleclaw/admin smoke:external-cli"
   }
 }
