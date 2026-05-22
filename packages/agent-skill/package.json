@@ -1,0 +1,27 @@
+{
+  "name": "@peopleclaw/agent-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Drop-in AGENTS.md + SKILL.md package teaching external coding agents (Codex/OpenClaw/Claude Code/Cursor) how to safely drive a PeopleClaw App through the scoped CLI/API.",
+  "type": "module",
+  "bin": {
+    "peopleclaw-agent-skill": "./bin/install.mjs"
+  },
+  "files": [
+    "bin",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "install:local": "node ./bin/install.mjs --dest ."
+  },
+  "keywords": [
+    "peopleclaw",
+    "agents.md",
+    "skill",
+    "codex",
+    "openclaw",
+    "claude-code",
+    "cursor"
+  ]
+}

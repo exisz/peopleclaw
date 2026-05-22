@@ -2,6 +2,8 @@
 
 This smoke proves a clean Codex/BYO-agent style environment can mutate a PeopleClaw app only through the scoped external-agent CLI/API surface.
 
+> 👉 **Customer onboarding** lives at [`docs/external-agents/README.md`](./external-agents/README.md) and is shipped as a drop-in package at [`packages/agent-skill/`](../packages/agent-skill/) (AGENTS.md + SKILL.md + QUICKSTART + TROUBLESHOOTING for Codex / OpenClaw / Claude Code / Cursor).
+
 It exercises:
 
 1. CLI config via a temp `PEOPLECLAW_CONFIG`
