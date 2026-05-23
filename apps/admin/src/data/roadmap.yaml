@@ -2722,5 +2722,5 @@
   prerequisites: [F223]
   jira: "PLANET-1943"
   completed_at: "2026-05-23"
-  commit_sha: "2488364"
+  commit_sha: "29e98b8"
   reject_reason: ""
