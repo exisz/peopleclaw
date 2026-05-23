@@ -17,6 +17,7 @@ import {
   Clock,
   KeyRound,
   Cpu,
+  Bot,
   ScrollText,
   ArrowLeft,
   Puzzle,
@@ -76,6 +77,7 @@ export default function AppInnerShell({ title, children }: AppInnerShellProps) {
     { to: `${base}/system/cron`,    label: 'Cron',        icon: Clock,       testId: 'inner-nav-system-cron' },
     { to: `${base}/system/secrets`, label: 'Secrets',     icon: KeyRound,    testId: 'inner-nav-system-secrets' },
     { to: `${base}/system/runners`, label: 'Runners',     icon: Cpu,         testId: 'inner-nav-system-runners' },
+    { to: `${base}/system/external-agent`, label: 'Connect Codex', icon: Bot, testId: 'inner-nav-system-external-agent' },
     { to: `${base}/system/logs`,    label: 'Logs',        icon: ScrollText,  testId: 'inner-nav-system-logs' },
   ];
 

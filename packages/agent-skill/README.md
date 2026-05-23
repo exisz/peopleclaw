@@ -46,7 +46,7 @@ Flags:
 ## What the customer needs before running
 
 1. A PeopleClaw account and an App they own (or were granted access to).
-2. An app-scoped external-agent API key (`pc_m2m_…`) minted from **App → Settings → External Agents**. Recommended scopes for a coding agent:
+2. An app-scoped external-agent API key (`pc_m2m_…`) minted from **App → System → Connect Codex** (`/app/<APP_ID>/system/external-agent`). The page generates tenant/app-specific copy-paste config and reveals the token once. Recommended scopes for a coding agent:
    - `agent:read`
    - `app:read`
    - `component:read`

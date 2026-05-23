@@ -32,6 +32,7 @@ import AppRunnersPage from './pages/app/AppRunnersPage';
 import AppLogsPage from './pages/app/AppLogsPage';
 import AppComponentPage from './pages/app/AppComponentPage';
 import AppModulesPage from './pages/app/AppModulesPage';
+import AppExternalAgentPage from './pages/app/AppExternalAgentPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -60,6 +61,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/app/:id/system/cron" element={<ErrorBoundary><AppInnerShell title="Cron"><AppCronPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/secrets" element={<ErrorBoundary><AppInnerShell title="Secrets"><AppSecretsPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/runners" element={<ErrorBoundary><AppInnerShell title="Runners"><AppRunnersPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/system/external-agent" element={<ErrorBoundary><AppInnerShell title="Connect Codex"><AppExternalAgentPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/logs" element={<ErrorBoundary><AppInnerShell title="Logs"><AppLogsPage /></AppInnerShell></ErrorBoundary>} />
 
           {/* Legacy redirects — old workflow/case URLs collapse onto Apps list */}

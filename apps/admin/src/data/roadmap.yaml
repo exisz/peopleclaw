@@ -2712,3 +2712,15 @@
   completed_at: "2026-05-22"
   commit_sha: "5d031a65ba37cb3ae14f4f9dc61503265ee971f6"
   reject_reason: ""
+
+- id: F224
+  title: "Tenant-specific Codex external-agent onboarding"
+  category: "External Agents"
+  stage: 4
+  status: done
+  description: "PLANET-1943: Add the App System → Connect Codex page that mints an app-scoped external-agent key, reveals the token once, renders tenant/app-specific CLI and Codex copy-paste setup, lists/revokes existing keys without exposing secrets, and documents the quickstart/API/troubleshooting path for external coding agents."
+  prerequisites: [F223]
+  jira: "PLANET-1943"
+  completed_at: "2026-05-23"
+  commit_sha: "2488364"
+  reject_reason: ""

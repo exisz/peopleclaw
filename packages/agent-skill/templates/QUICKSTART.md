@@ -6,7 +6,7 @@ Hands-on walkthrough for a developer setting up a coding agent (Codex / OpenClaw
 
 - Node ≥ 18 and `npm` (or `pnpm`).
 - A PeopleClaw App you own or have access to.
-- An **app-scoped external-agent API key** minted from `app.peopleclaw.rollersoft.com.au` → your App → **Settings → External Agents → New key**. Recommended scopes for a coding agent:
+- An **app-scoped external-agent API key** minted from `app.peopleclaw.rollersoft.com.au` → your App → **System → Connect Codex → Create Codex key** (`/app/<APP_ID>/system/external-agent`). The page fills in your base URL, App ID, and one-time token. Recommended scopes for a coding agent:
   - `agent:read`
   - `app:read`
   - `component:read`

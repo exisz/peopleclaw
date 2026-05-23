@@ -21,6 +21,7 @@
     "smoke:external-cli": "pnpm --filter @peopleclaw/cli build && tsx scripts/smoke-external-cli-flow.ts",
     "test:external-agent": "tsx scripts/test-external-agent-safety.ts",
     "test:external-agent-api": "tsx scripts/test-external-agent-api.ts",
+    "test:external-agent-onboarding": "tsx scripts/test-external-agent-onboarding.ts",
     "migrate:external-agent-keys": "node scripts/migrate-add-external-agent-keys.mjs"
   },
   "dependencies": {

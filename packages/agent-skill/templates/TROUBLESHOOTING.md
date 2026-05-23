@@ -19,7 +19,7 @@ If the CLI works in your shell but your **agent** (Codex/OpenClaw/Claude Code) s
 Auth was rejected by the server.
 
 - Double-check `PEOPLECLAW_BASE_URL` — is the key for prod but you're hitting staging (or vice-versa)?
-- Has the key been revoked? Check **App → Settings → External Agents** in the admin UI.
+- Has the key been revoked? Check **App → System → Connect Codex** in the admin UI.
 - Did you accidentally paste a non-`pc_m2m_` value (e.g. a session cookie)? Mint a fresh key.
 
 ## `PeopleClaw API 403: insufficient_scope`
@@ -28,7 +28,7 @@ The key is valid but doesn't have the scope the operation requires.
 
 - **Don't** retry or try to route around it.
 - Read which scope was missing from the response body (`error`, `requiredScopes`).
-- Ask the operator to mint a new key with that scope, or to grant it to the existing key (App → Settings → External Agents → edit).
+- Ask the operator to mint a new key with that scope from **App → System → Connect Codex**.
 
 Common scope needs:
 

@@ -108,7 +108,7 @@ function main() {
   writeFresh(path.join(dest, 'docs', 'peopleclaw-agent', 'TROUBLESHOOTING.md'), troubleTpl, { force: args.force });
 
   console.log('\nDone. Next:');
-  console.log('  1. Mint an app-scoped pc_m2m_ key from PeopleClaw → App → Settings → External Agents.');
+  console.log('  1. Mint an app-scoped pc_m2m_ key from PeopleClaw → App → System → Connect Codex.');
   console.log('  2. export PEOPLECLAW_API_KEY=pc_m2m_...   # and ensure your agent runner sees it');
   console.log('  3. peopleclaw whoami --json');
 }
