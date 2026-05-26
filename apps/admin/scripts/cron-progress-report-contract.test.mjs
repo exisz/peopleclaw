@@ -16,6 +16,6 @@ describe('PeopleClaw cron Discord progress report contract', () => {
     assert.match(body, /Validation command\/result per test/);
     assert.match(body, /Commit hash\(es\) per test/);
     assert.match(body, /Any blocker/);
-    assert.match(body, /Use the message tool if you need to notify the user directly|final plain-text reply will be delivered automatically/s);
+    assert.match(body, /Final reply must include:/);
   });
 });
