@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createContact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
+import { addFollowupNote, createContact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
 
 function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
   const errors: string[] = [];
@@ -96,4 +96,47 @@ describe('CRM starter app functions', () => {
     ]);
     assert.deepEqual(result.contact, { id: 'contact_1', ...writes[0].row });
   });
+
+  it('TC-PC-086 proves addFollowupNote validates existing contact', async () => {
+    const contacts = new Map<string, Record<string, unknown>>([
+      ['contact_1', { id: 'contact_1', name: 'Ada Lovelace' }],
+    ]);
+    const writes: Array<{ collection: string; row: Record<string, unknown> }> = [];
+    const appStore = {
+      insert(collection: 'contacts' | 'followupNotes', row: Record<string, unknown>) {
+        writes.push({ collection, row });
+        return { id: 'followup_1', ...row };
+      },
+      getById(collection: 'contacts', id: string) {
+        return collection === 'contacts' ? contacts.get(id) as any ?? null : null;
+      },
+    };
+
+    const missing = await addFollowupNote(
+      { contactId: 'missing', type: 'meeting', note: 'Should not write' },
+      { now: () => new Date('2026-05-26T14:06:00.000Z'), appStore },
+    );
+    assert.deepEqual(missing, { ok: false, error: 'CONTACT_NOT_FOUND' });
+    assert.deepEqual(writes, []);
+
+    const result = await addFollowupNote(
+      { contactId: 'contact_1', type: 'meeting', note: ' Demo scheduled ' },
+      { now: () => new Date('2026-05-26T14:06:00.000Z'), appStore },
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(writes, [
+      {
+        collection: 'followupNotes',
+        row: {
+          contactId: 'contact_1',
+          type: 'meeting',
+          note: 'Demo scheduled',
+          createdAt: '2026-05-26T14:06:00.000Z',
+        },
+      },
+    ]);
+    assert.deepEqual(result.followupNote, { id: 'followup_1', ...writes[0].row });
+  });
+
 });

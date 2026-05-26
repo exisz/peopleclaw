@@ -8,8 +8,15 @@ type CreateContactInput = {
   tags?: string | string[];
 };
 
+type AddFollowupNoteInput = {
+  contactId?: string;
+  type?: string;
+  note?: string;
+};
+
 type CrmAppStore = {
-  insert(collection: 'contacts', row: Record<string, unknown>): { id: string } & Record<string, unknown>;
+  insert(collection: 'contacts' | 'followupNotes', row: Record<string, unknown>): { id: string } & Record<string, unknown>;
+  getById(collection: 'contacts', id: string): ({ id: string } & Record<string, unknown>) | null;
 };
 
 type CrmFunctionContext = {
@@ -40,6 +47,35 @@ export async function createContact(input: CreateContactInput, ctx: CrmFunctionC
   });
 
   return { ok: true as const, contact };
+}
+
+
+export async function addFollowupNote(input: AddFollowupNoteInput, ctx: CrmFunctionContext) {
+  const contactId = String(input.contactId ?? '').trim();
+  if (!contactId) {
+    return { ok: false as const, error: 'CONTACT_ID_REQUIRED' };
+  }
+
+  const contact = ctx.appStore.getById('contacts', contactId);
+  if (!contact) {
+    return { ok: false as const, error: 'CONTACT_NOT_FOUND' };
+  }
+
+  const note = String(input.note ?? '').trim();
+  if (!note) {
+    return { ok: false as const, error: 'NOTE_REQUIRED' };
+  }
+
+  const allowedTypes = new Set(['call', 'email', 'meeting']);
+  const type = allowedTypes.has(String(input.type)) ? String(input.type) : 'call';
+  const followupNote = ctx.appStore.insert('followupNotes', {
+    contactId,
+    type,
+    note,
+    createdAt: (ctx.now?.() ?? new Date()).toISOString(),
+  });
+
+  return { ok: true as const, followupNote };
 }
 
 export const crmAppTemplateManifest = {
