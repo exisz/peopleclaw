@@ -25,4 +25,14 @@ describe('PeopleClaw managed document collection planning', () => {
       },
     });
   });
+
+  it('TC-PC-032 proves raw SQL field is rejected', () => {
+    assert.throws(() => planDocumentCollectionDefinition({
+      name: 'leads',
+      version: 1,
+      fields: {
+        searchText: { type: 'string', rawSql: 'generated always as (...)' } as never,
+      },
+    }), /must not include raw SQL/);
+  });
 });

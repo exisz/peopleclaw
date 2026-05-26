@@ -6,6 +6,8 @@ export interface DocumentCollectionFieldDefinition {
   default?: unknown;
 }
 
+const FORBIDDEN_FIELD_KEYS = new Set(['rawSql', 'rawSQL', 'sql', 'query', 'migration']);
+
 export interface DocumentCollectionDefinition {
   name: string;
   version: number;
@@ -37,6 +39,13 @@ export function planDocumentCollectionDefinition(definition: DocumentCollectionD
   }
   if (!definition.fields || Object.keys(definition.fields).length === 0) {
     throw new Error('Document collection definition requires at least one field');
+  }
+  for (const [fieldName, field] of Object.entries(definition.fields)) {
+    for (const key of Object.keys(field as unknown as Record<string, unknown>)) {
+      if (FORBIDDEN_FIELD_KEYS.has(key)) {
+        throw new Error(`Document collection field ${fieldName} must not include raw SQL or migration directives`);
+      }
+    }
   }
 
   return {
