@@ -118,7 +118,9 @@ export async function server(ctx: any) {
 }
 
 // --- CLIENT (display) ---
-export function Client({ data, refresh }: { data: any; refresh?: () => void }) {
+export function Client(props: any) {
+  const data = props?.data;
+  const refresh = props?.refresh;
   const contacts = (data && data.contacts) || [];
   return (
     <div data-testid="crm-contact-list" style={{ padding: '1rem', fontFamily: 'system-ui' }}>
@@ -250,7 +252,9 @@ export async function server(ctx: any) {
 }
 
 // --- CLIENT ---
-export function Client({ data, refresh }: { data: any; refresh?: () => void }) {
+export function Client(props: any) {
+  const data = props?.data;
+  const refresh = props?.refresh;
   const items = (data && data.items) || [];
   const typeIcon = (t: string) => t === 'email' ? '✉️' : t === 'meeting' ? '🤝' : '📞';
   return (

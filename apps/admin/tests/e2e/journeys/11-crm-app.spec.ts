@@ -14,7 +14,7 @@ import { AppPage } from '../pages/AppPage';
 import { TID } from '../helpers/test-ids';
 
 test.describe('TC11: CRM App 模板 — connector-free 全流程', () => {
-  test('创建 crm-app → 验证 4 组件 → 提交联系人 → 提交跟进', async ({ authedPage }) => {
+  test('TC-PC-088 CRM preview create contact works end-to-end: 创建 crm-app → 验证 4 组件 → 提交联系人 → 提交跟进', async ({ authedPage }) => {
     const page = authedPage;
     test.setTimeout(180_000);
 
