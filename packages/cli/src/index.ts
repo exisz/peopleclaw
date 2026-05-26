@@ -165,6 +165,7 @@ Usage:
   peopleclaw app inspect <appId> [--json]
   peopleclaw app pull <appId> [--dir <path>] [--json]
   peopleclaw app plan <appId> [--dir <path>] [--json]
+  peopleclaw app deploy <appId> [--dir <path>] [--preview] [--json]
   peopleclaw app chat <appId> <message...> [--session-id <id>] [--confirm] [--dry-run] [--json]
   peopleclaw app action <appId> <operation> [--args '{"name":"..."}'] [--confirm] [--dry-run] [--json]
 
@@ -238,6 +239,22 @@ async function main() {
     const changes = diffTrees(remoteFiles, readLocalTree(inputDir));
     const fallback = changes.length ? changes.map(change => `${change.status}\t${change.path}`).join('\n') : 'No changes';
     print({ ok: true, appId, inputDir, changes }, flags, fallback);
+    return;
+  }
+
+  if (cmd === 'app' && subcmd === 'deploy') {
+    const appId = rest[0];
+    if (!appId) usage();
+    const inputDir = path.resolve(textFlag(flags.dir) ?? appId);
+    const files = readLocalTree(inputDir);
+    if (!Object.keys(files).length) throw new Error(`No app artifact files found in ${inputDir}`);
+    const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}/deploy`, {
+      method: 'POST',
+      flags,
+      body: { preview: Boolean(flags.preview), artifact: { files } },
+    });
+    const url = (body as any).previewUrl ?? (body as any).deployment?.previewUrl ?? (body as any).deployment?.url;
+    print(body, flags, url ? `Deployment ready: ${url}` : JSON.stringify(body));
     return;
   }
 
