@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { planDocumentCollectionDefinition, planDocumentIndexDeclaration } from './documentCollectionPlan';
+import { planDocumentCollectionDefinition, planDocumentIndexDeclaration, planDocumentSeedOperation } from './documentCollectionPlan';
 
 describe('PeopleClaw managed document collection planning', () => {
   it('TC-PC-031 proves collection definition creates document collection', () => {
@@ -50,6 +50,28 @@ describe('PeopleClaw managed document collection planning', () => {
       name: 'leads_email_unique',
       fields: ['email'],
       unique: true,
+    });
+  });
+
+  it('TC-PC-035 proves seed op is idempotent by key', () => {
+    const firstPlan = planDocumentSeedOperation({
+      collection: 'crm_statuses',
+      key: 'status:new',
+      document: { label: 'New', color: 'blue' },
+    });
+    const secondPlan = planDocumentSeedOperation({
+      collection: 'crm_statuses',
+      key: 'status:new',
+      document: { label: 'New', color: 'blue' },
+    });
+
+    assert.deepEqual(firstPlan, secondPlan);
+    assert.deepEqual(firstPlan, {
+      operation: 'seed_document',
+      collection: 'crm_statuses',
+      key: 'status:new',
+      mode: 'upsert_by_key',
+      document: { label: 'New', color: 'blue' },
     });
   });
 });

@@ -36,6 +36,20 @@ export interface DocumentIndexPlanRecord {
   unique: boolean;
 }
 
+export interface DocumentSeedDeclaration {
+  collection: string;
+  key: string;
+  document: Record<string, unknown>;
+}
+
+export interface DocumentSeedPlanRecord {
+  operation: 'seed_document';
+  collection: string;
+  key: string;
+  mode: 'upsert_by_key';
+  document: Readonly<Record<string, unknown>>;
+}
+
 function requireToken(value: string, field: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error(`Document collection definition requires ${field}`);
@@ -58,6 +72,22 @@ export function planDocumentIndexDeclaration(declaration: DocumentIndexDeclarati
     name,
     fields,
     unique: Boolean(declaration.unique),
+  };
+}
+
+export function planDocumentSeedOperation(declaration: DocumentSeedDeclaration): DocumentSeedPlanRecord {
+  const collection = requireToken(declaration.collection, 'collection');
+  const key = requireToken(declaration.key, 'seed.key');
+  if (!declaration.document || Array.isArray(declaration.document) || typeof declaration.document !== 'object') {
+    throw new Error('Document seed operation requires a document object');
+  }
+
+  return {
+    operation: 'seed_document',
+    collection,
+    key,
+    mode: 'upsert_by_key',
+    document: Object.freeze({ ...declaration.document }),
   };
 }
 
