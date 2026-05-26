@@ -155,6 +155,31 @@ function diffTrees(remoteFiles: Record<string, string>, localFiles: Record<strin
   });
 }
 
+
+function validateDeployArtifactFiles(files: Record<string, string>): string[] {
+  const errors: string[] = [];
+  const rawManifest = files['app/manifest.json'];
+  if (!rawManifest) {
+    errors.push('app/manifest.json is required');
+  } else {
+    try {
+      const manifest = JSON.parse(rawManifest) as Record<string, unknown>;
+      const appId = typeof manifest.appId === 'string' ? manifest.appId : typeof manifest.id === 'string' ? manifest.id : undefined;
+      if (!appId?.trim()) errors.push('app/manifest.json must include id or appId');
+      if (typeof manifest.name !== 'string' || !manifest.name.trim()) errors.push('app/manifest.json must include name');
+    } catch (error) {
+      errors.push(`app/manifest.json must be valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  for (const [filePath, contents] of Object.entries(files)) {
+    if (filePath.includes('..')) errors.push(`artifact path must not contain ..: ${filePath}`);
+    if (/TODO_INVALID|<<<<<<<|>>>>>>>|=======$/m.test(contents)) errors.push(`artifact file appears dirty or conflicted: ${filePath}`);
+  }
+
+  return errors;
+}
+
 function usage(): never {
   console.error(`PeopleClaw CLI v1
 
@@ -281,6 +306,8 @@ async function main() {
     const inputDir = path.resolve(textFlag(flags.dir) ?? appId);
     const files = readLocalTree(inputDir);
     if (!Object.keys(files).length) throw new Error(`No app artifact files found in ${inputDir}`);
+    const artifactErrors = validateDeployArtifactFiles(files);
+    if (artifactErrors.length) throw new Error(`Refusing to deploy invalid app artifact: ${artifactErrors.join('; ')}`);
     const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}/deploy`, {
       method: 'POST',
       flags,
