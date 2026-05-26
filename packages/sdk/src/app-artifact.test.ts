@@ -326,4 +326,29 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(store.read(first.artifactHash), minimalAppTree);
     assert.deepEqual(store.read(second.artifactHash), changedTree);
   });
+
+  it('TC-PC-049 proves old deployment loads after newer deploy exists', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry();
+    const firstTree = minimalAppTree;
+    const secondTree = {
+      ...minimalAppTree,
+      manifest: { ...minimalAppTree.manifest, version: '2.0.0' },
+    };
+    const first = await deployments.deployPreview(firstTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+    const second = await deployments.deployPreview(secondTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:01:00.000Z'),
+    });
+
+    assert.notEqual(second.deploymentRecord.deploymentId, first.deploymentRecord.deploymentId);
+    assert.deepEqual(deployments.loadDeploymentArtifact(first.deploymentRecord.deploymentId), firstTree);
+    assert.deepEqual(deployments.loadDeploymentArtifact(second.deploymentRecord.deploymentId), secondTree);
+  });
 });

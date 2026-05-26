@@ -120,6 +120,7 @@ export interface AppDeploymentRegistry {
   deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
   promote(deploymentId: string): PromoteAppDeploymentResult;
   rollbackProductionPointer(): RollbackAppDeploymentResult;
+  loadDeploymentArtifact(deploymentId: string): AppArtifactTree | null;
   listDeploymentRecords(): AppDeploymentRecord[];
   getProductionDeploymentId(): string | null;
 }
@@ -388,6 +389,10 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
       const rolledBackFromDeploymentId = productionDeploymentId;
       productionDeploymentId = productionPointerHistory.pop() ?? null;
       return { operation: 'restore_production_pointer', dataPlaneRollback: 'not_performed', rolledBackFromDeploymentId, productionDeploymentId };
+    },
+    loadDeploymentArtifact(deploymentId: string): AppArtifactTree | null {
+      const record = deploymentRecords.find(candidate => candidate.deploymentId === deploymentId);
+      return record ? artifactStore.read(record.artifactHash as `sha256:${string}`) : null;
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
