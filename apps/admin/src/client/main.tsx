@@ -33,6 +33,7 @@ import AppLogsPage from './pages/app/AppLogsPage';
 import AppComponentPage from './pages/app/AppComponentPage';
 import AppModulesPage from './pages/app/AppModulesPage';
 import AppExternalAgentPage from './pages/app/AppExternalAgentPage';
+import UserAppRuntimePage from './pages/app/UserAppRuntimePage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -45,6 +46,7 @@ createRoot(document.getElementById('root')!).render(
 
           {/* Top-level surfaces — outer AppShell */}
           <Route path="/apps" element={<ErrorBoundary><AppShell title="Apps"><AppsList /></AppShell></ErrorBoundary>} />
+          <Route path="/apps/:appId/*" element={<ErrorBoundary><AppShell title="App Runtime"><UserAppRuntimePage /></AppShell></ErrorBoundary>} />
           <Route path="/published" element={<ErrorBoundary><AppShell title="Published"><PlaceholderPage title="Published Apps" /></AppShell></ErrorBoundary>} />
           <Route path="/security" element={<ErrorBoundary><AppShell title="Security"><PlaceholderPage title="Security" /></AppShell></ErrorBoundary>} />
           <Route path="/settings" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
