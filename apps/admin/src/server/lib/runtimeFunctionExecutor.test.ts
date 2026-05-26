@@ -19,4 +19,17 @@ describe('PeopleClaw runtime function executor limits', () => {
     assert.equal(rejected.stage, 'timeout');
     assert.match(rejected.errors.join('\n'), /exceeded timeout/);
   });
+
+  it('TC-PC-062 proves memory hog function is killed by memory limit', async () => {
+    const rejected = await invokeRuntimeFunctionWorkerSource({
+      source: `() => { const chunks = []; while (true) chunks.push(new Array(1_000_000).fill('peopleclaw')); }`,
+      timeoutMs: 2_000,
+      memoryLimitMb: 16,
+    });
+
+    assert.equal(rejected.ok, false);
+    assert.equal(rejected.stage, 'memory');
+    assert.match(rejected.errors.join('\n'), /exceeded memory limit/);
+  });
+
 });

@@ -2,12 +2,13 @@ import { Worker } from 'node:worker_threads';
 
 export type RuntimeFunctionWorkerResult =
   | { ok: true; result: unknown }
-  | { ok: false; stage: 'timeout' | 'runtime'; errors: string[] };
+  | { ok: false; stage: 'timeout' | 'memory' | 'runtime'; errors: string[] };
 
 export interface RuntimeFunctionWorkerInput {
   source: string;
   payload?: unknown;
   timeoutMs: number;
+  memoryLimitMb?: number;
 }
 
 /**
@@ -28,7 +29,11 @@ export function invokeRuntimeFunctionWorkerSource(input: RuntimeFunctionWorkerIn
         error => parentPort.postMessage({ ok: false, error: error && error.message ? error.message : String(error) })
       );
     `,
-    { eval: true, workerData: { source: input.source, payload: input.payload } },
+    {
+      eval: true,
+      workerData: { source: input.source, payload: input.payload },
+      resourceLimits: input.memoryLimitMb ? { maxOldGenerationSizeMb: input.memoryLimitMb } : undefined,
+    },
   );
 
   return new Promise(resolve => {
@@ -53,9 +58,20 @@ export function invokeRuntimeFunctionWorkerSource(input: RuntimeFunctionWorkerIn
       if (message?.ok === true) finish({ ok: true, result: message.result });
       else finish({ ok: false, stage: 'runtime', errors: [message?.error ?? 'runtime function failed'] });
     });
-    worker.on('error', error => finish({ ok: false, stage: 'runtime', errors: [error.message] }));
+    worker.on('error', error => {
+      const message = error.message || String(error);
+      if (input.memoryLimitMb && /memory limit|heap out of memory|allocation failed/i.test(message)) {
+        finish({ ok: false, stage: 'memory', errors: ['runtime function exceeded memory limit and was terminated'] });
+        return;
+      }
+      finish({ ok: false, stage: 'runtime', errors: [message] });
+    });
     worker.on('exit', code => {
       if (timingOut) return;
+      if (!settled && code !== 0 && input.memoryLimitMb) {
+        finish({ ok: false, stage: 'memory', errors: ['runtime function exceeded memory limit and was terminated'] });
+        return;
+      }
       if (!settled && code !== 0) finish({ ok: false, stage: 'runtime', errors: [`runtime worker exited with code ${code}`] });
     });
   });
