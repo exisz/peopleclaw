@@ -80,4 +80,25 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /manifest\.routes\[0\]\.path must be inside \/apps\/demo-crm/);
   });
+
+  it('TC-PC-005 accepts app and system sidebar sections', () => {
+    const appTreeWithAppAndSystemSections = {
+      ...minimalAppTree,
+      sidebar: {
+        sections: [
+          minimalAppTree.sidebar.sections[0],
+          {
+            id: 'system',
+            title: 'System',
+            kind: 'system',
+            items: [{ id: 'settings', label: 'Settings', routeId: 'dashboard' }],
+          },
+        ],
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithAppAndSystemSections);
+
+    assert.deepEqual(result, { ok: true, errors: [] });
+  });
 });
