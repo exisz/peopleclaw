@@ -8,7 +8,12 @@ export interface RuntimeProgressEvent {
 
 export interface RuntimeProgressEmitter {
   emitted: RuntimeProgressEvent[];
-  emit(message: string, data?: Record<string, unknown>): RuntimeProgressEvent;
+  emit(message: string, data?: Record<string, unknown>): RuntimeProgressEvent | null;
+}
+
+export interface CancellableRuntimeProgressEmitter extends RuntimeProgressEmitter {
+  cancel(): void;
+  isCancelled(): boolean;
 }
 
 function requireToken(value: string, field: string): string {
@@ -19,11 +24,23 @@ function requireToken(value: string, field: string): string {
 
 /** Build ctx.progress.emit for a sandboxed function invocation. */
 export function createRuntimeProgressEmitter(invocationId: string, now: () => Date = () => new Date()): RuntimeProgressEmitter {
+  return createCancellableRuntimeProgressEmitter(invocationId, now);
+}
+
+export function createCancellableRuntimeProgressEmitter(invocationId: string, now: () => Date = () => new Date()): CancellableRuntimeProgressEmitter {
   const scopedInvocationId = requireToken(invocationId, 'invocationId');
   const emitted: RuntimeProgressEvent[] = [];
+  let cancelled = false;
   return {
     emitted,
+    cancel() {
+      cancelled = true;
+    },
+    isCancelled() {
+      return cancelled;
+    },
     emit(message, data) {
+      if (cancelled) return null;
       const event: RuntimeProgressEvent = {
         invocationId: scopedInvocationId,
         type: 'progress',

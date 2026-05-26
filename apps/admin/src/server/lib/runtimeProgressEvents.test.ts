@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createRuntimeProgressEmitter, serializeScopedProgressSse } from './runtimeProgressEvents';
+import { createCancellableRuntimeProgressEmitter, createRuntimeProgressEmitter, serializeScopedProgressSse } from './runtimeProgressEvents';
 
 describe('PeopleClaw runtime function progress events', () => {
   it('TC-PC-026 lets a function emit a scoped progress event', () => {
@@ -16,6 +16,19 @@ describe('PeopleClaw runtime function progress events', () => {
       timestamp: '2026-05-26T05:00:00.000Z',
     });
     assert.deepEqual(progress.emitted, [event]);
+  });
+
+  it('TC-PC-070 proves job cancellation stops future progress events', () => {
+    const progress = createCancellableRuntimeProgressEmitter('inv_cancelled_001', () => new Date('2026-05-26T05:00:00.000Z'));
+    const beforeCancel = progress.emit('started');
+
+    progress.cancel();
+    const afterCancel = progress.emit('should not be emitted');
+
+    assert.equal(progress.isCancelled(), true);
+    assert.equal(afterCancel, null);
+    assert.deepEqual(progress.emitted, [beforeCancel]);
+    assert.doesNotMatch(JSON.stringify(progress.emitted), /should not be emitted/);
   });
 
   it('TC-PC-027 scopes SSE progress stream events to the requested invocation', () => {
