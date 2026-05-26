@@ -120,6 +120,32 @@ function safeWriteAppTree(root: string, files: Record<string, string>): string[]
   return written.sort();
 }
 
+function readLocalTree(root: string): Record<string, string> {
+  const resolvedRoot = path.resolve(root);
+  const files: Record<string, string> = {};
+  function walk(dir: string): void {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '.git' || entry.name === 'node_modules') continue;
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(fullPath);
+      else if (entry.isFile()) files[path.relative(resolvedRoot, fullPath).split(path.sep).join('/')] = fs.readFileSync(fullPath, 'utf8');
+    }
+  }
+  walk(resolvedRoot);
+  return files;
+}
+
+function diffTrees(remoteFiles: Record<string, string>, localFiles: Record<string, string>) {
+  const paths = Array.from(new Set([...Object.keys(remoteFiles), ...Object.keys(localFiles)])).sort();
+  return paths.flatMap(filePath => {
+    if (!(filePath in remoteFiles)) return [{ status: 'added', path: filePath }];
+    if (!(filePath in localFiles)) return [{ status: 'deleted', path: filePath }];
+    if (remoteFiles[filePath] !== localFiles[filePath]) return [{ status: 'modified', path: filePath }];
+    return [];
+  });
+}
+
 function usage(): never {
   console.error(`PeopleClaw CLI v1
 
@@ -129,6 +155,7 @@ Usage:
   peopleclaw apps list [--json]
   peopleclaw app inspect <appId> [--json]
   peopleclaw app pull <appId> [--dir <path>] [--json]
+  peopleclaw app plan <appId> [--dir <path>] [--json]
   peopleclaw app chat <appId> <message...> [--session-id <id>] [--confirm] [--dry-run] [--json]
   peopleclaw app action <appId> <operation> [--args '{"name":"..."}'] [--confirm] [--dry-run] [--json]
 
@@ -189,6 +216,19 @@ async function main() {
     const outputDir = path.resolve(textFlag(flags.dir) ?? appId);
     const written = safeWriteAppTree(outputDir, files);
     print({ ok: true, appId, outputDir, files: written }, flags, `Wrote ${written.length} files to ${outputDir}`);
+    return;
+  }
+
+  if (cmd === 'app' && subcmd === 'plan') {
+    const appId = rest[0];
+    if (!appId) usage();
+    const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}`, { flags });
+    const remoteFiles = fileEntries(body);
+    if (!Object.keys(remoteFiles).length) throw new Error('Inspect response did not include a repo-like app tree.');
+    const inputDir = path.resolve(textFlag(flags.dir) ?? appId);
+    const changes = diffTrees(remoteFiles, readLocalTree(inputDir));
+    const fallback = changes.length ? changes.map(change => `${change.status}\t${change.path}`).join('\n') : 'No changes';
+    print({ ok: true, appId, inputDir, changes }, flags, fallback);
     return;
   }
 
