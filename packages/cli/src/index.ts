@@ -136,12 +136,21 @@ function readLocalTree(root: string): Record<string, string> {
   return files;
 }
 
+function appTreeKind(filePath: string): 'screen' | 'function' | 'data' | 'manifest' | 'other' {
+  if (filePath.startsWith('app/screens/')) return 'screen';
+  if (filePath.startsWith('app/functions/')) return 'function';
+  if (filePath.startsWith('app/data/')) return 'data';
+  if (filePath === 'app/manifest.json' || filePath === 'app/sidebar.json5') return 'manifest';
+  return 'other';
+}
+
 function diffTrees(remoteFiles: Record<string, string>, localFiles: Record<string, string>) {
   const paths = Array.from(new Set([...Object.keys(remoteFiles), ...Object.keys(localFiles)])).sort();
   return paths.flatMap(filePath => {
-    if (!(filePath in remoteFiles)) return [{ status: 'added', path: filePath }];
-    if (!(filePath in localFiles)) return [{ status: 'deleted', path: filePath }];
-    if (remoteFiles[filePath] !== localFiles[filePath]) return [{ status: 'modified', path: filePath }];
+    const change = { kind: appTreeKind(filePath), path: filePath };
+    if (!(filePath in remoteFiles)) return [{ status: 'added', ...change }];
+    if (!(filePath in localFiles)) return [{ status: 'deleted', ...change }];
+    if (remoteFiles[filePath] !== localFiles[filePath]) return [{ status: 'modified', ...change }];
     return [];
   });
 }
