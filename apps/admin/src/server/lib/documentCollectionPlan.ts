@@ -81,6 +81,17 @@ export interface DocumentBackfillCheckpoint {
   processedCount: number;
 }
 
+export interface DocumentPlanQuotaInput {
+  collections: number;
+  maxCollections: number;
+}
+
+export interface DocumentPlanQuotaResult {
+  ok: boolean;
+  action: 'allow_deploy' | 'block_deploy';
+  errors: string[];
+}
+
 function requireToken(value: string, field: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error(`Document collection definition requires ${field}`);
@@ -168,6 +179,24 @@ export function resumeDocumentBackfillFromCheckpoint(checkpoint: DocumentBackfil
     field: requireToken(checkpoint.field, 'checkpoint.field'),
     lastDocumentKey: checkpoint.lastDocumentKey,
     processedCount: checkpoint.processedCount,
+  };
+}
+
+export function validateDocumentPlanQuota(input: DocumentPlanQuotaInput): DocumentPlanQuotaResult {
+  const errors: string[] = [];
+  if (!Number.isInteger(input.collections) || input.collections < 0) {
+    errors.push('collection count must be a non-negative integer');
+  }
+  if (!Number.isInteger(input.maxCollections) || input.maxCollections < 0) {
+    errors.push('collection quota must be a non-negative integer');
+  }
+  if (input.collections > input.maxCollections) {
+    errors.push(`collection quota exceeded: ${input.collections}/${input.maxCollections}`);
+  }
+  return {
+    ok: errors.length === 0,
+    action: errors.length === 0 ? 'allow_deploy' : 'block_deploy',
+    errors,
   };
 }
 

@@ -8,6 +8,7 @@ import {
   planDocumentSeedOperation,
   recordDocumentBackfillProgress,
   resumeDocumentBackfillFromCheckpoint,
+  validateDocumentPlanQuota,
 } from './documentCollectionPlan';
 
 describe('PeopleClaw managed document collection planning', () => {
@@ -159,5 +160,13 @@ describe('PeopleClaw managed document collection planning', () => {
       lastDocumentKey: 'lead_250',
       processedCount: 250,
     });
+  });
+
+  it('TC-PC-040 proves quota violation blocks deploy plan', () => {
+    const result = validateDocumentPlanQuota({ collections: 11, maxCollections: 10 });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.action, 'block_deploy');
+    assert.match(result.errors.join('\n'), /collection quota exceeded: 11\/10/);
   });
 });
