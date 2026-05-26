@@ -1,5 +1,47 @@
 export const CRM_APP_TEMPLATE_APP_ID = 'crm';
 
+type CreateContactInput = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  tags?: string | string[];
+};
+
+type CrmAppStore = {
+  insert(collection: 'contacts', row: Record<string, unknown>): { id: string } & Record<string, unknown>;
+};
+
+type CrmFunctionContext = {
+  appStore: CrmAppStore;
+  now?: () => Date;
+};
+
+function normalizeTags(tags: CreateContactInput['tags']): string[] {
+  const values = Array.isArray(tags) ? tags : String(tags ?? '').split(',');
+  return values.map(tag => tag.trim()).filter(Boolean);
+}
+
+export async function createContact(input: CreateContactInput, ctx: CrmFunctionContext) {
+  const name = String(input.name ?? '').trim();
+  if (!name) {
+    return { ok: false as const, error: 'NAME_REQUIRED' };
+  }
+
+  const now = (ctx.now?.() ?? new Date()).toISOString();
+  const contact = ctx.appStore.insert('contacts', {
+    name,
+    email: String(input.email ?? '').trim(),
+    phone: String(input.phone ?? '').trim(),
+    company: String(input.company ?? '').trim(),
+    tags: normalizeTags(input.tags),
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return { ok: true as const, contact };
+}
+
 export const crmAppTemplateManifest = {
   appId: CRM_APP_TEMPLATE_APP_ID,
   name: 'CRM Starter',

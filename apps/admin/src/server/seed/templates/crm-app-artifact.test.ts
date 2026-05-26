@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
+import { createContact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
 
 function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
   const errors: string[] = [];
@@ -56,3 +56,44 @@ describe('CRM starter app artifact data collections', () => {
     assert.deepEqual(followupNotes.fields.type.values, ['call', 'email', 'meeting']);
     assert.equal(followupNotes.fields.note.required, true);
   });
+
+describe('CRM starter app functions', () => {
+  it('TC-PC-085 proves createContact function writes contact', async () => {
+    const writes: Array<{ collection: string; row: Record<string, unknown> }> = [];
+    const result = await createContact(
+      {
+        name: '  Ada Lovelace  ',
+        email: ' ada@example.com ',
+        phone: ' 555-0100 ',
+        company: ' Analytical Engines Ltd ',
+        tags: 'vip, analyst, ',
+      },
+      {
+        now: () => new Date('2026-05-26T14:05:00.000Z'),
+        appStore: {
+          insert(collection, row) {
+            writes.push({ collection, row });
+            return { id: 'contact_1', ...row };
+          },
+        },
+      },
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(writes, [
+      {
+        collection: 'contacts',
+        row: {
+          name: 'Ada Lovelace',
+          email: 'ada@example.com',
+          phone: '555-0100',
+          company: 'Analytical Engines Ltd',
+          tags: ['vip', 'analyst'],
+          createdAt: '2026-05-26T14:05:00.000Z',
+          updatedAt: '2026-05-26T14:05:00.000Z',
+        },
+      },
+    ]);
+    assert.deepEqual(result.contact, { id: 'contact_1', ...writes[0].row });
+  });
+});
