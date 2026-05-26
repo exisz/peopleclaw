@@ -23,3 +23,6 @@ export interface FullstackDefinition {
 export function defineFullstack(opts: { server: (ctx: any) => Promise<any>; Client: (props: any) => any }): FullstackDefinition {
   return { ...opts, _kind: 'fullstack' };
 }
+
+export type { AppArtifactTree, AppManifest, AppManifestRoute, AppSidebar, AppSidebarSection, AppSidebarItem, ArtifactValidationResult } from './app-artifact';
+export { validateAppArtifactTree, assertValidAppArtifactTree } from './app-artifact';

@@ -18,6 +18,11 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.mjs",
       "require": "./dist/client.cjs"
+    },
+    "./app-artifact": {
+      "types": "./dist/app-artifact.d.ts",
+      "import": "./dist/app-artifact.mjs",
+      "require": "./dist/app-artifact.cjs"
     }
   },
   "main": "./dist/index.cjs",
@@ -25,10 +30,12 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/app-artifact.test.ts"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "tsx": "^4.19.0"
   }
 }
