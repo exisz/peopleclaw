@@ -3,6 +3,17 @@ export interface RuntimeFunctionDataAccessPolicyResult {
   errors: string[];
 }
 
+export interface RuntimeFunctionDataQueryScope {
+  tenantId: string;
+  appId: string;
+  collection: string;
+}
+
+export interface RuntimeFunctionDataQueryAuthorizationResult {
+  ok: boolean;
+  errors: string[];
+}
+
 const RAW_DATA_ACCESS_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern: /from\s+['"]@prisma\/client['"]|new\s+PrismaClient\s*\(/,
@@ -44,5 +55,24 @@ export function validateRuntimeFunctionDataAccess(source: string): RuntimeFuncti
     errors.push('runtime function data access must go through the PeopleClaw Data API SDK');
   }
 
+  return { ok: errors.length === 0, errors };
+}
+
+/**
+ * Authorize a Data API query using the runtime-injected tenant/app identity.
+ * Functions may only query collections inside their own tenant/app scope; any
+ * requested tenant/app override is treated as a confused-deputy attempt.
+ */
+export function authorizeRuntimeFunctionDataQuery(input: {
+  runtimeScope: RuntimeFunctionDataQueryScope;
+  requestedScope: RuntimeFunctionDataQueryScope;
+}): RuntimeFunctionDataQueryAuthorizationResult {
+  const errors: string[] = [];
+  if (input.requestedScope.tenantId !== input.runtimeScope.tenantId) {
+    errors.push('runtime function data query tenant scope mismatch');
+  }
+  if (input.requestedScope.appId !== input.runtimeScope.appId) {
+    errors.push('runtime function data query app scope mismatch');
+  }
   return { ok: errors.length === 0, errors };
 }
