@@ -75,6 +75,16 @@ export interface AppArtifactPlanRecord {
   artifact: AppArtifactTree;
 }
 
+export interface AppArtifactStoreResult {
+  artifactHash: `sha256:${string}`;
+  created: boolean;
+  storedCount: number;
+}
+
+export interface AppArtifactStore {
+  put(value: unknown): Promise<AppArtifactStoreResult>;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -270,6 +280,18 @@ export async function planImmutableAppArtifactStorage(value: unknown): Promise<A
     operation: 'store_immutable_artifact',
     artifactHash,
     artifact,
+  };
+}
+
+export function createInMemoryAppArtifactStore(): AppArtifactStore {
+  const artifacts = new Map<string, AppArtifactTree>();
+  return {
+    async put(value: unknown): Promise<AppArtifactStoreResult> {
+      const plan = await planImmutableAppArtifactStorage(value);
+      const created = !artifacts.has(plan.artifactHash);
+      if (created) artifacts.set(plan.artifactHash, plan.artifact);
+      return { artifactHash: plan.artifactHash, created, storedCount: artifacts.size };
+    },
   };
 }
 

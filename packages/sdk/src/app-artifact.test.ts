@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { planImmutableAppArtifactStorage, validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
+import { createInMemoryAppArtifactStore, planImmutableAppArtifactStorage, validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
 
 describe('PeopleClaw app artifact schema', () => {
   const minimalAppTree = {
@@ -207,5 +207,16 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(plan.operation, 'store_immutable_artifact');
     assert.match(plan.artifactHash, /^sha256:[a-f0-9]{64}$/);
     assert.deepEqual(plan.artifact, minimalAppTree);
+  });
+
+  it('TC-PC-042 proves same artifact hash is deduplicated', async () => {
+    const store = createInMemoryAppArtifactStore();
+    const first = await store.put(minimalAppTree);
+    const second = await store.put({ ...minimalAppTree, manifest: { ...minimalAppTree.manifest } });
+
+    assert.equal(first.created, true);
+    assert.equal(second.created, false);
+    assert.equal(second.artifactHash, first.artifactHash);
+    assert.equal(second.storedCount, 1);
   });
 });
