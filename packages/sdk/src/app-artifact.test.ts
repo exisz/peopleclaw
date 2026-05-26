@@ -395,6 +395,26 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(deployments.loadDeploymentArtifact(second.deploymentRecord.deploymentId), secondTree);
   });
 
+  it('TC-PC-067 proves SDK/runtime version mismatch blocks promote', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry({
+      currentSdkCompatibilityVersion: '0.2.0',
+      currentRuntimeCompatibilityVersion: 'runtime-2026-06',
+    });
+    const preview = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+
+    assert.throws(
+      () => deployments.promote(preview.deploymentRecord.deploymentId),
+      /SDK compatibility mismatch.*deployment 0\.1\.0, runtime 0\.2\.0/,
+    );
+    assert.equal(deployments.getProductionDeploymentId(), null);
+    assert.deepEqual(deployments.listAuditRecords().map(record => record.operation), ['plan', 'preview']);
+  });
+
   it('TC-PC-066 proves dependency version is recorded in deployment', async () => {
     const deployments = createInMemoryAppDeploymentRegistry();
 

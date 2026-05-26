@@ -104,6 +104,8 @@ export interface PreviewAppDeploymentResult {
 
 export interface InMemoryAppDeploymentRegistryOptions {
   productionDeploymentId?: string | null;
+  currentSdkCompatibilityVersion?: string;
+  currentRuntimeCompatibilityVersion?: string;
 }
 
 export interface PromoteAppDeploymentResult {
@@ -418,6 +420,8 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
   const artifactStore = createInMemoryAppArtifactStore();
   const deploymentRecords: AppDeploymentRecord[] = [];
   const auditRecords: AppDeploymentAuditRecord[] = [];
+  const currentSdkCompatibilityVersion = options.currentSdkCompatibilityVersion;
+  const currentRuntimeCompatibilityVersion = options.currentRuntimeCompatibilityVersion;
   let productionDeploymentId = options.productionDeploymentId ?? null;
   const productionPointerHistory: Array<string | null> = [];
 
@@ -456,6 +460,12 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
       const deploymentRecord = deploymentRecords.find(record => record.deploymentId === deploymentId);
       if (!deploymentRecord) {
         throw new Error(`Unknown deployment: ${deploymentId}`);
+      }
+      if (currentSdkCompatibilityVersion !== undefined && deploymentRecord.sdkCompatibilityVersion !== currentSdkCompatibilityVersion) {
+        throw new Error(`Cannot promote deployment ${deploymentId}: SDK compatibility mismatch (deployment ${deploymentRecord.sdkCompatibilityVersion}, runtime ${currentSdkCompatibilityVersion})`);
+      }
+      if (currentRuntimeCompatibilityVersion !== undefined && deploymentRecord.runtimeCompatibilityVersion !== currentRuntimeCompatibilityVersion) {
+        throw new Error(`Cannot promote deployment ${deploymentId}: runtime compatibility mismatch (deployment ${deploymentRecord.runtimeCompatibilityVersion}, runtime ${currentRuntimeCompatibilityVersion})`);
       }
       const previousProductionDeploymentId = productionDeploymentId;
       productionPointerHistory.push(previousProductionDeploymentId);
