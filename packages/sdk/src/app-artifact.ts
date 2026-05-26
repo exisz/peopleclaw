@@ -85,6 +85,24 @@ export interface AppArtifactStore {
   put(value: unknown): Promise<AppArtifactStoreResult>;
 }
 
+export interface PreviewAppDeploymentOptions {
+  appId: string;
+  sdkCompatibilityVersion: string;
+  runtimeCompatibilityVersion: string;
+  now?: Date;
+}
+
+export interface PreviewAppDeploymentResult {
+  artifactHash: `sha256:${string}`;
+  deploymentRecord: AppDeploymentRecord;
+  deploymentRecordCount: number;
+}
+
+export interface AppDeploymentRegistry {
+  deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
+  listDeploymentRecords(): AppDeploymentRecord[];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -291,6 +309,39 @@ export function createInMemoryAppArtifactStore(): AppArtifactStore {
       const created = !artifacts.has(plan.artifactHash);
       if (created) artifacts.set(plan.artifactHash, plan.artifact);
       return { artifactHash: plan.artifactHash, created, storedCount: artifacts.size };
+    },
+  };
+}
+
+export function createInMemoryAppDeploymentRegistry(): AppDeploymentRegistry {
+  const artifactStore = createInMemoryAppArtifactStore();
+  const deploymentRecords: AppDeploymentRecord[] = [];
+
+  return {
+    async deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult> {
+      if (!isNonEmptyString(options.appId)) throw new Error('appId must be a non-empty string');
+      if (!isNonEmptyString(options.sdkCompatibilityVersion)) throw new Error('sdkCompatibilityVersion must be a non-empty string');
+      if (!isNonEmptyString(options.runtimeCompatibilityVersion)) throw new Error('runtimeCompatibilityVersion must be a non-empty string');
+
+      const stored = await artifactStore.put(value);
+      const createdAt = (options.now ?? new Date()).toISOString();
+      const deploymentId = `dep_${options.appId}_preview_${deploymentRecords.length + 1}`;
+      const deploymentRecord: AppDeploymentRecord = {
+        id: `record_${deploymentId}`,
+        appId: options.appId,
+        deploymentId,
+        channel: 'preview',
+        artifactHash: stored.artifactHash,
+        sdkCompatibilityVersion: options.sdkCompatibilityVersion,
+        runtimeCompatibilityVersion: options.runtimeCompatibilityVersion,
+        createdAt,
+      };
+
+      deploymentRecords.push(deploymentRecord);
+      return { artifactHash: stored.artifactHash, deploymentRecord, deploymentRecordCount: deploymentRecords.length };
+    },
+    listDeploymentRecords(): AppDeploymentRecord[] {
+      return deploymentRecords.map(record => ({ ...record }));
     },
   };
 }

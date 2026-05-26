@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createInMemoryAppArtifactStore, planImmutableAppArtifactStorage, validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
+import { createInMemoryAppArtifactStore, createInMemoryAppDeploymentRegistry, planImmutableAppArtifactStorage, validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
 
 describe('PeopleClaw app artifact schema', () => {
   const minimalAppTree = {
@@ -218,5 +218,24 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(second.created, false);
     assert.equal(second.artifactHash, first.artifactHash);
     assert.equal(second.storedCount, 1);
+  });
+
+  it('TC-PC-043 proves preview deploy creates deployment record', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry();
+
+    const result = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+
+    assert.equal(result.deploymentRecordCount, 1);
+    assert.equal(result.deploymentRecord.appId, 'demo-crm');
+    assert.equal(result.deploymentRecord.channel, 'preview');
+    assert.equal(result.deploymentRecord.artifactHash, result.artifactHash);
+    assert.equal(result.deploymentRecord.createdAt, '2026-05-26T00:00:00.000Z');
+    assert.deepEqual(deployments.listDeploymentRecords(), [result.deploymentRecord]);
+    assert.deepEqual(validateAppDeploymentRecord(result.deploymentRecord), { ok: true, errors: [] });
   });
 });
