@@ -311,4 +311,19 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(Object.prototype.hasOwnProperty.call(rollback, 'dataRollbackPerformed'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(rollback, 'dataRollbackPlan'), false);
   });
+
+  it('TC-PC-048 proves artifact URL cannot be overwritten', async () => {
+    const store = createInMemoryAppArtifactStore();
+    const first = await store.put(minimalAppTree);
+    const changedTree = {
+      ...minimalAppTree,
+      manifest: { ...minimalAppTree.manifest, version: '2.0.0' },
+    };
+
+    const second = await store.put(changedTree);
+
+    assert.notEqual(second.artifactUrl, first.artifactUrl);
+    assert.deepEqual(store.read(first.artifactHash), minimalAppTree);
+    assert.deepEqual(store.read(second.artifactHash), changedTree);
+  });
 });

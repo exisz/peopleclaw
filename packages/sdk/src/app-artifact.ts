@@ -77,12 +77,14 @@ export interface AppArtifactPlanRecord {
 
 export interface AppArtifactStoreResult {
   artifactHash: `sha256:${string}`;
+  artifactUrl: `peopleclaw://artifacts/${string}`;
   created: boolean;
   storedCount: number;
 }
 
 export interface AppArtifactStore {
   put(value: unknown): Promise<AppArtifactStoreResult>;
+  read(artifactHash: `sha256:${string}`): AppArtifactTree | null;
 }
 
 export interface PreviewAppDeploymentOptions {
@@ -298,6 +300,14 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function cloneAppArtifactTree(value: AppArtifactTree): AppArtifactTree {
+  return JSON.parse(JSON.stringify(value)) as AppArtifactTree;
+}
+
+function artifactUrlForHash(artifactHash: `sha256:${string}`): `peopleclaw://artifacts/${string}` {
+  return `peopleclaw://artifacts/${artifactHash}`;
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const cryptoApi = globalThis.crypto?.subtle;
   if (cryptoApi) {
@@ -326,8 +336,12 @@ export function createInMemoryAppArtifactStore(): AppArtifactStore {
     async put(value: unknown): Promise<AppArtifactStoreResult> {
       const plan = await planImmutableAppArtifactStorage(value);
       const created = !artifacts.has(plan.artifactHash);
-      if (created) artifacts.set(plan.artifactHash, plan.artifact);
-      return { artifactHash: plan.artifactHash, created, storedCount: artifacts.size };
+      if (created) artifacts.set(plan.artifactHash, cloneAppArtifactTree(plan.artifact));
+      return { artifactHash: plan.artifactHash, artifactUrl: artifactUrlForHash(plan.artifactHash), created, storedCount: artifacts.size };
+    },
+    read(artifactHash: `sha256:${string}`): AppArtifactTree | null {
+      const artifact = artifacts.get(artifactHash);
+      return artifact ? cloneAppArtifactTree(artifact) : null;
     },
   };
 }
