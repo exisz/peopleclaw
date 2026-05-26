@@ -103,12 +103,20 @@ function validateSidebar(value: unknown, errors: string[]): value is AppSidebar 
     return false;
   }
 
+  const sectionIds = new Set<string>();
+  const itemIds = new Set<string>();
   for (const [sectionIndex, section] of value.sections.entries()) {
     if (!isRecord(section)) {
       errors.push(`sidebar.sections[${sectionIndex}] must be an object`);
       continue;
     }
-    if (!isNonEmptyString(section.id)) errors.push(`sidebar.sections[${sectionIndex}].id must be a non-empty string`);
+    if (!isNonEmptyString(section.id)) {
+      errors.push(`sidebar.sections[${sectionIndex}].id must be a non-empty string`);
+    } else if (sectionIds.has(section.id)) {
+      errors.push(`sidebar.sections[${sectionIndex}].id must be unique`);
+    } else {
+      sectionIds.add(section.id);
+    }
     if (!isNonEmptyString(section.title)) errors.push(`sidebar.sections[${sectionIndex}].title must be a non-empty string`);
     if (section.kind !== 'app' && section.kind !== 'system') {
       errors.push(`sidebar.sections[${sectionIndex}].kind must be app or system`);
@@ -122,7 +130,13 @@ function validateSidebar(value: unknown, errors: string[]): value is AppSidebar 
         errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}] must be an object`);
         continue;
       }
-      if (!isNonEmptyString(item.id)) errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}].id must be a non-empty string`);
+      if (!isNonEmptyString(item.id)) {
+        errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}].id must be a non-empty string`);
+      } else if (itemIds.has(item.id)) {
+        errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}].id must be unique`);
+      } else {
+        itemIds.add(item.id);
+      }
       if (!isNonEmptyString(item.label)) errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}].label must be a non-empty string`);
       if (!isNonEmptyString(item.routeId)) errors.push(`sidebar.sections[${sectionIndex}].items[${itemIndex}].routeId must be a non-empty string`);
     }

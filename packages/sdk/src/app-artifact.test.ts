@@ -101,4 +101,27 @@ describe('PeopleClaw app artifact schema', () => {
 
     assert.deepEqual(result, { ok: true, errors: [] });
   });
+
+  it('TC-PC-006 rejects duplicate sidebar ids', () => {
+    const appTreeWithDuplicateSidebarIds = {
+      ...minimalAppTree,
+      sidebar: {
+        sections: [
+          minimalAppTree.sidebar.sections[0],
+          {
+            id: 'app',
+            title: 'Duplicate App Section',
+            kind: 'system',
+            items: [{ id: 'dashboard', label: 'Dashboard Copy', routeId: 'dashboard' }],
+          },
+        ],
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithDuplicateSidebarIds);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /sidebar\.sections\[1\]\.id must be unique/);
+    assert.match(result.errors.join('\n'), /sidebar\.sections\[1\]\.items\[0\]\.id must be unique/);
+  });
 });
