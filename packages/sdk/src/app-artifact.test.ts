@@ -32,6 +32,7 @@ describe('PeopleClaw app artifact schema', () => {
       'functions/createContact.ts': {
         source: 'export default async function createContact() { return { ok: true }; }',
         inputSchema: { type: 'object', properties: {} },
+        outputSchema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] },
       },
     },
     data: { collections: [], indexes: [], playbooks: {} },
@@ -155,6 +156,7 @@ describe('PeopleClaw app artifact schema', () => {
       functions: {
         'functions/createContact.ts': {
           source: 'export default async function createContact() { return { ok: true }; }',
+          outputSchema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] },
         },
       },
     };
@@ -163,5 +165,22 @@ describe('PeopleClaw app artifact schema', () => {
 
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /functions\.functions\/createContact\.ts\.inputSchema is required/);
+  });
+
+  it('TC-PC-009 rejects function contracts missing output schema', () => {
+    const appTreeWithMissingOutputSchema = {
+      ...minimalAppTree,
+      functions: {
+        'functions/createContact.ts': {
+          source: 'export default async function createContact() { return { ok: true }; }',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithMissingOutputSchema);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /functions\.functions\/createContact\.ts\.outputSchema is required/);
   });
 });

@@ -33,7 +33,7 @@ export interface AppScreenArtifact {
 export interface AppFunctionArtifact {
   source: string;
   inputSchema: unknown;
-  outputSchema?: unknown;
+  outputSchema: unknown;
 }
 
 export interface AppSidebar {
@@ -136,6 +136,7 @@ function validateFunctions(value: unknown, errors: string[]): value is Record<st
     }
     if (!isNonEmptyString(fn.source)) errors.push(`functions.${path}.source must be a non-empty string`);
     if (fn.inputSchema === undefined) errors.push(`functions.${path}.inputSchema is required`);
+    if (fn.outputSchema === undefined) errors.push(`functions.${path}.outputSchema is required`);
   }
 
   return true;
