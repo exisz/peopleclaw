@@ -45,4 +45,22 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /manifest must be an object/);
   });
+
+  it('TC-PC-003 rejects duplicate manifest route ids', () => {
+    const appTreeWithDuplicateRouteIds = {
+      ...minimalAppTree,
+      manifest: {
+        ...minimalAppTree.manifest,
+        routes: [
+          ...minimalAppTree.manifest.routes,
+          { id: 'dashboard', path: '/apps/demo-crm/duplicate-dashboard', screen: 'screens/DashboardCopy.tsx' },
+        ],
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithDuplicateRouteIds);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /manifest\.routes\[1\]\.id must be unique/);
+  });
 });

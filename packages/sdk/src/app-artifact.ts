@@ -70,12 +70,19 @@ function validateManifest(value: unknown, errors: string[]): value is AppManifes
     return false;
   }
 
+  const routeIds = new Set<string>();
   for (const [index, route] of value.routes.entries()) {
     if (!isRecord(route)) {
       errors.push(`manifest.routes[${index}] must be an object`);
       continue;
     }
-    if (!isNonEmptyString(route.id)) errors.push(`manifest.routes[${index}].id must be a non-empty string`);
+    if (!isNonEmptyString(route.id)) {
+      errors.push(`manifest.routes[${index}].id must be a non-empty string`);
+    } else if (routeIds.has(route.id)) {
+      errors.push(`manifest.routes[${index}].id must be unique`);
+    } else {
+      routeIds.add(route.id);
+    }
     if (!isNonEmptyString(route.path) || !route.path.startsWith('/apps/')) {
       errors.push(`manifest.routes[${index}].path must be inside /apps/`);
     }
