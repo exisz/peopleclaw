@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getPrisma } from '../lib/prisma.js';
+import { createScopedAppNotFoundBody } from '../lib/scopedNotFound.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 
@@ -54,7 +55,7 @@ appsRouter.post('/apps/:appId/components', requireAuth, requireTenant, async (re
     where: { id: req.params.appId, tenantId: r.tenant.id },
   });
   if (!app) {
-    res.status(404).json({ error: 'app not found' });
+    res.status(404).json(createScopedAppNotFoundBody());
     return;
   }
   const component = await prisma.component.create({
@@ -84,7 +85,7 @@ appsRouter.get('/apps/:id', requireAuth, requireTenant, async (req, res) => {
     },
   });
   if (!app) {
-    res.status(404).json({ error: 'app not found' });
+    res.status(404).json(createScopedAppNotFoundBody());
     return;
   }
   res.json({ app });
