@@ -23,7 +23,10 @@ describe('PeopleClaw app artifact schema', () => {
       ],
     },
     screens: {
-      'screens/Dashboard.tsx': 'export default function Dashboard() { return <main>Dashboard</main>; }',
+      'screens/Dashboard.tsx': {
+        source: 'export default function Dashboard() { return <main>Dashboard</main>; }',
+        artifactHash: 'sha256:dashboard-screen',
+      },
     },
     functions: {},
     data: { collections: [], indexes: [], playbooks: {} },
@@ -123,5 +126,21 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /sidebar\.sections\[1\]\.id must be unique/);
     assert.match(result.errors.join('\n'), /sidebar\.sections\[1\]\.items\[0\]\.id must be unique/);
+  });
+
+  it('TC-PC-007 rejects screen metadata missing artifact hash', () => {
+    const appTreeWithMissingScreenHash = {
+      ...minimalAppTree,
+      screens: {
+        'screens/Dashboard.tsx': {
+          source: 'export default function Dashboard() { return <main>Dashboard</main>; }',
+        },
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithMissingScreenHash);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /screens\.screens\/Dashboard\.tsx\.artifactHash must be a non-empty string/);
   });
 });
