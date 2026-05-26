@@ -28,7 +28,12 @@ describe('PeopleClaw app artifact schema', () => {
         artifactHash: 'sha256:dashboard-screen',
       },
     },
-    functions: {},
+    functions: {
+      'functions/createContact.ts': {
+        source: 'export default async function createContact() { return { ok: true }; }',
+        inputSchema: { type: 'object', properties: {} },
+      },
+    },
     data: { collections: [], indexes: [], playbooks: {} },
     secrets: {},
     tests: {},
@@ -142,5 +147,21 @@ describe('PeopleClaw app artifact schema', () => {
 
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /screens\.screens\/Dashboard\.tsx\.artifactHash must be a non-empty string/);
+  });
+
+  it('TC-PC-008 rejects function contracts missing input schema', () => {
+    const appTreeWithMissingInputSchema = {
+      ...minimalAppTree,
+      functions: {
+        'functions/createContact.ts': {
+          source: 'export default async function createContact() { return { ok: true }; }',
+        },
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithMissingInputSchema);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /functions\.functions\/createContact\.ts\.inputSchema is required/);
   });
 });

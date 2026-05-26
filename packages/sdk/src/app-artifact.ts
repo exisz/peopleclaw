@@ -2,7 +2,7 @@ export interface AppArtifactTree {
   manifest: AppManifest;
   sidebar: AppSidebar;
   screens?: Record<string, AppScreenArtifact>;
-  functions?: Record<string, string>;
+  functions?: Record<string, AppFunctionArtifact>;
   data?: {
     collections?: unknown[];
     indexes?: unknown[];
@@ -28,6 +28,12 @@ export interface AppManifestRoute {
 export interface AppScreenArtifact {
   source: string;
   artifactHash: string;
+}
+
+export interface AppFunctionArtifact {
+  source: string;
+  inputSchema: unknown;
+  outputSchema?: unknown;
 }
 
 export interface AppSidebar {
@@ -116,6 +122,25 @@ function validateScreens(value: unknown, errors: string[]): value is Record<stri
   return true;
 }
 
+function validateFunctions(value: unknown, errors: string[]): value is Record<string, AppFunctionArtifact> | undefined {
+  if (value === undefined) return true;
+  if (!isRecord(value)) {
+    errors.push('functions must be an object');
+    return false;
+  }
+
+  for (const [path, fn] of Object.entries(value)) {
+    if (!isRecord(fn)) {
+      errors.push(`functions.${path} must be an object`);
+      continue;
+    }
+    if (!isNonEmptyString(fn.source)) errors.push(`functions.${path}.source must be a non-empty string`);
+    if (fn.inputSchema === undefined) errors.push(`functions.${path}.inputSchema is required`);
+  }
+
+  return true;
+}
+
 function validateSidebar(value: unknown, errors: string[]): value is AppSidebar {
   if (!isRecord(value)) {
     errors.push('sidebar must be an object');
@@ -178,6 +203,7 @@ export function validateAppArtifactTree(value: unknown): ArtifactValidationResul
   validateManifest(value.manifest, errors);
   validateSidebar(value.sidebar, errors);
   validateScreens(value.screens, errors);
+  validateFunctions(value.functions, errors);
 
   return { ok: errors.length === 0, errors };
 }
