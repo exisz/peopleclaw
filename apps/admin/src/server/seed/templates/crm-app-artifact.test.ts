@@ -46,3 +46,13 @@ describe('CRM starter app artifact data collections', () => {
     assert.equal(contacts.fields.tags.type, 'string[]');
   });
 });
+
+
+  it('TC-PC-084 proves followupNotes collection schema validates', () => {
+    const followupNotes = crmAppTemplateCollections.find(collection => collection.name === 'followupNotes');
+    assert.ok(followupNotes, 'followupNotes collection should exist');
+    assert.deepEqual(Object.keys(followupNotes.fields), ['id', 'contactId', 'type', 'note', 'createdAt']);
+    assert.equal(followupNotes.fields.contactId.references, 'contacts.id');
+    assert.deepEqual(followupNotes.fields.type.values, ['call', 'email', 'meeting']);
+    assert.equal(followupNotes.fields.note.required, true);
+  });

@@ -51,4 +51,14 @@ export const crmAppTemplateCollections = [
       updatedAt: { type: 'datetime', required: true },
     },
   },
+  {
+    name: 'followupNotes',
+    fields: {
+      id: { type: 'string', required: true },
+      contactId: { type: 'string', required: true, references: 'contacts.id' },
+      type: { type: 'enum', values: ['call', 'email', 'meeting'], required: true },
+      note: { type: 'string', required: true },
+      createdAt: { type: 'datetime', required: true },
+    },
+  },
 ] as const;
