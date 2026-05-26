@@ -78,6 +78,50 @@ export async function addFollowupNote(input: AddFollowupNoteInput, ctx: CrmFunct
   return { ok: true as const, followupNote };
 }
 
+
+type ContactsReactSdk = {
+  useCollection(collection: 'contacts'): {
+    documents: Array<Record<string, unknown>>;
+    loading: boolean;
+    error?: { message?: string } | null;
+  };
+};
+
+export const crmContactsScreenArtifact = {
+  path: 'screens/Contacts.tsx',
+  artifactHash: 'sha256:crm-contacts-screen-react-sdk',
+  source: `import { useCollection } from '@peopleclaw/sdk/react';
+
+export default function ContactsScreen() {
+  const { documents: contacts, loading, error } = useCollection('contacts');
+  if (loading) return <main data-testid="crm-contacts-loading">Loading contacts…</main>;
+  if (error) return <main data-testid="crm-contacts-error">{error.message}</main>;
+  return (
+    <main data-testid="crm-contacts-screen">
+      <h1>Contacts</h1>
+      <ul>
+        {contacts.map((contact: any) => (
+          <li key={contact.id} data-testid={'crm-contact-' + contact.id}>{contact.name}</li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+`,
+} as const;
+
+export function renderContactsScreenModel(sdk: ContactsReactSdk) {
+  const { documents, loading, error } = sdk.useCollection('contacts');
+  return {
+    loading,
+    errorMessage: error?.message ?? null,
+    contacts: documents.map(contact => ({
+      id: String(contact.id ?? ''),
+      name: String(contact.name ?? ''),
+    })),
+  };
+}
+
 export const crmAppTemplateManifest = {
   appId: CRM_APP_TEMPLATE_APP_ID,
   name: 'CRM Starter',

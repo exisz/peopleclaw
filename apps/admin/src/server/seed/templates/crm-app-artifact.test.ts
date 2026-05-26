@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { addFollowupNote, createContact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
+import { addFollowupNote, createContact, crmContactsScreenArtifact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections, renderContactsScreenModel } from './crm-app-artifact';
 
 function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
   const errors: string[] = [];
@@ -137,6 +137,36 @@ describe('CRM starter app functions', () => {
       },
     ]);
     assert.deepEqual(result.followupNote, { id: 'followup_1', ...writes[0].row });
+  });
+
+
+  it('TC-PC-087 proves contacts screen reads collection via React SDK', () => {
+    const calls: string[] = [];
+    const model = renderContactsScreenModel({
+      useCollection(collection) {
+        calls.push(collection);
+        return {
+          loading: false,
+          documents: [
+            { id: 'contact_1', name: 'Ada Lovelace' },
+            { id: 'contact_2', name: 'Grace Hopper' },
+          ],
+        };
+      },
+    });
+
+    assert.deepEqual(calls, ['contacts']);
+    assert.deepEqual(model, {
+      loading: false,
+      errorMessage: null,
+      contacts: [
+        { id: 'contact_1', name: 'Ada Lovelace' },
+        { id: 'contact_2', name: 'Grace Hopper' },
+      ],
+    });
+    assert.equal(crmContactsScreenArtifact.path, 'screens/Contacts.tsx');
+    assert.match(crmContactsScreenArtifact.source, /from '@peopleclaw\/sdk\/react'/);
+    assert.match(crmContactsScreenArtifact.source, /useCollection\('contacts'\)/);
   });
 
 });
