@@ -21,6 +21,12 @@ export type ScreenBridgeMessageResult =
   | { ok: true; message: ScreenBridgeMessage }
   | { ok: false; reason: 'wrong_origin' | 'invalid_message' };
 
+const SCREEN_BRIDGE_MESSAGE_TYPES = new Set([
+  'peopleclaw.screen.ready',
+  'peopleclaw.screen.resize',
+  'peopleclaw.screen.navigate',
+]);
+
 function parseOrigin(value: string, field: string): URL {
   try {
     return new URL(value);
@@ -51,7 +57,14 @@ export function acceptScreenBridgeMessage(input: {
   if (actual.origin !== expected.origin) {
     return { ok: false, reason: 'wrong_origin' };
   }
-  if (!input.data || typeof input.data !== 'object' || Array.isArray(input.data) || typeof (input.data as { type?: unknown }).type !== 'string') {
+  if (!input.data || typeof input.data !== 'object' || Array.isArray(input.data)) {
+    return { ok: false, reason: 'invalid_message' };
+  }
+  const message = input.data as { type?: unknown; payload?: unknown };
+  if (typeof message.type !== 'string' || !SCREEN_BRIDGE_MESSAGE_TYPES.has(message.type)) {
+    return { ok: false, reason: 'invalid_message' };
+  }
+  if (message.payload !== undefined && (!message.payload || typeof message.payload !== 'object' || Array.isArray(message.payload))) {
     return { ok: false, reason: 'invalid_message' };
   }
   return { ok: true, message: input.data as ScreenBridgeMessage };

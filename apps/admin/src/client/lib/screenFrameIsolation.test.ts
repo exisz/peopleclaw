@@ -44,4 +44,26 @@ describe('PeopleClaw screen iframe origin isolation', () => {
     assert.equal(accepted.ok, true);
     assert.deepEqual(rejected, { ok: false, reason: 'wrong_origin' });
   });
+
+  it('TC-PC-058 proves postMessage payload schema is validated', () => {
+    const missingType = acceptScreenBridgeMessage({
+      expectedOrigin: 'https://screens.peopleclaw-runtime.example',
+      eventOrigin: 'https://screens.peopleclaw-runtime.example',
+      data: { payload: { screenId: 'screens/Dashboard.tsx' } },
+    });
+    const unknownType = acceptScreenBridgeMessage({
+      expectedOrigin: 'https://screens.peopleclaw-runtime.example',
+      eventOrigin: 'https://screens.peopleclaw-runtime.example',
+      data: { type: 'peopleclaw.screen.exfiltrate', payload: { secret: true } },
+    });
+    const invalidPayload = acceptScreenBridgeMessage({
+      expectedOrigin: 'https://screens.peopleclaw-runtime.example',
+      eventOrigin: 'https://screens.peopleclaw-runtime.example',
+      data: { type: 'peopleclaw.screen.ready', payload: 'not-an-object' },
+    });
+
+    assert.deepEqual(missingType, { ok: false, reason: 'invalid_message' });
+    assert.deepEqual(unknownType, { ok: false, reason: 'invalid_message' });
+    assert.deepEqual(invalidPayload, { ok: false, reason: 'invalid_message' });
+  });
 });
