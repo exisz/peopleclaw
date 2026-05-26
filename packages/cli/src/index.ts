@@ -166,6 +166,7 @@ Usage:
   peopleclaw app pull <appId> [--dir <path>] [--json]
   peopleclaw app plan <appId> [--dir <path>] [--json]
   peopleclaw app deploy <appId> [--dir <path>] [--preview] [--json]
+  peopleclaw logs <appId> [--deployment-id <id>] [--json]
   peopleclaw app chat <appId> <message...> [--session-id <id>] [--confirm] [--dry-run] [--json]
   peopleclaw app action <appId> <operation> [--args '{"name":"..."}'] [--confirm] [--dry-run] [--json]
 
@@ -206,6 +207,17 @@ async function main() {
     const body = await request('/external-agent/apps', { flags });
     const apps = Array.isArray((body as any).apps) ? (body as any).apps : [];
     print(body, flags, apps.map((app: any) => `${app.id}\t${app.name}`).join('\n') || 'No apps');
+    return;
+  }
+
+  if (cmd === 'logs') {
+    const appId = subcmd;
+    if (!appId) usage();
+    const deploymentId = textFlag(flags.deploymentId);
+    const suffix = deploymentId ? `?deploymentId=${encodeURIComponent(deploymentId)}` : '';
+    const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}/logs${suffix}`, { flags });
+    const logs = Array.isArray((body as any).logs) ? (body as any).logs : [];
+    print(body, flags, logs.map((log: any) => `${log.timestamp ?? ''}\t${log.level ?? 'info'}\t${log.message ?? JSON.stringify(log)}`).join('\n') || 'No logs');
     return;
   }
 
