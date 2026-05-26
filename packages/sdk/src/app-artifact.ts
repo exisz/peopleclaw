@@ -221,6 +221,28 @@ function validateFunctions(value: unknown, errors: string[]): value is Record<st
   return true;
 }
 
+function validateSecrets(value: unknown, errors: string[]): value is Record<string, { ref: string }> | undefined {
+  if (value === undefined) return true;
+  if (!isRecord(value)) {
+    errors.push('secrets must be an object');
+    return false;
+  }
+
+  for (const [name, secret] of Object.entries(value)) {
+    if (!isRecord(secret)) {
+      errors.push(`secrets.${name} must be an object containing only a ref`);
+      continue;
+    }
+    const keys = Object.keys(secret);
+    if (keys.length !== 1 || keys[0] !== 'ref') {
+      errors.push(`secrets.${name} must contain only a ref and no plaintext value`);
+    }
+    if (!isNonEmptyString(secret.ref)) errors.push(`secrets.${name}.ref must be a non-empty string`);
+  }
+
+  return true;
+}
+
 function validateSidebar(value: unknown, errors: string[]): value is AppSidebar {
   if (!isRecord(value)) {
     errors.push('sidebar must be an object');
@@ -284,6 +306,7 @@ export function validateAppArtifactTree(value: unknown): ArtifactValidationResul
   validateSidebar(value.sidebar, errors);
   validateScreens(value.screens, errors);
   validateFunctions(value.functions, errors);
+  validateSecrets(value.secrets, errors);
 
   return { ok: errors.length === 0, errors };
 }

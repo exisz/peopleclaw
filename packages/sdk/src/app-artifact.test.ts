@@ -201,6 +201,28 @@ describe('PeopleClaw app artifact schema', () => {
     assert.match(result.errors.join('\n'), /deploymentRecord\.runtimeCompatibilityVersion must be a non-empty string/);
   });
 
+  it('TC-PC-053 proves secret value never appears in app artifact', () => {
+    const artifactWithPlaintextSecret = {
+      ...minimalAppTree,
+      secrets: {
+        shopify: { ref: 'SHOPIFY_API_TOKEN', value: 'shpat_plaintext_secret' },
+      },
+    };
+    const artifactWithSecretRefOnly = {
+      ...minimalAppTree,
+      secrets: {
+        shopify: { ref: 'SHOPIFY_API_TOKEN' },
+      },
+    };
+
+    const rejected = validateAppArtifactTree(artifactWithPlaintextSecret);
+    const accepted = validateAppArtifactTree(artifactWithSecretRefOnly);
+
+    assert.equal(rejected.ok, false);
+    assert.match(rejected.errors.join('\n'), /must contain only a ref and no plaintext value/);
+    assert.deepEqual(accepted, { ok: true, errors: [] });
+  });
+
   it('TC-PC-041 proves plan stores immutable artifact by content hash', async () => {
     const plan = await planImmutableAppArtifactStorage(minimalAppTree);
 
