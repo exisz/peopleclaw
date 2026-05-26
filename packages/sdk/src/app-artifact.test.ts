@@ -286,9 +286,29 @@ describe('PeopleClaw app artifact schema', () => {
     const rollback = deployments.rollbackProductionPointer();
 
     assert.deepEqual(rollback, {
+      operation: 'restore_production_pointer',
+      dataPlaneRollback: 'not_performed',
       rolledBackFromDeploymentId: preview.deploymentRecord.deploymentId,
       productionDeploymentId: 'dep_demo-crm_prod_001',
     });
     assert.equal(deployments.getProductionDeploymentId(), 'dep_demo-crm_prod_001');
+  });
+
+  it('TC-PC-047 proves rollback does not claim data rollback', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry({ productionDeploymentId: 'dep_demo-crm_prod_001' });
+    const preview = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+    deployments.promote(preview.deploymentRecord.deploymentId);
+
+    const rollback = deployments.rollbackProductionPointer();
+
+    assert.equal(rollback.operation, 'restore_production_pointer');
+    assert.equal(rollback.dataPlaneRollback, 'not_performed');
+    assert.equal(Object.prototype.hasOwnProperty.call(rollback, 'dataRollbackPerformed'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(rollback, 'dataRollbackPlan'), false);
   });
 });

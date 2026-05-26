@@ -108,6 +108,8 @@ export interface PromoteAppDeploymentResult {
 }
 
 export interface RollbackAppDeploymentResult {
+  operation: 'restore_production_pointer';
+  dataPlaneRollback: 'not_performed';
   rolledBackFromDeploymentId: string | null;
   productionDeploymentId: string | null;
 }
@@ -371,7 +373,7 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
     rollbackProductionPointer(): RollbackAppDeploymentResult {
       const rolledBackFromDeploymentId = productionDeploymentId;
       productionDeploymentId = productionPointerHistory.pop() ?? null;
-      return { rolledBackFromDeploymentId, productionDeploymentId };
+      return { operation: 'restore_production_pointer', dataPlaneRollback: 'not_performed', rolledBackFromDeploymentId, productionDeploymentId };
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
