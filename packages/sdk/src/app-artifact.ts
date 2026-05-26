@@ -69,6 +69,12 @@ export interface ArtifactValidationResult {
   errors: string[];
 }
 
+export interface AppArtifactPlanRecord {
+  operation: 'store_immutable_artifact';
+  artifactHash: `sha256:${string}`;
+  artifact: AppArtifactTree;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -235,6 +241,36 @@ export function validateAppDeploymentRecord(value: unknown): ArtifactValidationR
   }
 
   return { ok: errors.length === 0, errors };
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (isRecord(value)) {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const cryptoApi = globalThis.crypto?.subtle;
+  if (cryptoApi) {
+    const bytes = new TextEncoder().encode(input);
+    const digest = await cryptoApi.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+  const { createHash } = await import('node:crypto');
+  return createHash('sha256').update(input).digest('hex');
+}
+
+export async function planImmutableAppArtifactStorage(value: unknown): Promise<AppArtifactPlanRecord> {
+  assertValidAppArtifactTree(value);
+  const artifact = value;
+  const artifactHash = `sha256:${await sha256Hex(stableStringify(artifact))}` as const;
+  return {
+    operation: 'store_immutable_artifact',
+    artifactHash,
+    artifact,
+  };
 }
 
 export function assertValidAppArtifactTree(value: unknown): asserts value is AppArtifactTree {

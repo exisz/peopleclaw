@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
+import { planImmutableAppArtifactStorage, validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
 
 describe('PeopleClaw app artifact schema', () => {
   const minimalAppTree = {
@@ -199,5 +199,13 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /deploymentRecord\.sdkCompatibilityVersion must be a non-empty string/);
     assert.match(result.errors.join('\n'), /deploymentRecord\.runtimeCompatibilityVersion must be a non-empty string/);
+  });
+
+  it('TC-PC-041 proves plan stores immutable artifact by content hash', async () => {
+    const plan = await planImmutableAppArtifactStorage(minimalAppTree);
+
+    assert.equal(plan.operation, 'store_immutable_artifact');
+    assert.match(plan.artifactHash, /^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(plan.artifact, minimalAppTree);
   });
 });
