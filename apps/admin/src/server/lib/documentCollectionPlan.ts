@@ -59,6 +59,21 @@ export interface DocumentSchemaVersionChangePlanRecord {
   addedFields: Record<string, DocumentCollectionFieldDefinition>;
 }
 
+export interface DocumentBackfillDeclaration {
+  collection: string;
+  field: string;
+  batchSize: number;
+}
+
+export interface DocumentBackfillPlanRecord {
+  operation: 'schedule_backfill';
+  collection: string;
+  field: string;
+  execution: 'deferred_worker';
+  batchSize: number;
+  runInlineDuringDeploy: false;
+}
+
 function requireToken(value: string, field: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error(`Document collection definition requires ${field}`);
@@ -108,6 +123,23 @@ function requirePositiveVersion(version: number, context: string): void {
 
 function isFieldCompatibleAddition(field: DocumentCollectionFieldDefinition): boolean {
   return !field.required || Object.prototype.hasOwnProperty.call(field, 'default');
+}
+
+export function planDocumentBackfillOperation(declaration: DocumentBackfillDeclaration): DocumentBackfillPlanRecord {
+  const collection = requireToken(declaration.collection, 'collection');
+  const field = requireToken(declaration.field, 'backfill.field');
+  if (!Number.isInteger(declaration.batchSize) || declaration.batchSize < 1) {
+    throw new Error('Document backfill operation requires positive integer batchSize');
+  }
+
+  return {
+    operation: 'schedule_backfill',
+    collection,
+    field,
+    execution: 'deferred_worker',
+    batchSize: declaration.batchSize,
+    runInlineDuringDeploy: false,
+  };
 }
 
 export function planCompatibleCollectionSchemaChange(

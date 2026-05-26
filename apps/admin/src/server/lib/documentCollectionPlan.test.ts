@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   planCompatibleCollectionSchemaChange,
+  planDocumentBackfillOperation,
   planDocumentCollectionDefinition,
   planDocumentIndexDeclaration,
   planDocumentSeedOperation,
@@ -124,5 +125,22 @@ describe('PeopleClaw managed document collection planning', () => {
         },
       },
     ), /ownerId requires a default for compatible schema change/);
+  });
+
+  it('TC-PC-038 proves backfill is chunked not run inline in deploy', () => {
+    const plan = planDocumentBackfillOperation({
+      collection: 'leads',
+      field: 'normalizedEmail',
+      batchSize: 250,
+    });
+
+    assert.deepEqual(plan, {
+      operation: 'schedule_backfill',
+      collection: 'leads',
+      field: 'normalizedEmail',
+      execution: 'deferred_worker',
+      batchSize: 250,
+      runInlineDuringDeploy: false,
+    });
   });
 });
