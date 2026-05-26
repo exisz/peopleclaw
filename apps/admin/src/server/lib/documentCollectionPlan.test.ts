@@ -111,4 +111,18 @@ describe('PeopleClaw managed document collection planning', () => {
       { name: 'leads', version: 3, fields: { email: { type: 'string', required: true }, score: { type: 'number', default: 0 } } },
     ), /increment version by exactly one/);
   });
+
+  it('TC-PC-037 proves required field without default is dangerous change', () => {
+    assert.throws(() => planCompatibleCollectionSchemaChange(
+      { name: 'leads', version: 1, fields: { email: { type: 'string', required: true } } },
+      {
+        name: 'leads',
+        version: 2,
+        fields: {
+          email: { type: 'string', required: true },
+          ownerId: { type: 'string', required: true },
+        },
+      },
+    ), /ownerId requires a default for compatible schema change/);
+  });
 });
