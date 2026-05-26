@@ -46,8 +46,14 @@ export async function invokeRuntimeFunctionWithInputValidation<T>(input: {
   payload: unknown;
   inputSchema: RuntimeObjectSchema;
   handler: (payload: unknown) => Promise<T> | T;
-}): Promise<{ ok: true; result: T } | { ok: false; errors: string[] }> {
+  outputSchema?: RuntimeObjectSchema;
+}): Promise<{ ok: true; result: T } | { ok: false; errors: string[]; stage: 'input' | 'output' }> {
   const validation = validateRuntimeFunctionPayload(input.payload, input.inputSchema);
-  if (!validation.ok) return { ok: false, errors: validation.errors };
-  return { ok: true, result: await input.handler(input.payload) };
+  if (!validation.ok) return { ok: false, stage: 'input', errors: validation.errors };
+  const result = await input.handler(input.payload);
+  if (input.outputSchema) {
+    const outputValidation = validateRuntimeFunctionPayload(result, input.outputSchema);
+    if (!outputValidation.ok) return { ok: false, stage: 'output', errors: outputValidation.errors };
+  }
+  return { ok: true, result };
 }
