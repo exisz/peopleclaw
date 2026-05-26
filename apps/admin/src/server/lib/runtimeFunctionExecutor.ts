@@ -12,6 +12,30 @@ export interface RuntimeFunctionWorkerInput {
   cpuLimitMs?: number;
 }
 
+export interface RuntimeInvocationOutcomeInput {
+  invocationId: string;
+  deploymentId: string;
+  workerResult: RuntimeFunctionWorkerResult;
+}
+
+export interface RuntimeInvocationOutcome {
+  invocationId: string;
+  deploymentId: string;
+  invocationStatus: 'succeeded' | 'failed';
+  deploymentStatus: 'unchanged';
+  errors: string[];
+}
+
+export function recordRuntimeInvocationOutcome(input: RuntimeInvocationOutcomeInput): RuntimeInvocationOutcome {
+  return {
+    invocationId: input.invocationId,
+    deploymentId: input.deploymentId,
+    invocationStatus: input.workerResult.ok ? 'succeeded' : 'failed',
+    deploymentStatus: 'unchanged',
+    errors: input.workerResult.ok ? [] : input.workerResult.errors,
+  };
+}
+
 /**
  * Minimal worker-thread harness for runtime safety tests. Production can swap in
  * a container/process sandbox behind the same timeout contract; the important

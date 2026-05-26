@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { invokeRuntimeFunctionWorkerSource } from './runtimeFunctionExecutor';
+import { invokeRuntimeFunctionWorkerSource, recordRuntimeInvocationOutcome } from './runtimeFunctionExecutor';
 
 describe('PeopleClaw runtime function executor limits', () => {
   it('TC-PC-061 proves infinite loop function is killed by timeout', async () => {
@@ -32,6 +32,30 @@ describe('PeopleClaw runtime function executor limits', () => {
     assert.match(rejected.errors.join('\n'), /exceeded memory limit/);
   });
 
+
+  it('TC-PC-068 proves worker crash marks invocation failed not deployment corrupt', async () => {
+    const workerResult = await invokeRuntimeFunctionWorkerSource({
+      source: `() => { process.exit(1); }`,
+      timeoutMs: 500,
+    });
+
+    const outcome = recordRuntimeInvocationOutcome({
+      invocationId: 'inv_crashed_001',
+      deploymentId: 'dep_demo-crm_prod_001',
+      workerResult,
+    });
+
+    assert.equal(workerResult.ok, false);
+    assert.equal(workerResult.stage, 'runtime');
+    assert.match(workerResult.errors.join('\n'), /runtime worker exited with code 1/);
+    assert.deepEqual(outcome, {
+      invocationId: 'inv_crashed_001',
+      deploymentId: 'dep_demo-crm_prod_001',
+      invocationStatus: 'failed',
+      deploymentStatus: 'unchanged',
+      errors: ['runtime worker exited with code 1'],
+    });
+  });
 
   it('TC-PC-063 proves CPU-heavy function hits configured limit', async () => {
     const rejected = await invokeRuntimeFunctionWorkerSource({
