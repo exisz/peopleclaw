@@ -102,8 +102,14 @@ export interface InMemoryAppDeploymentRegistryOptions {
   productionDeploymentId?: string | null;
 }
 
+export interface PromoteAppDeploymentResult {
+  previousProductionDeploymentId: string | null;
+  productionDeploymentId: string;
+}
+
 export interface AppDeploymentRegistry {
   deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
+  promote(deploymentId: string): PromoteAppDeploymentResult;
   listDeploymentRecords(): AppDeploymentRecord[];
   getProductionDeploymentId(): string | null;
 }
@@ -345,6 +351,14 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
 
       deploymentRecords.push(deploymentRecord);
       return { artifactHash: stored.artifactHash, deploymentRecord, deploymentRecordCount: deploymentRecords.length };
+    },
+    promote(deploymentId: string): PromoteAppDeploymentResult {
+      if (!deploymentRecords.some(record => record.deploymentId === deploymentId)) {
+        throw new Error(`Unknown deployment: ${deploymentId}`);
+      }
+      const previousProductionDeploymentId = productionDeploymentId;
+      productionDeploymentId = deploymentId;
+      return { previousProductionDeploymentId, productionDeploymentId };
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
