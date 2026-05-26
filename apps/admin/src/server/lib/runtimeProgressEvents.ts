@@ -36,3 +36,12 @@ export function createRuntimeProgressEmitter(invocationId: string, now: () => Da
     },
   };
 }
+
+
+export function serializeScopedProgressSse(invocationId: string, events: RuntimeProgressEvent[]): string {
+  const scopedInvocationId = requireToken(invocationId, 'invocationId');
+  return events
+    .filter(event => event.invocationId === scopedInvocationId)
+    .map(event => `event: progress\ndata: ${JSON.stringify(event)}\n\n`)
+    .join('');
+}
