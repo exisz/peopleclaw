@@ -93,6 +93,33 @@ function print(data: unknown, flags: Record<string, string | boolean>, fallback?
   else console.log(fallback);
 }
 
+function fileEntries(body: unknown): Record<string, string> {
+  const source = (body as any)?.appTree?.files ?? (body as any)?.artifact?.files ?? (body as any)?.files;
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
+  const entries: Record<string, string> = {};
+  for (const [name, value] of Object.entries(source as Record<string, unknown>)) {
+    if (typeof value === 'string') entries[name] = value;
+    else if (value !== undefined) entries[name] = JSON.stringify(value, null, 2) + '\n';
+  }
+  return entries;
+}
+
+function safeWriteAppTree(root: string, files: Record<string, string>): string[] {
+  const written: string[] = [];
+  const resolvedRoot = path.resolve(root);
+  for (const [relativePath, contents] of Object.entries(files)) {
+    const cleanRelativePath = relativePath.replace(/^\/+/, '');
+    const target = path.resolve(resolvedRoot, cleanRelativePath);
+    if (target !== resolvedRoot && !target.startsWith(resolvedRoot + path.sep)) {
+      throw new Error(`Refusing to write outside app tree: ${relativePath}`);
+    }
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, contents);
+    written.push(cleanRelativePath);
+  }
+  return written.sort();
+}
+
 function usage(): never {
   console.error(`PeopleClaw CLI v1
 
@@ -101,6 +128,7 @@ Usage:
   peopleclaw whoami [--json]
   peopleclaw apps list [--json]
   peopleclaw app inspect <appId> [--json]
+  peopleclaw app pull <appId> [--dir <path>] [--json]
   peopleclaw app chat <appId> <message...> [--session-id <id>] [--confirm] [--dry-run] [--json]
   peopleclaw app action <appId> <operation> [--args '{"name":"..."}'] [--confirm] [--dry-run] [--json]
 
@@ -149,6 +177,18 @@ async function main() {
     if (!appId) usage();
     const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}`, { flags });
     print(body, flags, `${(body as any).app?.name ?? appId}: ${(body as any).counts?.components ?? 0} components`);
+    return;
+  }
+
+  if (cmd === 'app' && subcmd === 'pull') {
+    const appId = rest[0];
+    if (!appId) usage();
+    const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}`, { flags });
+    const files = fileEntries(body);
+    if (!Object.keys(files).length) throw new Error('Inspect response did not include a repo-like app tree.');
+    const outputDir = path.resolve(textFlag(flags.dir) ?? appId);
+    const written = safeWriteAppTree(outputDir, files);
+    print({ ok: true, appId, outputDir, files: written }, flags, `Wrote ${written.length} files to ${outputDir}`);
     return;
   }
 
