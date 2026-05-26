@@ -395,6 +395,28 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(deployments.loadDeploymentArtifact(second.deploymentRecord.deploymentId), secondTree);
   });
 
+  it('TC-PC-066 proves dependency version is recorded in deployment', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry();
+
+    const preview = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      dependencyVersions: {
+        '@peopleclaw/sdk': '0.1.0',
+        '@peopleclaw/runtime-worker': '2026.05.26',
+      },
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+
+    assert.deepEqual(preview.deploymentRecord.dependencyVersions, {
+      '@peopleclaw/sdk': '0.1.0',
+      '@peopleclaw/runtime-worker': '2026.05.26',
+    });
+    assert.deepEqual(deployments.listDeploymentRecords()[0]?.dependencyVersions, preview.deploymentRecord.dependencyVersions);
+    assert.deepEqual(validateAppDeploymentRecord(preview.deploymentRecord), { ok: true, errors: [] });
+  });
+
   it('TC-PC-050 proves audit records plan/preview/promote/rollback sequence', async () => {
     const deployments = createInMemoryAppDeploymentRegistry({ productionDeploymentId: 'dep_demo-crm_prod_001' });
     const preview = await deployments.deployPreview(minimalAppTree, {

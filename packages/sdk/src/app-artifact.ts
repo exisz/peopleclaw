@@ -61,6 +61,7 @@ export interface AppDeploymentRecord {
   artifactHash: string;
   sdkCompatibilityVersion: string;
   runtimeCompatibilityVersion: string;
+  dependencyVersions: Record<string, string>;
   createdAt: string;
 }
 
@@ -91,6 +92,7 @@ export interface PreviewAppDeploymentOptions {
   appId: string;
   sdkCompatibilityVersion: string;
   runtimeCompatibilityVersion: string;
+  dependencyVersions?: Record<string, string>;
   now?: Date;
 }
 
@@ -346,6 +348,15 @@ export function validateAppDeploymentRecord(value: unknown): ArtifactValidationR
     errors.push('deploymentRecord.channel must be preview or production');
   }
 
+  if (!isRecord(value.dependencyVersions)) {
+    errors.push('deploymentRecord.dependencyVersions must be an object');
+  } else {
+    for (const [name, version] of Object.entries(value.dependencyVersions)) {
+      if (!isNonEmptyString(name)) errors.push('deploymentRecord.dependencyVersions names must be non-empty strings');
+      if (!isNonEmptyString(version)) errors.push(`deploymentRecord.dependencyVersions.${name} must be a non-empty string`);
+    }
+  }
+
   return { ok: errors.length === 0, errors };
 }
 
@@ -423,6 +434,7 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
       const stored = await artifactStore.put(value);
       const createdAt = (options.now ?? new Date()).toISOString();
       const deploymentId = `dep_${options.appId}_preview_${deploymentRecords.length + 1}`;
+      const dependencyVersions = { ...(options.dependencyVersions ?? {}) };
       appendAuditRecord({ operation: 'plan', appId: options.appId, deploymentId: null, artifactHash: stored.artifactHash, createdAt });
       const deploymentRecord: AppDeploymentRecord = {
         id: `record_${deploymentId}`,
@@ -432,6 +444,7 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
         artifactHash: stored.artifactHash,
         sdkCompatibilityVersion: options.sdkCompatibilityVersion,
         runtimeCompatibilityVersion: options.runtimeCompatibilityVersion,
+        dependencyVersions,
         createdAt,
       };
 
