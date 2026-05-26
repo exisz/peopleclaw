@@ -32,4 +32,17 @@ describe('PeopleClaw runtime function executor limits', () => {
     assert.match(rejected.errors.join('\n'), /exceeded memory limit/);
   });
 
+
+  it('TC-PC-063 proves CPU-heavy function hits configured limit', async () => {
+    const rejected = await invokeRuntimeFunctionWorkerSource({
+      source: `() => { let total = 0; while (true) total += Math.sqrt(total + 1); }`,
+      timeoutMs: 1_000,
+      cpuLimitMs: 50,
+    });
+
+    assert.equal(rejected.ok, false);
+    assert.equal(rejected.stage, 'cpu');
+    assert.match(rejected.errors.join('\n'), /exceeded CPU limit/);
+  });
+
 });

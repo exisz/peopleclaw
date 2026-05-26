@@ -2,13 +2,14 @@ import { Worker } from 'node:worker_threads';
 
 export type RuntimeFunctionWorkerResult =
   | { ok: true; result: unknown }
-  | { ok: false; stage: 'timeout' | 'memory' | 'runtime'; errors: string[] };
+  | { ok: false; stage: 'timeout' | 'memory' | 'cpu' | 'runtime'; errors: string[] };
 
 export interface RuntimeFunctionWorkerInput {
   source: string;
   payload?: unknown;
   timeoutMs: number;
   memoryLimitMb?: number;
+  cpuLimitMs?: number;
 }
 
 /**
@@ -47,12 +48,18 @@ export function invokeRuntimeFunctionWorkerSource(input: RuntimeFunctionWorkerIn
       resolve(result);
     };
 
+    const cpuLimitMs = input.cpuLimitMs;
+    const effectiveTimeoutMs = cpuLimitMs === undefined ? input.timeoutMs : Math.min(input.timeoutMs, cpuLimitMs);
     const timer = setTimeout(() => {
       timingOut = true;
+      const stage = cpuLimitMs !== undefined && cpuLimitMs <= input.timeoutMs ? 'cpu' : 'timeout';
+      const message = stage === 'cpu'
+        ? 'runtime function exceeded CPU limit and was terminated'
+        : 'runtime function exceeded timeout and was terminated';
       void worker.terminate().finally(() => {
-        finish({ ok: false, stage: 'timeout', errors: ['runtime function exceeded timeout and was terminated'] });
+        finish({ ok: false, stage, errors: [message] });
       });
-    }, input.timeoutMs);
+    }, effectiveTimeoutMs);
 
     worker.on('message', message => {
       if (message?.ok === true) finish({ ok: true, result: message.result });
