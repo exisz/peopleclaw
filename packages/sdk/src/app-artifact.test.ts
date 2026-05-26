@@ -223,6 +223,27 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(accepted, { ok: true, errors: [] });
   });
 
+  it('TC-PC-056 proves forbidden secret reference blocks plan', async () => {
+    const artifactWithForbiddenSecretRef = {
+      ...minimalAppTree,
+      secrets: {
+        shopify: { ref: 'SHOPIFY_API_TOKEN' },
+      },
+      functions: {
+        'functions/syncStripe.ts': {
+          source: `export async function syncStripe(input, ctx) { return ctx.secrets.ref('STRIPE_API_KEY'); }`,
+          inputSchema: { type: 'object', properties: {} },
+          outputSchema: { type: 'object', properties: { ok: { type: 'boolean' } } },
+        },
+      },
+    };
+
+    await assert.rejects(
+      () => planImmutableAppArtifactStorage(artifactWithForbiddenSecretRef),
+      /functions\.functions\/syncStripe\.ts references forbidden secret STRIPE_API_KEY/,
+    );
+  });
+
   it('TC-PC-041 proves plan stores immutable artifact by content hash', async () => {
     const plan = await planImmutableAppArtifactStorage(minimalAppTree);
 

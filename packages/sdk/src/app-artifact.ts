@@ -243,6 +243,26 @@ function validateSecrets(value: unknown, errors: string[]): value is Record<stri
   return true;
 }
 
+function validateFunctionSecretReferences(functions: unknown, secrets: unknown, errors: string[]): void {
+  if (!isRecord(functions)) return;
+  const allowedRefs = new Set<string>();
+  if (isRecord(secrets)) {
+    for (const [name, secret] of Object.entries(secrets)) {
+      allowedRefs.add(name);
+      if (isRecord(secret) && isNonEmptyString(secret.ref)) allowedRefs.add(secret.ref);
+    }
+  }
+
+  const secretRefCall = /ctx\.secrets\.ref\(\s*['"]([^'"]+)['"]\s*\)/g;
+  for (const [path, fn] of Object.entries(functions)) {
+    if (!isRecord(fn) || !isNonEmptyString(fn.source)) continue;
+    for (const match of fn.source.matchAll(secretRefCall)) {
+      const ref = match[1];
+      if (!allowedRefs.has(ref)) errors.push(`functions.${path} references forbidden secret ${ref}`);
+    }
+  }
+}
+
 function validateSidebar(value: unknown, errors: string[]): value is AppSidebar {
   if (!isRecord(value)) {
     errors.push('sidebar must be an object');
@@ -307,6 +327,7 @@ export function validateAppArtifactTree(value: unknown): ArtifactValidationResul
   validateScreens(value.screens, errors);
   validateFunctions(value.functions, errors);
   validateSecrets(value.secrets, errors);
+  validateFunctionSecretReferences(value.functions, value.secrets, errors);
 
   return { ok: errors.length === 0, errors };
 }
