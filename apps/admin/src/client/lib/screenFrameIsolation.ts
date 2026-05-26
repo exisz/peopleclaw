@@ -12,6 +12,15 @@ export interface ScreenIframeUrlResult {
   sandbox: string;
 }
 
+export interface ScreenBridgeMessage {
+  type: string;
+  payload?: unknown;
+}
+
+export type ScreenBridgeMessageResult =
+  | { ok: true; message: ScreenBridgeMessage }
+  | { ok: false; reason: 'wrong_origin' | 'invalid_message' };
+
 function parseOrigin(value: string, field: string): URL {
   try {
     return new URL(value);
@@ -32,6 +41,22 @@ function requireToken(value: string, field: keyof ScreenIframeUrlInput): string 
  * origin rendering is intentionally rejected so screen code cannot share the
  * core shell's DOM/cookies/storage boundary.
  */
+export function acceptScreenBridgeMessage(input: {
+  expectedOrigin: string;
+  eventOrigin: string;
+  data: unknown;
+}): ScreenBridgeMessageResult {
+  const expected = parseOrigin(input.expectedOrigin, 'expectedOrigin');
+  const actual = parseOrigin(input.eventOrigin, 'eventOrigin');
+  if (actual.origin !== expected.origin) {
+    return { ok: false, reason: 'wrong_origin' };
+  }
+  if (!input.data || typeof input.data !== 'object' || Array.isArray(input.data) || typeof (input.data as { type?: unknown }).type !== 'string') {
+    return { ok: false, reason: 'invalid_message' };
+  }
+  return { ok: true, message: input.data as ScreenBridgeMessage };
+}
+
 export function createScreenIframeUrl(input: ScreenIframeUrlInput): Readonly<ScreenIframeUrlResult> {
   const core = parseOrigin(input.coreOrigin, 'coreOrigin');
   const screen = parseOrigin(input.screenOrigin, 'screenOrigin');

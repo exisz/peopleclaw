@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createScreenIframeUrl } from './screenFrameIsolation';
+import { acceptScreenBridgeMessage, createScreenIframeUrl } from './screenFrameIsolation';
 
 describe('PeopleClaw screen iframe origin isolation', () => {
   it('TC-PC-019 runs a screen iframe on a separate origin from the core shell', () => {
@@ -27,5 +27,21 @@ describe('PeopleClaw screen iframe origin isolation', () => {
       deploymentId: 'dep_prod_123',
       screenId: 'screens/Dashboard.tsx',
     }), /must be separate/);
+  });
+
+  it('TC-PC-057 proves postMessage rejects wrong origin', () => {
+    const accepted = acceptScreenBridgeMessage({
+      expectedOrigin: 'https://screens.peopleclaw-runtime.example',
+      eventOrigin: 'https://screens.peopleclaw-runtime.example',
+      data: { type: 'peopleclaw.screen.ready', payload: { screenId: 'screens/Dashboard.tsx' } },
+    });
+    const rejected = acceptScreenBridgeMessage({
+      expectedOrigin: 'https://screens.peopleclaw-runtime.example',
+      eventOrigin: 'https://evil.example',
+      data: { type: 'peopleclaw.screen.ready', payload: { screenId: 'screens/Dashboard.tsx' } },
+    });
+
+    assert.equal(accepted.ok, true);
+    assert.deepEqual(rejected, { ok: false, reason: 'wrong_origin' });
   });
 });
