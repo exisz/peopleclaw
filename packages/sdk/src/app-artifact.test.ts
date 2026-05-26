@@ -351,4 +351,29 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(deployments.loadDeploymentArtifact(first.deploymentRecord.deploymentId), firstTree);
     assert.deepEqual(deployments.loadDeploymentArtifact(second.deploymentRecord.deploymentId), secondTree);
   });
+
+  it('TC-PC-050 proves audit records plan/preview/promote/rollback sequence', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry({ productionDeploymentId: 'dep_demo-crm_prod_001' });
+    const preview = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+
+    deployments.promote(preview.deploymentRecord.deploymentId);
+    deployments.rollbackProductionPointer();
+
+    const auditRecords = deployments.listAuditRecords();
+    assert.deepEqual(auditRecords.map(record => record.sequence), [1, 2, 3, 4]);
+    assert.deepEqual(auditRecords.map(record => record.operation), ['plan', 'preview', 'promote', 'rollback']);
+    assert.deepEqual(auditRecords.map(record => record.appId), ['demo-crm', 'demo-crm', 'demo-crm', 'demo-crm']);
+    assert.equal(auditRecords[0]?.deploymentId, null);
+    assert.equal(auditRecords[0]?.artifactHash, preview.artifactHash);
+    assert.equal(auditRecords[1]?.deploymentId, preview.deploymentRecord.deploymentId);
+    assert.equal(auditRecords[2]?.previousProductionDeploymentId, 'dep_demo-crm_prod_001');
+    assert.equal(auditRecords[2]?.productionDeploymentId, preview.deploymentRecord.deploymentId);
+    assert.equal(auditRecords[3]?.previousProductionDeploymentId, preview.deploymentRecord.deploymentId);
+    assert.equal(auditRecords[3]?.productionDeploymentId, 'dep_demo-crm_prod_001');
+  });
 });

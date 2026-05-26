@@ -116,12 +116,24 @@ export interface RollbackAppDeploymentResult {
   productionDeploymentId: string | null;
 }
 
+export interface AppDeploymentAuditRecord {
+  sequence: number;
+  operation: 'plan' | 'preview' | 'promote' | 'rollback';
+  appId: string;
+  deploymentId: string | null;
+  artifactHash?: `sha256:${string}`;
+  previousProductionDeploymentId?: string | null;
+  productionDeploymentId?: string | null;
+  createdAt: string;
+}
+
 export interface AppDeploymentRegistry {
   deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
   promote(deploymentId: string): PromoteAppDeploymentResult;
   rollbackProductionPointer(): RollbackAppDeploymentResult;
   loadDeploymentArtifact(deploymentId: string): AppArtifactTree | null;
   listDeploymentRecords(): AppDeploymentRecord[];
+  listAuditRecords(): AppDeploymentAuditRecord[];
   getProductionDeploymentId(): string | null;
 }
 
@@ -350,8 +362,13 @@ export function createInMemoryAppArtifactStore(): AppArtifactStore {
 export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeploymentRegistryOptions = {}): AppDeploymentRegistry {
   const artifactStore = createInMemoryAppArtifactStore();
   const deploymentRecords: AppDeploymentRecord[] = [];
+  const auditRecords: AppDeploymentAuditRecord[] = [];
   let productionDeploymentId = options.productionDeploymentId ?? null;
   const productionPointerHistory: Array<string | null> = [];
+
+  function appendAuditRecord(record: Omit<AppDeploymentAuditRecord, 'sequence'>): void {
+    auditRecords.push({ sequence: auditRecords.length + 1, ...record });
+  }
 
   return {
     async deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult> {
@@ -362,6 +379,7 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
       const stored = await artifactStore.put(value);
       const createdAt = (options.now ?? new Date()).toISOString();
       const deploymentId = `dep_${options.appId}_preview_${deploymentRecords.length + 1}`;
+      appendAuditRecord({ operation: 'plan', appId: options.appId, deploymentId: null, artifactHash: stored.artifactHash, createdAt });
       const deploymentRecord: AppDeploymentRecord = {
         id: `record_${deploymentId}`,
         appId: options.appId,
@@ -374,20 +392,39 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
       };
 
       deploymentRecords.push(deploymentRecord);
+      appendAuditRecord({ operation: 'preview', appId: options.appId, deploymentId, artifactHash: stored.artifactHash, createdAt });
       return { artifactHash: stored.artifactHash, deploymentRecord, deploymentRecordCount: deploymentRecords.length };
     },
     promote(deploymentId: string): PromoteAppDeploymentResult {
-      if (!deploymentRecords.some(record => record.deploymentId === deploymentId)) {
+      const deploymentRecord = deploymentRecords.find(record => record.deploymentId === deploymentId);
+      if (!deploymentRecord) {
         throw new Error(`Unknown deployment: ${deploymentId}`);
       }
       const previousProductionDeploymentId = productionDeploymentId;
       productionPointerHistory.push(previousProductionDeploymentId);
       productionDeploymentId = deploymentId;
+      appendAuditRecord({
+        operation: 'promote',
+        appId: deploymentRecord.appId,
+        deploymentId,
+        previousProductionDeploymentId,
+        productionDeploymentId,
+        createdAt: new Date().toISOString(),
+      });
       return { previousProductionDeploymentId, productionDeploymentId };
     },
     rollbackProductionPointer(): RollbackAppDeploymentResult {
       const rolledBackFromDeploymentId = productionDeploymentId;
       productionDeploymentId = productionPointerHistory.pop() ?? null;
+      const appId = deploymentRecords.find(record => record.deploymentId === rolledBackFromDeploymentId || record.deploymentId === productionDeploymentId)?.appId ?? 'unknown';
+      appendAuditRecord({
+        operation: 'rollback',
+        appId,
+        deploymentId: rolledBackFromDeploymentId,
+        previousProductionDeploymentId: rolledBackFromDeploymentId,
+        productionDeploymentId,
+        createdAt: new Date().toISOString(),
+      });
       return { operation: 'restore_production_pointer', dataPlaneRollback: 'not_performed', rolledBackFromDeploymentId, productionDeploymentId };
     },
     loadDeploymentArtifact(deploymentId: string): AppArtifactTree | null {
@@ -396,6 +433,9 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
+    },
+    listAuditRecords(): AppDeploymentAuditRecord[] {
+      return auditRecords.map(record => ({ ...record }));
     },
     getProductionDeploymentId(): string | null {
       return productionDeploymentId;
