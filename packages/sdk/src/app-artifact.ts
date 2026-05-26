@@ -53,6 +53,17 @@ export interface AppSidebarItem {
   routeId: string;
 }
 
+export interface AppDeploymentRecord {
+  id: string;
+  appId: string;
+  deploymentId: string;
+  channel: 'preview' | 'production';
+  artifactHash: string;
+  sdkCompatibilityVersion: string;
+  runtimeCompatibilityVersion: string;
+  createdAt: string;
+}
+
 export interface ArtifactValidationResult {
   ok: boolean;
   errors: string[];
@@ -205,6 +216,23 @@ export function validateAppArtifactTree(value: unknown): ArtifactValidationResul
   validateSidebar(value.sidebar, errors);
   validateScreens(value.screens, errors);
   validateFunctions(value.functions, errors);
+
+  return { ok: errors.length === 0, errors };
+}
+
+export function validateAppDeploymentRecord(value: unknown): ArtifactValidationResult {
+  const errors: string[] = [];
+  if (!isRecord(value)) {
+    return { ok: false, errors: ['deployment record must be an object'] };
+  }
+
+  for (const field of ['id', 'appId', 'deploymentId', 'artifactHash', 'sdkCompatibilityVersion', 'runtimeCompatibilityVersion', 'createdAt'] as const) {
+    if (!isNonEmptyString(value[field])) errors.push(`deploymentRecord.${field} must be a non-empty string`);
+  }
+
+  if (value.channel !== 'preview' && value.channel !== 'production') {
+    errors.push('deploymentRecord.channel must be preview or production');
+  }
 
   return { ok: errors.length === 0, errors };
 }

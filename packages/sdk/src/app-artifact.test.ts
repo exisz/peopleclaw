@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { validateAppArtifactTree } from './app-artifact';
+import { validateAppArtifactTree, validateAppDeploymentRecord } from './app-artifact';
 
 describe('PeopleClaw app artifact schema', () => {
   const minimalAppTree = {
@@ -182,5 +182,22 @@ describe('PeopleClaw app artifact schema', () => {
 
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /functions\.functions\/createContact\.ts\.outputSchema is required/);
+  });
+
+  it('TC-PC-010 requires deployment records to declare SDK and runtime compatibility versions', () => {
+    const deploymentRecordMissingCompatibilityVersions = {
+      id: 'record_demo-crm_prod_001',
+      appId: 'demo-crm',
+      deploymentId: 'dep_demo-crm_prod_001',
+      channel: 'production',
+      artifactHash: 'sha256:app-artifact-tree',
+      createdAt: '2026-05-26T00:00:00.000Z',
+    };
+
+    const result = validateAppDeploymentRecord(deploymentRecordMissingCompatibilityVersions);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /deploymentRecord\.sdkCompatibilityVersion must be a non-empty string/);
+    assert.match(result.errors.join('\n'), /deploymentRecord\.runtimeCompatibilityVersion must be a non-empty string/);
   });
 });
