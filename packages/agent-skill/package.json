@@ -13,7 +13,8 @@
     "README.md"
   ],
   "scripts": {
-    "install:local": "node ./bin/install.mjs --dest ."
+    "install:local": "node ./bin/install.mjs --dest .",
+    "test": "node --test test/*.test.mjs"
   },
   "keywords": [
     "peopleclaw",
