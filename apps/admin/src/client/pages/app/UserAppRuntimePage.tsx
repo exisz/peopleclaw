@@ -1,6 +1,6 @@
 import { useLocation, useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { resolveCoreAppShellRoute } from '../../lib/appRouteResolution';
+import { resolveDeploymentManifestRequest } from '../../lib/appRouteResolution';
 
 /**
  * MVP core shell entrypoint for soft-deployed user App routes.
@@ -11,7 +11,7 @@ import { resolveCoreAppShellRoute } from '../../lib/appRouteResolution';
 export default function UserAppRuntimePage() {
   const location = useLocation();
   const { appId } = useParams();
-  const resolved = resolveCoreAppShellRoute(location.pathname);
+  const resolved = resolveDeploymentManifestRequest(location.pathname, location.search);
   const resolvedAppId = resolved?.appId ?? appId ?? 'unknown';
   const appPath = resolved?.appPath ?? '/';
 
@@ -28,6 +28,7 @@ export default function UserAppRuntimePage() {
           <CardContent className="text-sm text-muted-foreground space-y-2">
             <p data-testid="core-app-shell-app-id">App: {resolvedAppId}</p>
             <p data-testid="core-app-shell-path">Path: {appPath}</p>
+            <p data-testid="core-app-shell-channel">Manifest channel: {resolved?.channel ?? 'production'}</p>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,12 @@
+export type DeploymentChannel = 'preview' | 'production';
+
 export interface CoreAppShellRoute {
   appId: string;
   appPath: string;
+}
+
+export interface DeploymentManifestRequest extends CoreAppShellRoute {
+  channel: DeploymentChannel;
 }
 
 const APPS_PREFIX = '/apps/';
@@ -22,4 +28,13 @@ export function resolveCoreAppShellRoute(pathname: string): CoreAppShellRoute | 
 
   const appPath = `/${pathParts.join('/')}`;
   return { appId, appPath };
+}
+
+export function resolveDeploymentManifestRequest(pathname: string, search = ''): DeploymentManifestRequest | null {
+  const route = resolveCoreAppShellRoute(pathname);
+  if (!route) return null;
+
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const channel: DeploymentChannel = params.get('preview') ? 'preview' : 'production';
+  return { ...route, channel };
 }
