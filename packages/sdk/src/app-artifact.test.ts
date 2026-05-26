@@ -272,4 +272,23 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(deployments.getProductionDeploymentId(), preview.deploymentRecord.deploymentId);
     assert.deepEqual(deployments.listDeploymentRecords(), recordsBeforePromote);
   });
+
+  it('TC-PC-046 proves rollback restores previous production deployment pointer', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry({ productionDeploymentId: 'dep_demo-crm_prod_001' });
+    const preview = await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+    deployments.promote(preview.deploymentRecord.deploymentId);
+
+    const rollback = deployments.rollbackProductionPointer();
+
+    assert.deepEqual(rollback, {
+      rolledBackFromDeploymentId: preview.deploymentRecord.deploymentId,
+      productionDeploymentId: 'dep_demo-crm_prod_001',
+    });
+    assert.equal(deployments.getProductionDeploymentId(), 'dep_demo-crm_prod_001');
+  });
 });

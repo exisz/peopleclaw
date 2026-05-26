@@ -107,9 +107,15 @@ export interface PromoteAppDeploymentResult {
   productionDeploymentId: string;
 }
 
+export interface RollbackAppDeploymentResult {
+  rolledBackFromDeploymentId: string | null;
+  productionDeploymentId: string | null;
+}
+
 export interface AppDeploymentRegistry {
   deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
   promote(deploymentId: string): PromoteAppDeploymentResult;
+  rollbackProductionPointer(): RollbackAppDeploymentResult;
   listDeploymentRecords(): AppDeploymentRecord[];
   getProductionDeploymentId(): string | null;
 }
@@ -328,6 +334,7 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
   const artifactStore = createInMemoryAppArtifactStore();
   const deploymentRecords: AppDeploymentRecord[] = [];
   let productionDeploymentId = options.productionDeploymentId ?? null;
+  const productionPointerHistory: Array<string | null> = [];
 
   return {
     async deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult> {
@@ -357,8 +364,14 @@ export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeployme
         throw new Error(`Unknown deployment: ${deploymentId}`);
       }
       const previousProductionDeploymentId = productionDeploymentId;
+      productionPointerHistory.push(previousProductionDeploymentId);
       productionDeploymentId = deploymentId;
       return { previousProductionDeploymentId, productionDeploymentId };
+    },
+    rollbackProductionPointer(): RollbackAppDeploymentResult {
+      const rolledBackFromDeploymentId = productionDeploymentId;
+      productionDeploymentId = productionPointerHistory.pop() ?? null;
+      return { rolledBackFromDeploymentId, productionDeploymentId };
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
