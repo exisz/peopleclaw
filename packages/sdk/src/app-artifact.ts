@@ -83,8 +83,8 @@ function validateManifest(value: unknown, errors: string[]): value is AppManifes
     } else {
       routeIds.add(route.id);
     }
-    if (!isNonEmptyString(route.path) || !route.path.startsWith('/apps/')) {
-      errors.push(`manifest.routes[${index}].path must be inside /apps/`);
+    if (!isNonEmptyString(route.path) || !isNonEmptyString(value.appId) || !route.path.startsWith(`/apps/${value.appId}`)) {
+      errors.push(`manifest.routes[${index}].path must be inside /apps/${String(value.appId)}`);
     }
     if (!isNonEmptyString(route.screen)) errors.push(`manifest.routes[${index}].screen must be a non-empty string`);
   }

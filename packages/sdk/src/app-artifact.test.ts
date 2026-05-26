@@ -63,4 +63,21 @@ describe('PeopleClaw app artifact schema', () => {
     assert.equal(result.ok, false);
     assert.match(result.errors.join('\n'), /manifest\.routes\[1\]\.id must be unique/);
   });
+
+  it('TC-PC-004 rejects manifest routes outside the app namespace', () => {
+    const appTreeWithForeignRoute = {
+      ...minimalAppTree,
+      manifest: {
+        ...minimalAppTree.manifest,
+        routes: [
+          { id: 'dashboard', path: '/apps/other-app/dashboard', screen: 'screens/Dashboard.tsx' },
+        ],
+      },
+    };
+
+    const result = validateAppArtifactTree(appTreeWithForeignRoute);
+
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /manifest\.routes\[0\]\.path must be inside \/apps\/demo-crm/);
+  });
 });
