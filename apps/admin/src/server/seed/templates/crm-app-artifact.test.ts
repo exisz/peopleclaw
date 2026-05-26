@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { crmAppTemplateManifest, crmAppTemplateSidebar } from './crm-app-artifact';
+import { crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections } from './crm-app-artifact';
 
 function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
   const errors: string[] = [];
@@ -32,5 +32,17 @@ describe('CRM starter app artifact sidebar', () => {
     assert.deepEqual(itemRouteIds, ['dashboard', 'contacts', 'chat', 'system']);
     assert.deepEqual(new Set(itemRouteIds), new Set(crmAppTemplateManifest.routes.map(route => route.id)));
     assert.equal(crmAppTemplateSidebar.sections.at(-1)?.kind, 'system');
+  });
+});
+
+
+describe('CRM starter app artifact data collections', () => {
+  it('TC-PC-083 proves contacts collection schema validates', () => {
+    const contacts = crmAppTemplateCollections.find(collection => collection.name === 'contacts');
+    assert.ok(contacts, 'contacts collection should exist');
+    assert.deepEqual(Object.keys(contacts.fields), ['id', 'name', 'email', 'phone', 'company', 'tags', 'createdAt', 'updatedAt']);
+    assert.equal(contacts.fields.name.required, true);
+    assert.equal(contacts.fields.email.type, 'string');
+    assert.equal(contacts.fields.tags.type, 'string[]');
   });
 });

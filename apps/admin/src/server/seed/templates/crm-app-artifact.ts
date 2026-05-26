@@ -35,3 +35,20 @@ export const crmAppTemplateSidebar = {
     },
   ],
 } as const;
+
+
+export const crmAppTemplateCollections = [
+  {
+    name: 'contacts',
+    fields: {
+      id: { type: 'string', required: true },
+      name: { type: 'string', required: true },
+      email: { type: 'string', required: false },
+      phone: { type: 'string', required: false },
+      company: { type: 'string', required: false },
+      tags: { type: 'string[]', required: false },
+      createdAt: { type: 'datetime', required: true },
+      updatedAt: { type: 'datetime', required: true },
+    },
+  },
+] as const;
