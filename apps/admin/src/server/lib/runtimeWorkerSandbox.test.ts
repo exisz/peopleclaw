@@ -25,4 +25,30 @@ describe('PeopleClaw runtime worker sandbox policy', () => {
     assert.equal(rejectedTarget.ok, false);
     assert.match(rejectedTarget.errors.join('\n'), /must not mount the Docker socket/);
   });
+
+  it('TC-PC-060 proves sandbox egress blocks forbidden network host', () => {
+    const accepted = validateRuntimeWorkerSandboxSpec({
+      network: {
+        allowHosts: ['api.stripe.com', 'storage.peopleclaw.example'],
+      },
+    });
+
+    assert.deepEqual(accepted, { ok: true, errors: [] });
+
+    const rejectedMetadata = validateRuntimeWorkerSandboxSpec({
+      network: {
+        allowHosts: ['169.254.169.254'],
+      },
+    });
+    assert.equal(rejectedMetadata.ok, false);
+    assert.match(rejectedMetadata.errors.join('\n'), /egress must block forbidden host: 169\.254\.169\.254/);
+
+    const rejectedLocalhost = validateRuntimeWorkerSandboxSpec({
+      network: {
+        allowHosts: ['LOCALHOST.'],
+      },
+    });
+    assert.equal(rejectedLocalhost.ok, false);
+    assert.match(rejectedLocalhost.errors.join('\n'), /egress must block forbidden host: localhost/);
+  });
 });
