@@ -10,10 +10,6 @@
   ],
   "crons": [
     {
-      "path": "/api/internal/refresh-shopify-tokens",
-      "schedule": "0 */12 * * *"
-    },
-    {
       "path": "/api/internal/run-scheduled",
       "schedule": "*/5 * * * *"
     }

@@ -13,7 +13,7 @@ const REQUIRED_PROD = [
   'RESEND_API_KEY',
   'LOGTO_EMAIL_WEBHOOK_SECRET',
 ] as const;
-const RECOMMENDED = ['SHOPIFY_API_KEY', 'SHOPIFY_API_SECRET', 'OPENAI_API_KEY'] as const;
+const RECOMMENDED = ['OPENAI_API_KEY'] as const;
 
 export function checkEnv(): { missing: string[]; warnings: string[] } {
   const missing: string[] = [];

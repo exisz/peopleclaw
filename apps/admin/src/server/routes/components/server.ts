@@ -24,8 +24,7 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       return res.status(400).json({ error: 'Component not compiled. POST /compile first.' });
     }
 
-    // PLANET-1463: core no longer injects Shopify-specific env. ctx.env stays
-    // available as a generic empty bag for back-compat with old serverHandlers.
+    // ctx.env is a generic empty bag for back-compat with old serverHandlers.
     const envBag: Record<string, string> = {};
 
     // PLANET-1458: decrypt App.secrets so server handlers can read ctx.secrets.X
@@ -36,8 +35,8 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       console.error('[component/server] failed to decrypt secrets', err);
     }
 
-    // PLANET-1459/1461: inject callApp so FULLSTACK server() can fan out to
-    // sibling components (e.g. shopify connector) inside the same App.
+    // Inject callApp so FULLSTACK server() can fan out to sibling components
+    // inside the same App.
     const callApp = component.app
       ? buildCallAppCtx(component.app.tenantId)
       : undefined;

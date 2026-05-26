@@ -16,5 +16,5 @@ export const CREDIT_COSTS = {
   AI_DESCRIPTION: 1,
   AI_OTHER: 1,
   AI_IMAGE: 3,
-  SHOPIFY_UPLOAD: 0,
+  EXTERNAL_CONNECTOR_WRITE: 0,
 } as const;

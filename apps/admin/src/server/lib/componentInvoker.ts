@@ -91,8 +91,7 @@ function compileComponent(component: ComponentWithApp): CompiledRun {
 }
 
 async function buildEnvBag(_tenantId: string): Promise<Record<string, string>> {
-  // PLANET-1463: core no longer injects Shopify-specific env. ctx.env stays
-  // available as a generic injection point for future use; today it's empty.
+  // ctx.env is a generic injection point for future platform use; today it's empty.
   return {};
 }
 

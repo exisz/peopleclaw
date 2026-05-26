@@ -1,7 +1,7 @@
 /**
  * ctx.updateAppSecrets — generic per-App secret updater (PLANET-1579).
  *
- * Core primitive, NOT a Shopify-specific path (§1.4 compliant). Any connector
+ * Core primitive for artifact-owned connectors. Any connector
  * template that needs to persist refreshed credentials (OAuth access tokens,
  * rotated API keys, refresh-token grants, etc.) calls
  *   await ctx.updateAppSecrets({ KEY: 'value', ... })

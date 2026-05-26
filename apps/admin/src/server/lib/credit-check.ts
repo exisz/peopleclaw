@@ -20,7 +20,7 @@ export async function checkAndDeductCredit(
 ): Promise<number> {
   if (cost <= 0) return -1;
   // Skip credit check in mock/dev mode
-  if (process.env.SHOPIFY_MOCK === 'true') return 9999;
+  if (process.env.PEOPLECLAW_MOCK === 'true') return 9999;
   const prisma = getPrisma();
   return prisma.$transaction(async (tx) => {
     const tenant = await tx.tenant.findUnique({ where: { id: tenantId } });
