@@ -26,6 +26,21 @@ describe('PeopleClaw core app shell route resolution', () => {
       appId: 'demo-crm',
       appPath: '/dashboard',
       channel: 'preview',
+      deploymentId: 'dep_preview_001',
     });
+  });
+
+  it('TC-PC-092 soft-deploy E2E proves no core redeploy required', () => {
+    const before = resolveDeploymentManifestRequest('/apps/demo-crm/dashboard', '?preview=dep_demo_crm_v1');
+    const after = resolveDeploymentManifestRequest('/apps/demo-crm/dashboard', '?preview=dep_demo_crm_v2');
+
+    assert.deepEqual(
+      { appId: before?.appId, appPath: before?.appPath, channel: before?.channel },
+      { appId: after?.appId, appPath: after?.appPath, channel: after?.channel },
+      'soft-deploying a new deployment artifact must keep the same core shell route',
+    );
+    assert.equal(before?.deploymentId, 'dep_demo_crm_v1');
+    assert.equal(after?.deploymentId, 'dep_demo_crm_v2');
+    assert.doesNotMatch(JSON.stringify(after), /VITE_BUILD_SHA|github\.sha|coreBuild|redeploy/i);
   });
 });

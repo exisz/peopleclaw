@@ -7,6 +7,8 @@ export interface CoreAppShellRoute {
 
 export interface DeploymentManifestRequest extends CoreAppShellRoute {
   channel: DeploymentChannel;
+  /** Immutable deployment selected by the manifest lookup; changing this must not require a core route/code deploy. */
+  deploymentId?: string;
 }
 
 const APPS_PREFIX = '/apps/';
@@ -35,6 +37,7 @@ export function resolveDeploymentManifestRequest(pathname: string, search = ''):
   if (!route) return null;
 
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  const channel: DeploymentChannel = params.get('preview') ? 'preview' : 'production';
-  return { ...route, channel };
+  const previewDeploymentId = params.get('preview')?.trim() || undefined;
+  const channel: DeploymentChannel = previewDeploymentId ? 'preview' : 'production';
+  return previewDeploymentId ? { ...route, channel, deploymentId: previewDeploymentId } : { ...route, channel };
 }
