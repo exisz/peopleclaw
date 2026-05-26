@@ -11,3 +11,27 @@ export const crmAppTemplateManifest = {
     { id: 'system', path: '/apps/crm/system', screen: 'screens/System.tsx' },
   ],
 } as const;
+
+
+export const crmAppTemplateSidebar = {
+  sections: [
+    {
+      id: 'app',
+      title: 'CRM',
+      kind: 'app',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', routeId: 'dashboard' },
+        { id: 'contacts', label: 'Contacts', routeId: 'contacts' },
+        { id: 'chat', label: 'Chat', routeId: 'chat' },
+      ],
+    },
+    {
+      id: 'system',
+      title: 'System',
+      kind: 'system',
+      items: [
+        { id: 'system', label: 'System', routeId: 'system' },
+      ],
+    },
+  ],
+} as const;

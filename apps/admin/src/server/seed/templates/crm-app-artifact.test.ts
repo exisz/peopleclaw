@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { crmAppTemplateManifest } from './crm-app-artifact';
+import { crmAppTemplateManifest, crmAppTemplateSidebar } from './crm-app-artifact';
 
 function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
   const errors: string[] = [];
@@ -22,5 +22,15 @@ describe('CRM starter app artifact template', () => {
   it('TC-PC-081 proves crm template manifest validates', () => {
     assert.deepEqual(validateManifest(crmAppTemplateManifest), []);
     assert.deepEqual(crmAppTemplateManifest.routes.map(route => route.id), ['dashboard', 'contacts', 'chat', 'system']);
+  });
+});
+
+
+describe('CRM starter app artifact sidebar', () => {
+  it('TC-PC-082 proves crm sidebar has dashboard contacts chat system pages', () => {
+    const itemRouteIds = crmAppTemplateSidebar.sections.flatMap(section => section.items.map(item => item.routeId));
+    assert.deepEqual(itemRouteIds, ['dashboard', 'contacts', 'chat', 'system']);
+    assert.deepEqual(new Set(itemRouteIds), new Set(crmAppTemplateManifest.routes.map(route => route.id)));
+    assert.equal(crmAppTemplateSidebar.sections.at(-1)?.kind, 'system');
   });
 });
