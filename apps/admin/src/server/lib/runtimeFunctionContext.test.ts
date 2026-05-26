@@ -32,4 +32,25 @@ describe('PeopleClaw runtime function context', () => {
       functionId: 'functions/createLead.ts',
     });
   });
+
+  it('TC-PC-055 proves function can use allowed secret reference', () => {
+    const ctx = buildRuntimeFunctionContext({
+      tenantId: 'tenant_123',
+      authUser: {
+        userId: 'user_456',
+        roles: ['owner'],
+      },
+      route: {
+        appId: 'demo-crm',
+        deploymentId: 'dep_prod_001',
+        functionId: 'functions/syncShopify.ts',
+        artifactHash: 'sha256:sync-shopify-v1',
+        handler: 'syncShopify',
+      },
+      allowedSecretRefs: ['SHOPIFY_API_TOKEN'],
+    });
+
+    assert.deepEqual(ctx.secrets.ref('SHOPIFY_API_TOKEN'), { ref: 'SHOPIFY_API_TOKEN' });
+    assert.doesNotMatch(JSON.stringify(ctx.secrets.ref('SHOPIFY_API_TOKEN')), /shpat_|plaintext|token-value/i);
+  });
 });
