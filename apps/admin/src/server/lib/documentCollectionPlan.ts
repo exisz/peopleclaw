@@ -74,6 +74,13 @@ export interface DocumentBackfillPlanRecord {
   runInlineDuringDeploy: false;
 }
 
+export interface DocumentBackfillCheckpoint {
+  collection: string;
+  field: string;
+  lastDocumentKey: string | null;
+  processedCount: number;
+}
+
 function requireToken(value: string, field: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error(`Document collection definition requires ${field}`);
@@ -139,6 +146,28 @@ export function planDocumentBackfillOperation(declaration: DocumentBackfillDecla
     execution: 'deferred_worker',
     batchSize: declaration.batchSize,
     runInlineDuringDeploy: false,
+  };
+}
+
+export function recordDocumentBackfillProgress(
+  declaration: Pick<DocumentBackfillDeclaration, 'collection' | 'field'>,
+  lastDocumentKey: string | null,
+  processedCount: number,
+): DocumentBackfillCheckpoint {
+  const collection = requireToken(declaration.collection, 'collection');
+  const field = requireToken(declaration.field, 'backfill.field');
+  if (!Number.isInteger(processedCount) || processedCount < 0) {
+    throw new Error('Document backfill checkpoint requires non-negative integer processedCount');
+  }
+  return { collection, field, lastDocumentKey, processedCount };
+}
+
+export function resumeDocumentBackfillFromCheckpoint(checkpoint: DocumentBackfillCheckpoint): DocumentBackfillCheckpoint {
+  return {
+    collection: requireToken(checkpoint.collection, 'checkpoint.collection'),
+    field: requireToken(checkpoint.field, 'checkpoint.field'),
+    lastDocumentKey: checkpoint.lastDocumentKey,
+    processedCount: checkpoint.processedCount,
   };
 }
 

@@ -6,6 +6,8 @@ import {
   planDocumentCollectionDefinition,
   planDocumentIndexDeclaration,
   planDocumentSeedOperation,
+  recordDocumentBackfillProgress,
+  resumeDocumentBackfillFromCheckpoint,
 } from './documentCollectionPlan';
 
 describe('PeopleClaw managed document collection planning', () => {
@@ -141,6 +143,21 @@ describe('PeopleClaw managed document collection planning', () => {
       execution: 'deferred_worker',
       batchSize: 250,
       runInlineDuringDeploy: false,
+    });
+  });
+
+  it('TC-PC-039 proves backfill can resume after worker restart', () => {
+    const checkpoint = recordDocumentBackfillProgress(
+      { collection: 'leads', field: 'normalizedEmail' },
+      'lead_250',
+      250,
+    );
+
+    assert.deepEqual(resumeDocumentBackfillFromCheckpoint(checkpoint), {
+      collection: 'leads',
+      field: 'normalizedEmail',
+      lastDocumentKey: 'lead_250',
+      processedCount: 250,
     });
   });
 });
