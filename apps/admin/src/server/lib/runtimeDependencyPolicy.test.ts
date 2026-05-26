@@ -29,4 +29,22 @@ describe('PeopleClaw runtime dependency policy', () => {
     assert.equal(rejectedVersion.ok, false);
     assert.match(rejectedVersion.errors.join('\n'), /dependency version is not allowlisted: zod@3\.22\.4/);
   });
+
+  it('TC-PC-065 proves native binary dependency blocks MVP build', () => {
+    const rejectedDefaultNative = validateRuntimeDependencyAllowlist({
+      requestedDependencies: { sharp: '0.33.5' },
+      allowlist: { sharp: '0.33.5' },
+    });
+    assert.equal(rejectedDefaultNative.ok, false);
+    assert.match(rejectedDefaultNative.errors.join('\n'), /native binary dependency is not allowed.*sharp/);
+
+    const rejectedConfiguredNative = validateRuntimeDependencyAllowlist({
+      requestedDependencies: { 'custom-native-addon': '1.0.0' },
+      allowlist: { 'custom-native-addon': '1.0.0' },
+      nativeDenylist: ['custom-native-addon'],
+    });
+    assert.equal(rejectedConfiguredNative.ok, false);
+    assert.match(rejectedConfiguredNative.errors.join('\n'), /native binary dependency is not allowed.*custom-native-addon/);
+  });
+
 });

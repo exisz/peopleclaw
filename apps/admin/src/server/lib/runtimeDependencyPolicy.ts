@@ -1,6 +1,7 @@
 export interface RuntimeDependencyPolicyInput {
   requestedDependencies: Record<string, string>;
   allowlist: Record<string, string | string[]>;
+  nativeDenylist?: string[];
 }
 
 export interface RuntimeDependencyPolicyResult {
@@ -12,6 +13,14 @@ function allowedVersions(rule: string | string[]): string[] {
   return Array.isArray(rule) ? rule : [rule];
 }
 
+const DEFAULT_NATIVE_DENYLIST = new Set([
+  'better-sqlite3',
+  'sharp',
+  'canvas',
+  'node-gyp-build',
+  'ffi-napi',
+]);
+
 /**
  * Build-time dependency gate for user App function artifacts. User code may only
  * depend on packages the platform has explicitly allowlisted so the sandbox
@@ -19,7 +28,12 @@ function allowedVersions(rule: string | string[]): string[] {
  */
 export function validateRuntimeDependencyAllowlist(input: RuntimeDependencyPolicyInput): RuntimeDependencyPolicyResult {
   const errors: string[] = [];
+  const nativeDenylist = new Set([...DEFAULT_NATIVE_DENYLIST, ...(input.nativeDenylist ?? [])]);
   for (const [name, version] of Object.entries(input.requestedDependencies)) {
+    if (nativeDenylist.has(name)) {
+      errors.push(`native binary dependency is not allowed in MVP build: ${name}`);
+      continue;
+    }
     const rule = input.allowlist[name];
     if (!rule) {
       errors.push(`dependency is not allowlisted: ${name}`);
