@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { planDocumentCollectionDefinition, planDocumentIndexDeclaration, planDocumentSeedOperation } from './documentCollectionPlan';
+import {
+  planCompatibleCollectionSchemaChange,
+  planDocumentCollectionDefinition,
+  planDocumentIndexDeclaration,
+  planDocumentSeedOperation,
+} from './documentCollectionPlan';
 
 describe('PeopleClaw managed document collection planning', () => {
   it('TC-PC-031 proves collection definition creates document collection', () => {
@@ -73,5 +78,37 @@ describe('PeopleClaw managed document collection planning', () => {
       mode: 'upsert_by_key',
       document: { label: 'New', color: 'blue' },
     });
+  });
+
+  it('TC-PC-036 proves schema version increments on compatible change', () => {
+    const plan = planCompatibleCollectionSchemaChange(
+      {
+        name: 'leads',
+        version: 1,
+        fields: { email: { type: 'string', required: true } },
+      },
+      {
+        name: 'leads',
+        version: 2,
+        fields: {
+          email: { type: 'string', required: true },
+          score: { type: 'number', default: 0 },
+        },
+      },
+    );
+
+    assert.deepEqual(plan, {
+      operation: 'update_collection_schema',
+      collection: 'leads',
+      fromVersion: 1,
+      toVersion: 2,
+      compatibility: 'compatible',
+      addedFields: { score: { type: 'number', default: 0 } },
+    });
+
+    assert.throws(() => planCompatibleCollectionSchemaChange(
+      { name: 'leads', version: 1, fields: { email: { type: 'string', required: true } } },
+      { name: 'leads', version: 3, fields: { email: { type: 'string', required: true }, score: { type: 'number', default: 0 } } },
+    ), /increment version by exactly one/);
   });
 });
