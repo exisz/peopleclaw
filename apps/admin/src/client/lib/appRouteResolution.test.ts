@@ -20,4 +20,12 @@ describe('PeopleClaw core app shell route resolution', () => {
       channel: 'production',
     });
   });
+
+  it('TC-PC-014 loads the preview deployment manifest for preview routes', () => {
+    assert.deepEqual(resolveDeploymentManifestRequest('/apps/demo-crm/dashboard', '?preview=dep_preview_001'), {
+      appId: 'demo-crm',
+      appPath: '/dashboard',
+      channel: 'preview',
+    });
+  });
 });
