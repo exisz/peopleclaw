@@ -98,9 +98,14 @@ export interface PreviewAppDeploymentResult {
   deploymentRecordCount: number;
 }
 
+export interface InMemoryAppDeploymentRegistryOptions {
+  productionDeploymentId?: string | null;
+}
+
 export interface AppDeploymentRegistry {
   deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult>;
   listDeploymentRecords(): AppDeploymentRecord[];
+  getProductionDeploymentId(): string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -313,9 +318,10 @@ export function createInMemoryAppArtifactStore(): AppArtifactStore {
   };
 }
 
-export function createInMemoryAppDeploymentRegistry(): AppDeploymentRegistry {
+export function createInMemoryAppDeploymentRegistry(options: InMemoryAppDeploymentRegistryOptions = {}): AppDeploymentRegistry {
   const artifactStore = createInMemoryAppArtifactStore();
   const deploymentRecords: AppDeploymentRecord[] = [];
+  let productionDeploymentId = options.productionDeploymentId ?? null;
 
   return {
     async deployPreview(value: unknown, options: PreviewAppDeploymentOptions): Promise<PreviewAppDeploymentResult> {
@@ -342,6 +348,9 @@ export function createInMemoryAppDeploymentRegistry(): AppDeploymentRegistry {
     },
     listDeploymentRecords(): AppDeploymentRecord[] {
       return deploymentRecords.map(record => ({ ...record }));
+    },
+    getProductionDeploymentId(): string | null {
+      return productionDeploymentId;
     },
   };
 }

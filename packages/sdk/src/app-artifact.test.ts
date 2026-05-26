@@ -238,4 +238,18 @@ describe('PeopleClaw app artifact schema', () => {
     assert.deepEqual(deployments.listDeploymentRecords(), [result.deploymentRecord]);
     assert.deepEqual(validateAppDeploymentRecord(result.deploymentRecord), { ok: true, errors: [] });
   });
+
+  it('TC-PC-044 proves production pointer is unchanged after preview', async () => {
+    const deployments = createInMemoryAppDeploymentRegistry({ productionDeploymentId: 'dep_demo-crm_prod_001' });
+
+    await deployments.deployPreview(minimalAppTree, {
+      appId: 'demo-crm',
+      sdkCompatibilityVersion: '0.1.0',
+      runtimeCompatibilityVersion: 'runtime-2026-05',
+      now: new Date('2026-05-26T00:00:00.000Z'),
+    });
+
+    assert.equal(deployments.getProductionDeploymentId(), 'dep_demo-crm_prod_001');
+    assert.equal(deployments.listDeploymentRecords()[0]?.channel, 'preview');
+  });
 });
