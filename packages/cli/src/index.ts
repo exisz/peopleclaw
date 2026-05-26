@@ -167,6 +167,7 @@ Usage:
   peopleclaw app plan <appId> [--dir <path>] [--json]
   peopleclaw app deploy <appId> [--dir <path>] [--preview] [--json]
   peopleclaw logs <appId> [--deployment-id <id>] [--json]
+  peopleclaw audit <appId> [--json]
   peopleclaw app chat <appId> <message...> [--session-id <id>] [--confirm] [--dry-run] [--json]
   peopleclaw app action <appId> <operation> [--args '{"name":"..."}'] [--confirm] [--dry-run] [--json]
 
@@ -218,6 +219,26 @@ async function main() {
     const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}/logs${suffix}`, { flags });
     const logs = Array.isArray((body as any).logs) ? (body as any).logs : [];
     print(body, flags, logs.map((log: any) => `${log.timestamp ?? ''}\t${log.level ?? 'info'}\t${log.message ?? JSON.stringify(log)}`).join('\n') || 'No logs');
+    return;
+  }
+
+  if (cmd === 'audit') {
+    const appId = subcmd;
+    if (!appId) usage();
+    const body = await request(`/external-agent/apps/${encodeURIComponent(appId)}/audit`, { flags });
+    const events = Array.isArray((body as any).events) ? (body as any).events : [];
+    print(
+      body,
+      flags,
+      events
+        .map((event: any) => [
+          event.timestamp ?? '',
+          event.actor?.name ?? event.actor ?? 'system',
+          event.action ?? event.type ?? 'event',
+          event.summary ?? event.message ?? JSON.stringify(event),
+        ].join('\t'))
+        .join('\n') || 'No audit events',
+    );
     return;
   }
 
