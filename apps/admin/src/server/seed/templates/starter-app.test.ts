@@ -45,15 +45,30 @@ describe('Starter app template safety', () => {
 
   });
 
-  it('TC-PC-2202 keeps Shopify setup out of global Settings', () => {
+  it('TC-PC-106 proves Shopify setup is absent from core Settings and present in starter connector', () => {
     const settingsSource = readFileSync(new URL('../../../client/pages/Settings.tsx', import.meta.url), 'utf8');
+    const settingsEn = readFileSync(new URL('../../../client/i18n/locales/en/settings.json', import.meta.url), 'utf8');
+    const settingsZh = readFileSync(new URL('../../../client/i18n/locales/zh/settings.json', import.meta.url), 'utf8');
+
+    for (const source of [settingsSource, settingsEn, settingsZh]) {
+      assert.doesNotMatch(source, /shopify/i);
+      assert.doesNotMatch(source, /connector/i);
+      assert.doesNotMatch(source, /connection setup/i);
+    }
+
     assert.doesNotMatch(settingsSource, /SettingsConnections/);
     assert.doesNotMatch(settingsSource, /settings-tab-connections/);
     assert.match(settingsSource, /Team and Billing settings/);
 
     const connector = starterAppTemplate.components.find(c => c.name === STARTER_APP_CONNECTOR_NAME)!;
+    assert.equal(connector.type, 'BACKEND');
+    assert.equal(connector.isExported, true);
     assert.match(connector.code, /SHOPIFY_SHOP_DOMAIN/);
     assert.match(connector.code, /SHOPIFY_ADMIN_TOKEN|SHOPIFY_CLIENT_ID/);
+
+    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_FULLSTACK_NAME)!;
+    assert.match(productBrowser.code, /shopify-setup-cta/);
+    assert.match(productBrowser.code, /Connect store/);
   });
 
   it('TC-PC-105 keeps Shopify starter navigation out of workflow/canvas primary UI', () => {
