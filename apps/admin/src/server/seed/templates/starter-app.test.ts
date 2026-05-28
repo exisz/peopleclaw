@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -151,6 +151,32 @@ describe('Starter app template safety', () => {
     );
   });
 
+
+
+  it('TC-PC-113 covers every Shopify starter sidecar must and must-not obligation', () => {
+    const matrix = buildShopifyStarterSpecCompletenessMatrix();
+    assert.equal(matrix.length >= 10, true, 'matrix should split sidecar obligations into reviewable rows');
+    assert.deepEqual(matrix.filter((row) => !row.ok), []);
+    assert.deepEqual(new Set(matrix.map((row) => row.source)), new Set(['must', 'must_not']));
+    for (const required of [
+      'starter-app-contract',
+      'one-click-preview-deploy',
+      'secret-references-only',
+      'generic-platform-primitives',
+      'connector-component-surface',
+      'verification-path',
+      'no-workflow-canvas-primary-ui',
+      'no-core-settings-shopify',
+      'no-destructive-delete',
+      'no-placeholder-fake-success',
+      'no-core-shopify-client',
+    ]) {
+      assert.equal(matrix.some((row) => row.id === required), true, `missing matrix row ${required}`);
+    }
+    for (const row of matrix) {
+      assert.equal(row.evidence.length > 0, true, `${row.id} must cite evidence`);
+    }
+  });
 
   it('TC-PC-112 records Shopify starter post-deploy verification evidence', () => {
     const deployment = planStarterAppPreviewDeployment({

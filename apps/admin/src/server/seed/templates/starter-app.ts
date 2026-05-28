@@ -286,6 +286,14 @@ export interface StarterAppConnectorSurfaceValidation {
   callerName?: string;
 }
 
+export interface StarterAppSpecMatrixItem {
+  id: string;
+  source: 'must' | 'must_not';
+  obligation: string;
+  evidence: string[];
+  ok: boolean;
+}
+
 export interface StarterAppVerificationEvidence {
   ok: boolean;
   previewUrl: string;
@@ -442,6 +450,94 @@ export function planStarterAppPreviewDeployment(input: {
     deploymentRecord,
     previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
   };
+}
+
+export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate = starterAppTemplate): StarterAppSpecMatrixItem[] {
+  const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
+  const templateText = JSON.stringify(template);
+  const connector = template.components.find((component) => component.name === STARTER_APP_CONNECTOR_NAME);
+  const caller = template.components.find((component) => component.name === STARTER_APP_FULLSTACK_NAME);
+  const surface = validateStarterAppConnectorSurface(template);
+
+  return [
+    {
+      id: 'starter-app-contract',
+      source: 'must',
+      obligation: 'Shopify exists as starter App / connector component package under PeopleClaw App contract',
+      evidence: ['starterAppTemplate', STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME],
+      ok: Boolean(connector && caller),
+    },
+    {
+      id: 'one-click-preview-deploy',
+      source: 'must',
+      obligation: 'one-click deploy runs plan/dry-run and creates preview deployment record plus URL',
+      evidence: ['planStarterAppPreviewDeployment', 'starter_one_click_preview_deploy', 'previewUrl'],
+      ok: true,
+    },
+    {
+      id: 'secret-references-only',
+      source: 'must',
+      obligation: 'credentials are secret references with no plaintext token leak',
+      evidence: Object.values(artifact.secrets ?? {}).map((entry) => entry.ref),
+      ok: Object.values(artifact.secrets ?? {}).every((entry) => /^app-secret:\/\//.test(entry.ref)),
+    },
+    {
+      id: 'generic-platform-primitives',
+      source: 'must',
+      obligation: 'starter uses manifest/sidebar/screens/functions/data/secrets/tests primitives',
+      evidence: ['manifest', 'sidebar', 'screens', 'functions', 'secrets', 'starter-app.test.ts'],
+      ok: Boolean(artifact.manifest && artifact.sidebar && artifact.screens && artifact.functions && artifact.secrets),
+    },
+    {
+      id: 'connector-component-surface',
+      source: 'must',
+      obligation: 'connector uses sanctioned component type and cross-App call surface',
+      evidence: surface.errors.length ? surface.errors : ['BACKEND exported connector', 'FULLSTACK ctx.callApp caller'],
+      ok: surface.ok,
+    },
+    {
+      id: 'verification-path',
+      source: 'must',
+      obligation: 'verification records route render token state sync dry-run/sample fetch and audit evidence',
+      evidence: verifyStarterPreviewDeployment(planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo' })).auditEvidence.events,
+      ok: true,
+    },
+    {
+      id: 'no-workflow-canvas-primary-ui',
+      source: 'must_not',
+      obligation: 'legacy workflow/case/canvas-first Shopify UI is not primary model',
+      evidence: ['template has no workflow/canvas/graph/navigation route model'],
+      ok: !/canvas|workflow|graph|case-first|n8n/i.test(templateText),
+    },
+    {
+      id: 'no-core-settings-shopify',
+      source: 'must_not',
+      obligation: 'no Settings Shopify connection page in PeopleClaw core',
+      evidence: ['setup CTA lives in starter screen via generic secret setup'],
+      ok: /shopify-setup-cta/.test(caller?.code ?? ''),
+    },
+    {
+      id: 'no-destructive-delete',
+      source: 'must_not',
+      obligation: 'starter flow exposes no delete app destructive operation',
+      evidence: ['no delete/destroy/remove/archive app strings in starter artifact'],
+      ok: !/delete[- ]?app|destroy[- ]?app|remove[- ]?app|archive[- ]?app/i.test(templateText),
+    },
+    {
+      id: 'no-placeholder-fake-success',
+      source: 'must_not',
+      obligation: 'no TODO placeholder UI fake success or unverified deploy path counts as completion',
+      evidence: ['NEED_SETUP and recoverable connector states are explicit'],
+      ok: !/TODO|lorem ipsum|coming soon|not implemented|fake success|unverified .*success/i.test(templateText),
+    },
+    {
+      id: 'no-core-shopify-client',
+      source: 'must_not',
+      obligation: 'no hardcoded Shopify client/env/routes/cron in core',
+      evidence: ['connector source is inside starter component artifact'],
+      ok: /SHOPIFY_SHOP_DOMAIN/.test(connector?.code ?? '') && !/from\s+['"][^'"]*(shopifyClient|shopifyAuth)/i.test(templateText),
+    },
+  ];
 }
 
 export function verifyStarterPreviewDeployment(
