@@ -412,9 +412,20 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
         outputSchema: { ok: 'boolean' },
       },
     },
+    data: {
+      collections: [{ id: 'products_cache', source: 'connector', ttlSeconds: 300 }],
+      indexes: [{ collection: 'products_cache', fields: ['title', 'vendor'] }],
+      playbooks: {
+        verifyConnection: { steps: ['render_products_route', 'run_connector_dry_run', 'record_audit_evidence'] },
+      },
+    },
     secrets: {
       SHOPIFY_SHOP_DOMAIN: { ref: 'app-secret://SHOPIFY_SHOP_DOMAIN' },
       SHOPIFY_ADMIN_TOKEN: { ref: 'app-secret://SHOPIFY_ADMIN_TOKEN' },
+    },
+    tests: {
+      starterTemplateSafety: 'apps/admin/src/server/seed/templates/starter-app.test.ts',
+      connectorBoundary: 'apps/admin/src/server/lib/coreConnectorBoundary.test.ts',
     },
   };
 }
@@ -485,8 +496,8 @@ export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate 
       id: 'generic-platform-primitives',
       source: 'must',
       obligation: 'starter uses manifest/sidebar/screens/functions/data/secrets/tests primitives',
-      evidence: ['manifest', 'sidebar', 'screens', 'functions', 'secrets', 'starter-app.test.ts'],
-      ok: Boolean(artifact.manifest && artifact.sidebar && artifact.screens && artifact.functions && artifact.secrets),
+      evidence: ['manifest', 'sidebar', 'screens', 'functions', 'data', 'playbooks', 'secrets', 'tests', 'starter-app.test.ts'],
+      ok: Boolean(artifact.manifest && artifact.sidebar && artifact.screens && artifact.functions && artifact.data?.playbooks && artifact.secrets && artifact.tests),
     },
     {
       id: 'connector-component-surface',

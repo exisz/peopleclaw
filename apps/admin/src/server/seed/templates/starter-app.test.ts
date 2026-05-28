@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -152,6 +152,32 @@ describe('Starter app template safety', () => {
   });
 
 
+
+
+  it('TC-PC-115 represents Shopify starter as a normal App artifact tree', () => {
+    const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
+    assert.deepEqual(Object.keys(artifact).sort(), [
+      'data',
+      'functions',
+      'manifest',
+      'screens',
+      'secrets',
+      'sidebar',
+      'tests',
+    ]);
+    assert.equal(artifact.manifest.routes[0].path, '/apps/starter-shopify-demo');
+    assert.equal(artifact.sidebar.sections[0].kind, 'app');
+    assert.equal(Boolean(artifact.screens?.products?.source), true);
+    assert.equal(Boolean(artifact.functions?.shopifyConnector?.source), true);
+    assert.equal(Boolean(artifact.data?.collections?.length), true);
+    assert.equal(Boolean(artifact.data?.indexes?.length), true);
+    assert.equal(Boolean(artifact.data?.playbooks?.verifyConnection), true);
+    assert.deepEqual(artifact.secrets?.SHOPIFY_ADMIN_TOKEN, { ref: 'app-secret://SHOPIFY_ADMIN_TOKEN' });
+    assert.match(artifact.tests?.starterTemplateSafety ?? '', /starter-app\.test\.ts$/);
+    assert.equal('connectorClient' in artifact, false);
+    assert.equal('coreRoutes' in artifact, false);
+    assert.equal('cronJobs' in artifact, false);
+  });
 
   it('TC-PC-113 covers every Shopify starter sidecar must and must-not obligation', () => {
     const matrix = buildShopifyStarterSpecCompletenessMatrix();
