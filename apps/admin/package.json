@@ -18,6 +18,7 @@
     "e2e:report": "playwright show-report",
     "smoke:app-agent-tools": "tsx scripts/smoke-app-agent-tools.ts",
     "smoke:app-chat-mutation": "tsx scripts/smoke-app-chat-mutation.ts",
+    "smoke:codex-auth": "tsx scripts/smoke-codex-auth.ts",
     "smoke:external-cli": "pnpm --filter @peopleclaw/cli build && tsx scripts/smoke-external-cli-flow.ts",
     "test:external-agent": "tsx scripts/test-external-agent-safety.ts",
     "test:external-agent-api": "tsx scripts/test-external-agent-api.ts",

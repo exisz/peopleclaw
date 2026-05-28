@@ -39,7 +39,9 @@ Optional metadata / tuning env vars:
 - `PEOPLECLAW_CODEX_PLAN_TYPE`
 - `PEOPLECLAW_CODEX_MODEL`
 
-Production must use env-provided OAuth tokens. Local development may instead point at an explicit PI/OpenClaw auth profile store with `PEOPLECLAW_CODEX_AUTH_PROFILES_PATH` (and optionally `PEOPLECLAW_CODEX_AUTH_PROFILE`). Tokens are server-side only; the frontend never receives access or refresh tokens.
+Production env OAuth tokens are the bootstrap seed. At runtime, refreshed Codex OAuth credentials are stored in the existing durable `AppStoreRecord` table as an encrypted server-only record, so Vercel cold starts reuse the newest refresh token instead of repeatedly starting from stale read-only env. Keep env tokens configured for first bootstrap and recovery. Local development may instead point at an explicit PI/OpenClaw auth profile store with `PEOPLECLAW_CODEX_AUTH_PROFILES_PATH` (and optionally `PEOPLECLAW_CODEX_AUTH_PROFILE`). Tokens are server-side only; the frontend never receives access or refresh tokens.
+
+Production/cron smoke gate: run `pnpm --filter @peopleclaw/admin smoke:codex-auth` in an environment with production `LOCAL_DATABASE_URL`/Turso, `SECRETS_ENCRYPTION_KEY`, and Codex env bootstrap vars available. It calls the same server-side credential path as App Chat and prints only source/expiry metadata, never token values.
 
 DeepSeek is not part of the current App Chat/model path. The old `/api/chat` DeepSeek route has been removed; App Chat should use the agent-session routes above.
 

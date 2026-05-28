@@ -2,6 +2,8 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { refreshOpenAICodexToken, type OAuthCredentials } from '@mariozechner/pi-ai';
+import { getPrisma } from './prisma.js';
+import { decrypt, encrypt } from './secretCrypto.js';
 
 interface CodexProfile extends OAuthCredentials {
   type: 'oauth';
@@ -17,10 +19,30 @@ interface AuthProfileStore {
   profiles?: Record<string, unknown>;
 }
 
+interface DurableCodexPayload {
+  version: 1;
+  encryptedProfile: string;
+  profileId: string;
+  source: 'env-bootstrap' | 'runtime-refresh';
+  updatedAt: string;
+}
+
+interface DurableCodexStore {
+  read(): Promise<CodexProfile | null>;
+  write(profile: CodexProfile, source: DurableCodexPayload['source']): Promise<void>;
+}
+
 const DEFAULT_AUTH_PROFILES_PATH = path.join(os.homedir(), '.openclaw', 'agents', 'main', 'agent', 'auth-profiles.json');
 const DEFAULT_PROFILE_ID = 'openai-codex:gotexis@gmail.com';
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const REQUIRED_PROD_ENV = 'PEOPLECLAW_CODEX_ACCESS_TOKEN and PEOPLECLAW_CODEX_REFRESH_TOKEN';
+const DURABLE_RECORD_ID = 'system:codex-oauth:openai-codex';
+const DURABLE_TENANT_ID = 'system';
+const DURABLE_APP_ID = 'system';
+const DURABLE_TABLE = 'server_codex_oauth';
+
+let refreshTokenFn: (refreshToken: string) => Promise<OAuthCredentials> = refreshOpenAICodexToken;
+let durableStoreOverride: DurableCodexStore | null = null;
 
 export class CodexAuthUnavailableError extends Error {
   readonly userMessage: string;
@@ -41,7 +63,14 @@ export function toCodexUserError(error: unknown): string {
   if (/Failed to refresh OpenAI Codex token/i.test(message) || /refresh.*Codex/i.test(message)) {
     return 'PeopleClaw Chat is temporarily unavailable because the server-side Codex login needs to be reconnected. App editing is safe; please reconnect the Codex OAuth profile or configure fresh PEOPLECLAW_CODEX_* tokens.';
   }
-  return message;
+  return redactTokenLikeStrings(message);
+}
+
+function redactTokenLikeStrings(value: string): string {
+  return value
+    .replace(/\b((?:access|refresh|id)_?token)\s*[:=]\s*[^\s,;)]+/gi, '$1=[redacted]')
+    .replace(/shp(?:at|ca|ss)_[A-Za-z0-9_\-]+/g, '[redacted]')
+    .replace(/\b(?:eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}|[A-Za-z0-9_-]{40,})\b/g, '[redacted]');
 }
 
 function isProductionRuntime(): boolean {
@@ -92,13 +121,22 @@ function envProfile(): CodexProfile | null {
   };
 }
 
-export function getCodexConnectionStatus(): { configured: boolean; source: 'env' | 'auth-profile' | 'missing'; requiredEnv: string[]; detail: string } {
+export function getCodexConnectionStatus(): { configured: boolean; source: 'env' | 'auth-profile' | 'durable-db' | 'missing'; requiredEnv: string[]; detail: string } {
   if (envProfile()) {
     return {
       configured: true,
       source: 'env',
       requiredEnv: ['PEOPLECLAW_CODEX_ACCESS_TOKEN', 'PEOPLECLAW_CODEX_REFRESH_TOKEN'],
-      detail: 'Server-side Codex OAuth tokens are configured from environment variables.',
+      detail: 'Server-side Codex OAuth tokens are configured from environment variables and will seed durable DB refresh state at runtime.',
+    };
+  }
+
+  if (isProductionRuntime()) {
+    return {
+      configured: true,
+      source: 'durable-db',
+      requiredEnv: ['PEOPLECLAW_CODEX_ACCESS_TOKEN', 'PEOPLECLAW_CODEX_REFRESH_TOKEN'],
+      detail: 'Server-side Codex OAuth may be available from encrypted durable DB refresh state; env tokens are still required for first bootstrap or recovery.',
     };
   }
 
@@ -116,27 +154,25 @@ export function getCodexConnectionStatus(): { configured: boolean; source: 'env'
     configured: false,
     source: 'missing',
     requiredEnv: ['PEOPLECLAW_CODEX_ACCESS_TOKEN', 'PEOPLECLAW_CODEX_REFRESH_TOKEN'],
-    detail: isProductionRuntime()
-      ? `Production Codex connection is not configured. Set ${REQUIRED_PROD_ENV} in Vercel production environment variables.`
-      : `Codex connection is not configured. Set ${REQUIRED_PROD_ENV}, or set PEOPLECLAW_CODEX_AUTH_PROFILES_PATH for local development.`,
+    detail: `Codex connection is not configured. Set ${REQUIRED_PROD_ENV}, or set PEOPLECLAW_CODEX_AUTH_PROFILES_PATH for local development.`,
   };
 }
 
 export async function getCodexAccessToken(): Promise<{ accessToken: string; profileId: string; email?: string; expires?: number }> {
+  if (isProductionRuntime()) {
+    const profile = await getProductionCodexProfile();
+    return { accessToken: profile.access, profileId: 'durable-db', email: profile.email, expires: profile.expires };
+  }
+
   const env = envProfile();
   if (env) {
     const refreshed = await refreshIfNeeded(env);
     return { accessToken: refreshed.access, profileId: 'env', email: refreshed.email, expires: refreshed.expires };
   }
 
-  const explicitPath = explicitAuthProfilesPath();
-  if (isProductionRuntime() && !explicitPath) {
-    throw new Error(`Production Codex connection is not configured. Set ${REQUIRED_PROD_ENV} in Vercel production environment variables. Local auth profile fallback is disabled in production.`);
-  }
-
   const filePath = authProfilesPath();
   if (!fs.existsSync(filePath)) {
-    if (explicitPath) {
+    if (explicitAuthProfilesPath()) {
       throw new Error(`Configured Codex auth profile store was not found at PEOPLECLAW_CODEX_AUTH_PROFILES_PATH. Set ${REQUIRED_PROD_ENV} for production, or fix the explicit profile path for local development.`);
     }
     throw new Error(`Codex connection is not configured. Set ${REQUIRED_PROD_ENV}, or set PEOPLECLAW_CODEX_AUTH_PROFILES_PATH for local development.`);
@@ -155,11 +191,69 @@ export async function getCodexAccessToken(): Promise<{ accessToken: string; prof
   return { accessToken: refreshed.access, profileId: id, email: refreshed.email, expires: refreshed.expires };
 }
 
+async function getProductionCodexProfile(): Promise<CodexProfile> {
+  const env = envProfile();
+  const durable = durableCodexStore();
+  const persisted = await durable.read();
+  const base = persisted ?? env;
+  if (!base) {
+    throw new Error(`Production Codex connection is not configured. Set ${REQUIRED_PROD_ENV} in Vercel production environment variables. Local auth profile fallback is disabled in production.`);
+  }
+
+  if (!persisted && env) {
+    await durable.write(env, 'env-bootstrap');
+  }
+
+  const refreshed = await refreshIfNeeded(base);
+  if (refreshed !== base) {
+    await durable.write(refreshed, 'runtime-refresh');
+  }
+  return refreshed;
+}
+
+function durableCodexStore(): DurableCodexStore {
+  if (durableStoreOverride) return durableStoreOverride;
+  return {
+    async read() {
+      const row = await getPrisma().appStoreRecord.findUnique({ where: { id: DURABLE_RECORD_ID } });
+      if (!row?.payload) return null;
+      try {
+        const payload = JSON.parse(row.payload) as Partial<DurableCodexPayload>;
+        if (payload.version !== 1 || typeof payload.encryptedProfile !== 'string') return null;
+        const parsed = JSON.parse(decrypt(payload.encryptedProfile));
+        return isCodexProfile(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    },
+    async write(profile, source) {
+      const payload: DurableCodexPayload = {
+        version: 1,
+        encryptedProfile: encrypt(JSON.stringify(profile)),
+        profileId: 'openai-codex',
+        source,
+        updatedAt: new Date().toISOString(),
+      };
+      await getPrisma().appStoreRecord.upsert({
+        where: { id: DURABLE_RECORD_ID },
+        create: {
+          id: DURABLE_RECORD_ID,
+          tenantId: DURABLE_TENANT_ID,
+          appId: DURABLE_APP_ID,
+          table: DURABLE_TABLE,
+          payload: JSON.stringify(payload),
+        },
+        update: { payload: JSON.stringify(payload) },
+      });
+    },
+  };
+}
+
 async function refreshIfNeeded(profile: CodexProfile): Promise<CodexProfile> {
   if (Number.isFinite(profile.expires) && profile.expires > Date.now() + REFRESH_MARGIN_MS) return profile;
   let refreshed: OAuthCredentials;
   try {
-    refreshed = await refreshOpenAICodexToken(profile.refresh);
+    refreshed = await refreshTokenFn(profile.refresh);
   } catch (e) {
     throw new CodexAuthUnavailableError(
       'PeopleClaw Chat is temporarily unavailable because the server-side Codex login needs to be reconnected. App editing is safe; please reconnect the Codex OAuth profile or configure fresh PEOPLECLAW_CODEX_* tokens.',
@@ -172,4 +266,12 @@ async function refreshIfNeeded(profile: CodexProfile): Promise<CodexProfile> {
     type: 'oauth',
     provider: 'openai-codex',
   };
+}
+
+export function __setCodexAuthTestOverrides(overrides: {
+  refreshTokenFn?: (refreshToken: string) => Promise<OAuthCredentials>;
+  durableStore?: DurableCodexStore | null;
+}): void {
+  refreshTokenFn = overrides.refreshTokenFn ?? refreshOpenAICodexToken;
+  durableStoreOverride = overrides.durableStore ?? null;
 }
