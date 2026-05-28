@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { createInMemoryAppDeploymentRegistry } from '@peopleclaw/sdk/app-artifact';
 import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync } from './starter-app';
 
 describe('Starter app template safety', () => {
@@ -156,6 +157,59 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-119 promotes verified starter preview by pointer and rolls back pointer only', async () => {
+    const registry = createInMemoryAppDeploymentRegistry({
+      currentSdkCompatibilityVersion: '0.1.0',
+      currentRuntimeCompatibilityVersion: 'peopleclaw-cloud-v1',
+    });
+    const priorPreview = await registry.deployPreview(
+      buildStarterAppArtifactTree('starter-shopify-demo'),
+      {
+        appId: 'starter-shopify-demo',
+        sdkCompatibilityVersion: '0.1.0',
+        runtimeCompatibilityVersion: 'peopleclaw-cloud-v1',
+        dependencyVersions: { react: '19' },
+        now: new Date('2026-05-28T04:25:00.000Z'),
+      },
+    );
+    registry.promote(priorPreview.deploymentRecord.deploymentId);
+
+    const verifiedDeployment = planStarterAppPreviewDeployment({
+      appId: 'starter-shopify-demo',
+      now: new Date('2026-05-28T04:30:00.000Z'),
+    });
+    const verification = verifyStarterPreviewDeployment(verifiedDeployment, { hasToken: true });
+    assert.equal(verification.ok, true);
+    const preview = await registry.deployPreview(
+      verifiedDeployment.immutableArtifact.artifact,
+      {
+        appId: 'starter-shopify-demo',
+        sdkCompatibilityVersion: verifiedDeployment.deploymentRecord.sdkCompatibilityVersion,
+        runtimeCompatibilityVersion: verifiedDeployment.deploymentRecord.runtimeCompatibilityVersion,
+        dependencyVersions: verifiedDeployment.deploymentRecord.dependencyVersions,
+        now: new Date('2026-05-28T04:30:00.000Z'),
+      },
+    );
+
+    const promoted = registry.promote(preview.deploymentRecord.deploymentId);
+    assert.deepEqual(promoted, {
+      previousProductionDeploymentId: priorPreview.deploymentRecord.deploymentId,
+      productionDeploymentId: preview.deploymentRecord.deploymentId,
+    });
+    assert.equal(registry.getProductionDeploymentId(), preview.deploymentRecord.deploymentId);
+
+    const rollback = registry.rollbackProductionPointer();
+    assert.deepEqual(rollback, {
+      operation: 'restore_production_pointer',
+      dataPlaneRollback: 'not_performed',
+      rolledBackFromDeploymentId: preview.deploymentRecord.deploymentId,
+      productionDeploymentId: priorPreview.deploymentRecord.deploymentId,
+    });
+    assert.equal(registry.getProductionDeploymentId(), priorPreview.deploymentRecord.deploymentId);
+    assert.doesNotMatch(JSON.stringify(rollback), /shopify rollback|data rollback|order rollback|product rollback/i);
+  });
 
   it('TC-PC-118 writes Shopify sync data only through managed document Data API', () => {
     const plan = planStarterManagedDataSync({
