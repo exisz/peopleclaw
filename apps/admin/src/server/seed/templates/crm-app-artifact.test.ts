@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { addFollowupNote, createContact, crmContactsScreenArtifact, crmAppTemplateManifest, crmAppTemplateSidebar, crmAppTemplateCollections, renderContactsScreenModel } from './crm-app-artifact';
 
-function validateManifest(manifest: typeof crmAppTemplateManifest): string[] {
+type ManifestLike = {
+  appId: string;
+  name: string;
+  version: string;
+  routes: ReadonlyArray<{ id: string; path: string; screen: string }>;
+};
+
+function validateManifest(manifest: ManifestLike): string[] {
   const errors: string[] = [];
   if (!manifest.appId) errors.push('appId is required');
   if (!manifest.name) errors.push('name is required');
@@ -60,6 +67,15 @@ describe('CRM starter app artifact data collections', () => {
 describe('CRM starter app functions', () => {
   it('TC-PC-085 proves createContact function writes contact', async () => {
     const writes: Array<{ collection: string; row: Record<string, unknown> }> = [];
+    const expectedRow = {
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      phone: '555-0100',
+      company: 'Analytical Engines Ltd',
+      tags: ['vip', 'analyst'],
+      createdAt: '2026-05-26T14:05:00.000Z',
+      updatedAt: '2026-05-26T14:05:00.000Z',
+    };
     const result = await createContact(
       {
         name: '  Ada Lovelace  ',
@@ -75,6 +91,9 @@ describe('CRM starter app functions', () => {
             writes.push({ collection, row });
             return { id: 'contact_1', ...row };
           },
+          getById() {
+            return null;
+          },
         },
       },
     );
@@ -83,18 +102,10 @@ describe('CRM starter app functions', () => {
     assert.deepEqual(writes, [
       {
         collection: 'contacts',
-        row: {
-          name: 'Ada Lovelace',
-          email: 'ada@example.com',
-          phone: '555-0100',
-          company: 'Analytical Engines Ltd',
-          tags: ['vip', 'analyst'],
-          createdAt: '2026-05-26T14:05:00.000Z',
-          updatedAt: '2026-05-26T14:05:00.000Z',
-        },
+        row: expectedRow,
       },
     ]);
-    assert.deepEqual(result.contact, { id: 'contact_1', ...writes[0].row });
+    assert.deepEqual(result.contact, { id: 'contact_1', ...expectedRow });
   });
 
   it('TC-PC-086 proves addFollowupNote validates existing contact', async () => {
@@ -102,6 +113,12 @@ describe('CRM starter app functions', () => {
       ['contact_1', { id: 'contact_1', name: 'Ada Lovelace' }],
     ]);
     const writes: Array<{ collection: string; row: Record<string, unknown> }> = [];
+    const expectedRow = {
+      contactId: 'contact_1',
+      type: 'meeting',
+      note: 'Demo scheduled',
+      createdAt: '2026-05-26T14:06:00.000Z',
+    };
     const appStore = {
       insert(collection: 'contacts' | 'followupNotes', row: Record<string, unknown>) {
         writes.push({ collection, row });
@@ -128,15 +145,10 @@ describe('CRM starter app functions', () => {
     assert.deepEqual(writes, [
       {
         collection: 'followupNotes',
-        row: {
-          contactId: 'contact_1',
-          type: 'meeting',
-          note: 'Demo scheduled',
-          createdAt: '2026-05-26T14:06:00.000Z',
-        },
+        row: expectedRow,
       },
     ]);
-    assert.deepEqual(result.followupNote, { id: 'followup_1', ...writes[0].row });
+    assert.deepEqual(result.followupNote, { id: 'followup_1', ...expectedRow });
   });
 
 
