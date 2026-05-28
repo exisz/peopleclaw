@@ -349,6 +349,14 @@ export interface StarterOneClickCrudDryRunResult {
     shopDomainRef: 'app-secret://SHOPIFY_SHOP_DOMAIN';
     action: 'createProduct' | 'updateProduct';
     productTitle: string;
+    imagePrompt?: string;
+  };
+  imageProcessing: {
+    invokedBeforeCrud: boolean;
+    step: 'ai_image_processing';
+    promptProvided: boolean;
+    outputRef: string | null;
+    safeFailure: { ok: boolean; recoverable: true; message: string } | null;
   };
   backendInvocation: {
     invoked: true;
@@ -482,7 +490,7 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
       dashboard: { source: 'export default function Dashboard() { return "Store dashboard"; }', artifactHash: sha256('dashboard') },
       products: { source: FULLSTACK_CODE_TEMPLATE, artifactHash: sha256(FULLSTACK_CODE_TEMPLATE) },
       sync: {
-        source: 'export default function Sync() { return <form data-testid="shopify-crud-dry-run-form"><input name="productTitle" aria-label="Product title" /><button type="submit">Run Shopify CRUD dry-run</button><output data-testid="shopify-crud-audit-evidence">Audit evidence</output></form>; }',
+        source: 'export default function Sync() { return <form data-testid="shopify-crud-dry-run-form"><input name="productTitle" aria-label="Product title" /><textarea name="imagePrompt" aria-label="Image prompt"></textarea><button type="submit">Run Shopify CRUD dry-run</button><output data-testid="shopify-crud-audit-evidence">Audit evidence</output></form>; }',
         artifactHash: sha256('shopify-crud-dry-run-form'),
       },
       chat: { source: 'export default function Chat() { return "Store assistant"; }', artifactHash: sha256('chat') },
@@ -555,6 +563,7 @@ export function runOneClickShopifyStarterCrudDryRun(input: {
     shopDomainRef?: 'app-secret://SHOPIFY_SHOP_DOMAIN';
     action: 'createProduct' | 'updateProduct';
     productTitle: string;
+    imagePrompt?: string;
     dryRun: true;
   };
   baseUrl?: string;
@@ -576,11 +585,14 @@ export function runOneClickShopifyStarterCrudDryRun(input: {
     now: input.now,
   });
   const verification = verifyStarterPreviewDeployment(deployment, { hasConnection: true });
-  const dataPlan = planStarterManagedDataSync({ products: [{ title: productTitle, dryRun: true }] });
+  const imagePrompt = input.form.imagePrompt?.trim() ?? '';
+  const imageOutputRef = imagePrompt ? `app-artifact://generated-images/${sha256({ appId: input.appId, imagePrompt }).slice(7, 19)}.png` : null;
+  const dataPlan = planStarterManagedDataSync({ products: [{ title: productTitle, dryRun: true, imageRef: imageOutputRef }] });
   const backendMethod = action;
   const events = [
     'starter_one_click_preview_deploy_planned',
     'shopify_crud_form_submitted',
+    imagePrompt ? 'ai_image_processing_invoked_before_shopify_crud' : 'ai_image_processing_skipped_no_prompt',
     `backend_${backendMethod}_invoked_via_ctx_callApp`,
     'shopify_crud_dry_run_recorded',
     'managed_data_api_plan_recorded',
@@ -597,6 +609,14 @@ export function runOneClickShopifyStarterCrudDryRun(input: {
       shopDomainRef: input.form.shopDomainRef ?? 'app-secret://SHOPIFY_SHOP_DOMAIN',
       action,
       productTitle,
+      imagePrompt: imagePrompt || undefined,
+    },
+    imageProcessing: {
+      invokedBeforeCrud: Boolean(imagePrompt),
+      step: 'ai_image_processing',
+      promptProvided: Boolean(imagePrompt),
+      outputRef: imageOutputRef,
+      safeFailure: imagePrompt ? null : { ok: true, recoverable: true, message: 'No image prompt provided; CRUD dry-run continues without generated image.' },
     },
     backendInvocation: {
       invoked: true,

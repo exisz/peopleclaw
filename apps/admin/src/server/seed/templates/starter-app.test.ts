@@ -164,6 +164,7 @@ describe('Starter app template safety', () => {
     const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
     assert.match(artifact.screens!.sync.source, /data-testid="shopify-crud-dry-run-form"/);
     assert.match(artifact.screens!.sync.source, /Run Shopify CRUD dry-run/);
+    assert.match(artifact.screens!.sync.source, /Image prompt/);
     assert.match(artifact.screens!.sync.source, /shopify-crud-audit-evidence/);
 
     const result = runOneClickShopifyStarterCrudDryRun({
@@ -203,6 +204,52 @@ describe('Starter app template safety', () => {
 
     const serialized = JSON.stringify(result);
     assert.doesNotMatch(serialized, /shpat_|shpca_|plain[_-]?text|SHOPIFY_ADMIN_TOKEN\s*[:=]\s*['"][^'"]+['"]/i);
+  });
+
+
+  it('TC-PC-126 calls AI image processing from prompt before Shopify CRUD payload construction', () => {
+    const result = runOneClickShopifyStarterCrudDryRun({
+      appId: 'starter-shopify-demo',
+      baseUrl: 'https://preview.peopleclaw.test',
+      now: new Date('2026-05-28T08:35:00.000Z'),
+      form: {
+        shopDomainRef: 'app-secret://SHOPIFY_SHOP_DOMAIN',
+        action: 'createProduct',
+        productTitle: 'Prompted product',
+        imagePrompt: 'clean product photo on a neutral studio background',
+        dryRun: true,
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.imageProcessing, {
+      invokedBeforeCrud: true,
+      step: 'ai_image_processing',
+      promptProvided: true,
+      outputRef: result.imageProcessing.outputRef,
+      safeFailure: null,
+    });
+    assert.match(result.imageProcessing.outputRef ?? '', /^app-artifact:\/\/generated-images\/[a-f0-9]+\.png$/);
+    assert.equal(result.backendInvocation.method, 'createProduct');
+    assert.equal(result.crudDryRun.writes, 0);
+    assert.equal(
+      result.auditEvidence.events.indexOf('ai_image_processing_invoked_before_shopify_crud') <
+        result.auditEvidence.events.indexOf('backend_createProduct_invoked_via_ctx_callApp'),
+      true,
+      'image processing must be audited before Shopify CRUD invocation',
+    );
+
+    const noPrompt = runOneClickShopifyStarterCrudDryRun({
+      appId: 'starter-shopify-demo',
+      form: { action: 'updateProduct', productTitle: 'No image prompt', dryRun: true },
+    });
+    assert.equal(noPrompt.imageProcessing.invokedBeforeCrud, false);
+    assert.deepEqual(noPrompt.imageProcessing.safeFailure, {
+      ok: true,
+      recoverable: true,
+      message: 'No image prompt provided; CRUD dry-run continues without generated image.',
+    });
+    assert.match(noPrompt.auditEvidence.events.join(' '), /ai_image_processing_skipped_no_prompt/);
   });
 
   it('TC-PC-119 promotes verified starter preview by pointer and rolls back pointer only', async () => {
