@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -107,6 +107,48 @@ describe('Starter app template safety', () => {
     }
     assert.doesNotMatch(connector.code, /return \{ ok: false, error: 'SHOPIFY_REFRESH_FAILED', message: e\?\.message/);
     assert.doesNotMatch(connector.code, /body\.slice\(0, 300\)/);
+  });
+
+
+  it('TC-PC-110 validates Shopify connector component type before deploy', () => {
+    const accepted = validateStarterAppConnectorSurface(starterAppTemplate);
+    assert.equal(accepted.ok, true, accepted.errors.join('; '));
+    assert.equal(accepted.connectorName, STARTER_APP_CONNECTOR_NAME);
+    assert.equal(accepted.callerName, STARTER_APP_FULLSTACK_NAME);
+
+    assert.doesNotThrow(() => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo' }));
+
+    const unsupportedTypeTemplate = {
+      ...starterAppTemplate,
+      components: starterAppTemplate.components.map((component) =>
+        component.name === STARTER_APP_CONNECTOR_NAME
+          ? { ...component, type: 'FRONTEND' as const }
+          : component,
+      ),
+    };
+    const unsupportedType = validateStarterAppConnectorSurface(unsupportedTypeTemplate);
+    assert.equal(unsupportedType.ok, false);
+    assert.match(unsupportedType.errors.join(' | '), /connector must be BACKEND/);
+    assert.throws(
+      () => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo', template: unsupportedTypeTemplate }),
+      /starter_connector_surface_invalid: .*connector must be BACKEND/,
+    );
+
+    const unsupportedSignatureTemplate = {
+      ...starterAppTemplate,
+      components: starterAppTemplate.components.map((component) =>
+        component.name === STARTER_APP_CONNECTOR_NAME
+          ? { ...component, code: 'export default async function run(ctx: any) { return { ok: true }; }' }
+          : component,
+      ),
+    };
+    const unsupportedSignature = validateStarterAppConnectorSurface(unsupportedSignatureTemplate);
+    assert.equal(unsupportedSignature.ok, false);
+    assert.match(unsupportedSignature.errors.join(' | '), /default async run\(input, ctx\)/);
+    assert.throws(
+      () => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo', template: unsupportedSignatureTemplate }),
+      /starter_connector_surface_invalid: .*default async run\(input, ctx\)/,
+    );
   });
 
   it('TC-PC-109 proves one-click Shopify starter deploy creates preview deployment record', () => {

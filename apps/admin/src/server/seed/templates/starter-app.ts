@@ -279,6 +279,13 @@ export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
 export const STARTER_APP_CONNECTOR_NAME = 'Store data source';
 export const STARTER_APP_FULLSTACK_NAME = 'Product Browser';
 
+export interface StarterAppConnectorSurfaceValidation {
+  ok: boolean;
+  errors: string[];
+  connectorName?: string;
+  callerName?: string;
+}
+
 export interface StarterAppPreviewDeploymentResult {
   plan: {
     operation: 'starter_one_click_preview_deploy';
@@ -296,6 +303,69 @@ export interface StarterAppPreviewDeploymentResult {
 
 function sha256(value: unknown): `sha256:${string}` {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
+}
+
+const SANCTIONED_COMPONENT_TYPES = new Set(['BACKEND', 'FULLSTACK']);
+
+/**
+ * Validates the Shopify starter's sanctioned cross-App connector surface before
+ * preview deploy. The connector must be an exported BACKEND component, and the
+ * caller must be a FULLSTACK component that uses ctx.callApp through the
+ * provisioned connector placeholder rather than importing platform internals or
+ * embedding a raw Shopify client in the screen.
+ */
+export function validateStarterAppConnectorSurface(template: AppTemplate): StarterAppConnectorSurfaceValidation {
+  const errors: string[] = [];
+  const components = template.components ?? [];
+  for (const component of components) {
+    if (!SANCTIONED_COMPONENT_TYPES.has(component.type)) {
+      errors.push(`${component.name}: unsupported component type ${component.type}`);
+    }
+  }
+
+  const connector = components.find((component) => component.name === STARTER_APP_CONNECTOR_NAME);
+  if (!connector) {
+    errors.push('missing Shopify connector component');
+  } else {
+    if (connector.type !== 'BACKEND') errors.push(`${connector.name}: connector must be BACKEND`);
+    if (connector.isExported !== true) errors.push(`${connector.name}: connector must be exported for ctx.callApp`);
+    if (!/export\s+default\s+async\s+function\s+run\s*\(\s*input\s*:\s*any\s*,\s*ctx\s*:\s*any\s*\)/.test(connector.code)) {
+      errors.push(`${connector.name}: connector must expose default async run(input, ctx)`);
+    }
+    if (!/SHOPIFY_SHOP_DOMAIN/.test(connector.code) || !/SHOPIFY_ADMIN_TOKEN|SHOPIFY_CLIENT_ID/.test(connector.code)) {
+      errors.push(`${connector.name}: connector must use generic secret references for credentials`);
+    }
+  }
+
+  const caller = components.find((component) => component.name === STARTER_APP_FULLSTACK_NAME);
+  if (!caller) {
+    errors.push('missing Shopify caller component');
+  } else {
+    if (caller.type !== 'FULLSTACK') errors.push(`${caller.name}: caller must be FULLSTACK`);
+    if (!/ctx\.callApp\(appId, connectorId, \{ method: 'listProducts' \}\)/.test(caller.code)) {
+      errors.push(`${caller.name}: caller must invoke connector through ctx.callApp(appId, connectorId, ...)`);
+    }
+    if (!/__CONNECTOR_ID__/.test(caller.code)) {
+      errors.push(`${caller.name}: caller must use provisioned connector id placeholder`);
+    }
+    if (/from\s+['"][^'"]*(routes|lib\/prisma|shopifyClient|shopifyAuth)/i.test(caller.code)) {
+      errors.push(`${caller.name}: caller must not import core internals or hardcoded connector clients`);
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    connectorName: connector?.name,
+    callerName: caller?.name,
+  };
+}
+
+function assertStarterAppConnectorSurface(template: AppTemplate): void {
+  const validation = validateStarterAppConnectorSurface(template);
+  if (!validation.ok) {
+    throw new Error(`starter_connector_surface_invalid: ${validation.errors.join('; ')}`);
+  }
 }
 
 export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
@@ -335,9 +405,11 @@ export function planStarterAppPreviewDeployment(input: {
   appId: string;
   baseUrl?: string;
   now?: Date;
+  template?: AppTemplate;
 }): StarterAppPreviewDeploymentResult {
   const appId = input.appId.trim();
   if (!appId) throw new Error('appId is required');
+  assertStarterAppConnectorSurface(input.template ?? starterAppTemplate);
   const artifact = buildStarterAppArtifactTree(appId);
   const artifactHash = sha256(artifact);
   const deploymentId = `dep_${appId}_preview_1`;
