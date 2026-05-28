@@ -106,3 +106,5 @@ In production `E2E_TEST_TOKEN` MUST be unset; the route then 404s and the
 sudo branch in `requireAuth` is inert.
 
 <!-- redeploy: codex env 2026-05-13 -->
+
+<!-- redeploy: codex env refresh 2026-05-28T02:30:09Z -->
