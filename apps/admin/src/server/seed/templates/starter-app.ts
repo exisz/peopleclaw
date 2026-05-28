@@ -278,6 +278,12 @@ export function Client({ data }: { data: any }) {
 export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
 export const STARTER_APP_CONNECTOR_NAME = 'Store data source';
 export const STARTER_APP_FULLSTACK_NAME = 'Product Browser';
+export const STARTER_APP_SIDEBAR_JSON5 = `{
+  sections: [
+    { id: 'business', title: 'Store', kind: 'app', items: ['dashboard', 'products', 'sync', 'chat'] },
+    { id: 'system', title: 'System', kind: 'system', items: ['setup', 'audit'] },
+  ],
+}`;
 
 export interface StarterAppConnectorSurfaceValidation {
   ok: boolean;
@@ -392,18 +398,46 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
       appId,
       name: 'Starter Store App',
       version: '0.1.0',
-      routes: [{ id: 'products', path: `/apps/${appId}`, screen: 'products' }],
+      routes: [
+        { id: 'dashboard', path: `/apps/${appId}`, screen: 'dashboard' },
+        { id: 'products', path: `/apps/${appId}/products`, screen: 'products' },
+        { id: 'sync', path: `/apps/${appId}/sync`, screen: 'sync' },
+        { id: 'chat', path: `/apps/${appId}/chat`, screen: 'chat' },
+        { id: 'setup', path: `/apps/${appId}/setup`, screen: 'setup' },
+        { id: 'audit', path: `/apps/${appId}/audit`, screen: 'audit' },
+      ],
     },
     sidebar: {
-      sections: [{
-        id: 'store',
-        title: 'Store',
-        kind: 'app',
-        items: [{ id: 'products', label: STARTER_APP_FULLSTACK_NAME, routeId: 'products' }],
-      }],
+      sections: [
+        {
+          id: 'business',
+          title: 'Store',
+          kind: 'app',
+          items: [
+            { id: 'dashboard', label: 'Dashboard', routeId: 'dashboard' },
+            { id: 'products', label: STARTER_APP_FULLSTACK_NAME, routeId: 'products' },
+            { id: 'sync', label: 'Sync', routeId: 'sync' },
+            { id: 'chat', label: 'Chat', routeId: 'chat' },
+          ],
+        },
+        {
+          id: 'system',
+          title: 'System',
+          kind: 'system',
+          items: [
+            { id: 'setup', label: 'Setup', routeId: 'setup' },
+            { id: 'audit', label: 'Audit', routeId: 'audit' },
+          ],
+        },
+      ],
     },
     screens: {
+      dashboard: { source: 'export default function Dashboard() { return "Store dashboard"; }', artifactHash: sha256('dashboard') },
       products: { source: FULLSTACK_CODE_TEMPLATE, artifactHash: sha256(FULLSTACK_CODE_TEMPLATE) },
+      sync: { source: 'export default function Sync() { return "Sync status"; }', artifactHash: sha256('sync') },
+      chat: { source: 'export default function Chat() { return "Store assistant"; }', artifactHash: sha256('chat') },
+      setup: { source: 'export default function Setup() { return "Connector setup"; }', artifactHash: sha256('setup') },
+      audit: { source: 'export default function Audit() { return "Audit evidence"; }', artifactHash: sha256('audit') },
     },
     functions: {
       shopifyConnector: {
@@ -416,6 +450,7 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
       collections: [{ id: 'products_cache', source: 'connector', ttlSeconds: 300 }],
       indexes: [{ collection: 'products_cache', fields: ['title', 'vendor'] }],
       playbooks: {
+        sidebarSource: { file: 'sidebar.json5', content: STARTER_APP_SIDEBAR_JSON5 },
         verifyConnection: { steps: ['render_products_route', 'run_connector_dry_run', 'record_audit_evidence'] },
       },
     },

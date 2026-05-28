@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5 } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -153,6 +153,25 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-116 exposes business and system pages through starter sidebar artifact config', () => {
+    const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
+    const sections = artifact.sidebar.sections;
+    assert.deepEqual(sections.map((section) => section.id), ['business', 'system']);
+    assert.deepEqual(sections[0].items.map((item) => item.label), ['Dashboard', STARTER_APP_FULLSTACK_NAME, 'Sync', 'Chat']);
+    assert.deepEqual(sections[1].items.map((item) => item.label), ['Setup', 'Audit']);
+    assert.equal(sections[0].kind, 'app');
+    assert.equal(sections[1].kind, 'system');
+    for (const item of sections.flatMap((section) => section.items)) {
+      const route = artifact.manifest.routes.find((candidate) => candidate.id === item.routeId);
+      assert.equal(Boolean(route), true, `${item.routeId} route must exist`);
+      assert.equal(Boolean(artifact.screens?.[route!.screen]), true, `${route!.screen} screen must exist`);
+    }
+    assert.match(STARTER_APP_SIDEBAR_JSON5, /sidebar|sections|dashboard|products|sync|chat|system/i);
+    assert.equal(JSON.stringify(artifact.sidebar).includes('/settings/shopify'), false);
+    assert.equal(JSON.stringify(artifact.sidebar).includes('/workflows'), false);
+  });
 
   it('TC-PC-115 represents Shopify starter as a normal App artifact tree', () => {
     const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
