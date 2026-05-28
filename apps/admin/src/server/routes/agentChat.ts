@@ -10,7 +10,7 @@ import {
   readAgentSession,
 } from '../lib/agentSessions.js';
 import { streamCodexAgent } from '../lib/codexAgent.js';
-import { getCodexConnectionStatus } from '../lib/codexAuth.js';
+import { getCodexConnectionStatus, toCodexUserError } from '../lib/codexAuth.js';
 
 export const agentChatRouter = Router();
 
@@ -109,7 +109,7 @@ agentChatRouter.post('/apps/:appId/agent-sessions/:sessionId/messages', requireA
     }
     await appendAgentMessage(checked.tenantId, checked.app.id, session.id, { role: 'assistant', content: result.content });
   } catch (e) {
-    const err = e instanceof Error ? e.message : String(e);
+    const err = toCodexUserError(e);
     sendSse(res, 'error', { message: err });
   } finally {
     sendSse(res, 'done', { sessionId: session.id });

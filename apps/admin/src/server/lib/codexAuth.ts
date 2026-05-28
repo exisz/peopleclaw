@@ -22,6 +22,28 @@ const DEFAULT_PROFILE_ID = 'openai-codex:gotexis@gmail.com';
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const REQUIRED_PROD_ENV = 'PEOPLECLAW_CODEX_ACCESS_TOKEN and PEOPLECLAW_CODEX_REFRESH_TOKEN';
 
+export class CodexAuthUnavailableError extends Error {
+  readonly userMessage: string;
+  readonly causeMessage?: string;
+
+  constructor(userMessage: string, cause?: unknown) {
+    const causeMessage = cause instanceof Error ? cause.message : (cause ? String(cause) : undefined);
+    super(causeMessage ? `${userMessage} (${causeMessage})` : userMessage);
+    this.name = 'CodexAuthUnavailableError';
+    this.userMessage = userMessage;
+    this.causeMessage = causeMessage;
+  }
+}
+
+export function toCodexUserError(error: unknown): string {
+  if (error instanceof CodexAuthUnavailableError) return error.userMessage;
+  const message = error instanceof Error ? error.message : String(error);
+  if (/Failed to refresh OpenAI Codex token/i.test(message) || /refresh.*Codex/i.test(message)) {
+    return 'PeopleClaw Chat is temporarily unavailable because the server-side Codex login needs to be reconnected. App editing is safe; please reconnect the Codex OAuth profile or configure fresh PEOPLECLAW_CODEX_* tokens.';
+  }
+  return message;
+}
+
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 }
@@ -135,7 +157,15 @@ export async function getCodexAccessToken(): Promise<{ accessToken: string; prof
 
 async function refreshIfNeeded(profile: CodexProfile): Promise<CodexProfile> {
   if (Number.isFinite(profile.expires) && profile.expires > Date.now() + REFRESH_MARGIN_MS) return profile;
-  const refreshed = await refreshOpenAICodexToken(profile.refresh);
+  let refreshed: OAuthCredentials;
+  try {
+    refreshed = await refreshOpenAICodexToken(profile.refresh);
+  } catch (e) {
+    throw new CodexAuthUnavailableError(
+      'PeopleClaw Chat is temporarily unavailable because the server-side Codex login needs to be reconnected. App editing is safe; please reconnect the Codex OAuth profile or configure fresh PEOPLECLAW_CODEX_* tokens.',
+      e,
+    );
+  }
   return {
     ...profile,
     ...refreshed,

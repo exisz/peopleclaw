@@ -108,7 +108,11 @@ export default function ComponentDetail({ component, runState, onRun, defaultTab
         {/* 运行 tab — fullscreen preview */}
         {subTab === 'run' && (
           <section className="h-full">
-            <FullstackPreview componentId={component.id} componentType={component.type} status={runState.status} />
+            {component.type === 'BACKEND' ? (
+              <BackendRunPanel componentName={component.name} onRun={onRun} runState={runState} />
+            ) : (
+              <FullstackPreview componentId={component.id} componentType={component.type} status={runState.status} />
+            )}
           </section>
         )}
 
@@ -158,6 +162,34 @@ export default function ComponentDetail({ component, runState, onRun, defaultTab
           </section>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function BackendRunPanel({ componentName, onRun, runState }: { componentName: string; onRun: () => void; runState: RunState }) {
+  return (
+    <div data-testid="backend-run-panel" className="p-4 space-y-3">
+      <div>
+        <h3 className="text-sm font-medium">{componentName}</h3>
+        <p className="text-xs text-muted-foreground">Backend/connector components run server-side; they do not compile to a visual client preview.</p>
+      </div>
+      <button
+        data-testid="backend-run-btn"
+        onClick={onRun}
+        disabled={runState.status === 'running'}
+        className="text-sm px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+      >
+        {runState.status === 'running' ? '运行中...' : '▶ Run backend'}
+      </button>
+      {runState.error && (
+        <p className="text-xs text-red-600 font-mono whitespace-pre-wrap">{runState.error}</p>
+      )}
+      {runState.result !== null && runState.result !== undefined && (
+        <pre data-testid="backend-run-result-json" className="bg-muted p-2 rounded overflow-auto max-h-60 text-[11px]">
+          {JSON.stringify(runState.result, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }

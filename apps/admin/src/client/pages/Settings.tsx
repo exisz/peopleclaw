@@ -1,12 +1,12 @@
 /**
- * PLANET-1431: Settings page — content only, AppShell provides chrome.
+ * Settings page — content only, AppShell provides chrome.
+ * Global connector setup is intentionally absent; connector credentials live in
+ * App artifacts/secrets, not workspace Settings.
  */
-import { useEffect, useState } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
-import { Plug, Users, CreditCard } from 'lucide-react';
+import { Users, CreditCard } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import SettingsConnections from './SettingsConnections';
 import SettingsTeam from './SettingsTeam';
 import SettingsBilling from './SettingsBilling';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -14,9 +14,9 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 export default function Settings() {
   const [params, setParams] = useSearchParams();
   const { tab: tabFromPath } = useParams();
-  const VALID_TABS = ['connections', 'team', 'billing'] as const;
-  const tabRaw = tabFromPath ?? params.get('tab') ?? 'connections';
-  const tab = (VALID_TABS as readonly string[]).includes(tabRaw) ? tabRaw : 'connections';
+  const VALID_TABS = ['team', 'billing'] as const;
+  const tabRaw = tabFromPath ?? params.get('tab') ?? 'team';
+  const tab = (VALID_TABS as readonly string[]).includes(tabRaw) ? tabRaw : 'team';
 
   return (
     <div className="p-6 md:p-10 h-full overflow-auto">
@@ -31,9 +31,6 @@ export default function Settings() {
               data-testid="settings-tabs"
             >
               <TabsList>
-                <TabsTrigger value="connections" data-testid="settings-tab-connections">
-                  <Plug className="h-4 w-4" /> Connections
-                </TabsTrigger>
                 <TabsTrigger value="team" data-testid="settings-tab-team">
                   <Users className="h-4 w-4" /> Team
                 </TabsTrigger>
@@ -41,9 +38,6 @@ export default function Settings() {
                   <CreditCard className="h-4 w-4" /> Billing
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="connections" className="mt-4">
-                <ErrorBoundary><SettingsConnections /></ErrorBoundary>
-              </TabsContent>
               <TabsContent value="team" className="mt-4">
                 <ErrorBoundary><SettingsTeam /></ErrorBoundary>
               </TabsContent>
