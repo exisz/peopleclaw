@@ -1,14 +1,12 @@
 /**
- * PLANET-1431: Unified sidebar — Apps / Published / Security / Settings.
+ * Unified sidebar for top-level platform surfaces.
  */
-import { Box, Globe, Shield, Settings } from 'lucide-react';
+import { Box, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import CreditsBadge from './CreditsBadge';
 
 const navItems = [
   { icon: Box, label: 'Apps', path: '/apps', match: (p: string) => p.startsWith('/apps') || p.startsWith('/app') },
-  { icon: Globe, label: 'Published', path: '/published', match: (p: string) => p.startsWith('/published') },
-  { icon: Shield, label: 'Security', path: '/security', match: (p: string) => p.startsWith('/security') },
   { icon: Settings, label: 'Settings', path: '/settings', match: (p: string) => p.startsWith('/settings') },
 ];
 
@@ -17,7 +15,6 @@ export default function AppsSidebar() {
 
   return (
     <aside data-testid="apps-sidebar" className="w-[200px] h-full border-r border-border bg-background flex flex-col shrink-0">
-      {/* Navigation */}
       <nav className="flex-1 p-2 space-y-0.5">
         {navItems.map(item => {
           const isActive = item.match(location.pathname);
@@ -38,7 +35,6 @@ export default function AppsSidebar() {
         })}
       </nav>
 
-      {/* Bottom plan info */}
       <div className="p-3 border-t border-border">
         <CreditsBadge />
       </div>

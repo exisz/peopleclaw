@@ -138,9 +138,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { window.location.href = '/workflows'; }}
+                  onClick={() => { window.location.href = '/apps'; }}
                 >
-                  回到工作流列表
+                  回到 Apps
                 </Button>
               </div>
             </CardContent>

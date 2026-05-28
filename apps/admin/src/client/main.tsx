@@ -1,10 +1,9 @@
 /**
- * PLANET-1407 — Living SaaS shell routing.
- * - Top-level surfaces (Apps/Published/Security/Settings) wrap with `AppShell`.
- * - Per-App surfaces wrap with `AppInnerShell` and live under
- *   `/app/:id/{dashboard|canvas|chat|system/{flow,cron,secrets,runners,logs}}`.
- * - `/app/:id` redirects to the canvas (the App's interactive workspace).
- * - The legacy `/app` (no id) Chat/Canvas dual-pane has been removed.
+ * PeopleClaw Living SaaS shell routing.
+ *
+ * Top-level shell: Apps + Settings.
+ * Per-App shell: `/app/:id/{dashboard|canvas|chat|modules|system/...}`.
+ * Runtime soft route: `/apps/:appId/*` resolves App deployment artifacts.
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -18,7 +17,6 @@ import SignIn from './pages/SignIn';
 import Callback from './pages/Callback';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppsList from './pages/AppsList';
-import PlaceholderPage from './pages/PlaceholderPage';
 import Settings from './pages/Settings';
 import AppShell from './components/layout/AppShell';
 import AppInnerShell from './components/layout/AppInnerShell';
@@ -44,15 +42,11 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/signin" element={<SignIn />} />
           <Route path="/callback" element={<Callback />} />
 
-          {/* Top-level surfaces — outer AppShell */}
           <Route path="/apps" element={<ErrorBoundary><AppShell title="Apps"><AppsList /></AppShell></ErrorBoundary>} />
           <Route path="/apps/:appId/*" element={<ErrorBoundary><AppShell title="App Runtime"><UserAppRuntimePage /></AppShell></ErrorBoundary>} />
-          <Route path="/published" element={<ErrorBoundary><AppShell title="Published"><PlaceholderPage title="Published Apps" /></AppShell></ErrorBoundary>} />
-          <Route path="/security" element={<ErrorBoundary><AppShell title="Security"><PlaceholderPage title="Security" /></AppShell></ErrorBoundary>} />
           <Route path="/settings" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
           <Route path="/settings/:tab" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
 
-          {/* Living SaaS — App inner shell. /app/:id redirects to canvas. */}
           <Route path="/app/:id" element={<Navigate to="canvas" replace />} />
           <Route path="/app/:id/dashboard" element={<ErrorBoundary><AppInnerShell title="Dashboard"><AppDashboardPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/canvas" element={<ErrorBoundary><AppInnerShell title="Canvas"><AppCanvasPage /></AppInnerShell></ErrorBoundary>} />
@@ -66,12 +60,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/app/:id/system/external-agent" element={<ErrorBoundary><AppInnerShell title="Connect Codex"><AppExternalAgentPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/system/logs" element={<ErrorBoundary><AppInnerShell title="Logs"><AppLogsPage /></AppInnerShell></ErrorBoundary>} />
 
-          {/* Legacy redirects — old workflow/case URLs collapse onto Apps list */}
           <Route path="/app" element={<Navigate to="/apps" replace />} />
-          <Route path="/app/workflow/*" element={<Navigate to="/apps" replace />} />
-          <Route path="/app/task/*" element={<Navigate to="/apps" replace />} />
           <Route path="/dashboard" element={<Navigate to="/apps" replace />} />
-          <Route path="/workflows/*" element={<Navigate to="/apps" replace />} />
           <Route path="/credits/*" element={<Navigate to="/apps" replace />} />
           <Route path="/roadmap" element={<Navigate to="/apps" replace />} />
           <Route path="*" element={<Navigate to="/apps" replace />} />

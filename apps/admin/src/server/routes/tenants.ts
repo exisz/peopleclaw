@@ -37,57 +37,6 @@ tenantsRouter.get('/tenants/:slug', async (req, res) => {
   });
 });
 
-// === Connections ===
-tenantsRouter.get('/tenants/:slug/connections', async (req, res) => {
-  const r = req as unknown as TenantedRequest;
-  const prisma = getPrisma();
-  const conns = await prisma.connection.findMany({ where: { tenantId: r.tenant.id } });
-  res.json({
-    connections: conns.map((c) => ({
-      id: c.id, type: c.type, enabled: c.enabled,
-      // Mask credentials in response
-      config: maskConfig(c.type, safeJSON(c.config)),
-      createdAt: c.createdAt, updatedAt: c.updatedAt,
-    })),
-  });
-});
-
-// Store tenant-level connection config generically. Connector-specific validation,
-// token exchange, and test calls live inside App artifact connectors, not core.
-tenantsRouter.post('/tenants/:slug/connections', async (req, res) => {
-  const r = req as unknown as TenantedRequest;
-  if (r.tenantUser.role === 'member') { res.status(403).json({ error: 'admin/owner required' }); return; }
-  const { type, config } = req.body ?? {};
-  if (!type || typeof type !== 'string' || !config || typeof config !== 'object' || Array.isArray(config)) {
-    res.status(400).json({ error: 'type and config object required' });
-    return;
-  }
-  const prisma = getPrisma();
-  const finalConfig: Record<string, unknown> = { ...(config as Record<string, unknown>) };
-
-  const c = await prisma.connection.upsert({
-    where: { tenantId_type: { tenantId: r.tenant.id, type } },
-    create: { tenantId: r.tenant.id, type, config: JSON.stringify(finalConfig) },
-    update: { config: JSON.stringify(finalConfig), enabled: true },
-  });
-  res.json({
-    connection: {
-      id: c.id, type: c.type, enabled: c.enabled,
-      config: maskConfig(c.type, safeJSON(c.config)),
-    },
-  });
-});
-
-tenantsRouter.delete('/tenants/:slug/connections/:id', async (req, res) => {
-  const r = req as unknown as TenantedRequest;
-  if (r.tenantUser.role === 'member') { res.status(403).json({ error: 'admin/owner required' }); return; }
-  const prisma = getPrisma();
-  const conn = await prisma.connection.findUnique({ where: { id: req.params.id } });
-  if (!conn || conn.tenantId !== r.tenant.id) { res.status(404).json({ error: 'not found' }); return; }
-  await prisma.connection.delete({ where: { id: conn.id } });
-  res.json({ ok: true });
-});
-
 // === Members ===
 tenantsRouter.get('/tenants/:slug/members', async (req, res) => {
   const r = req as unknown as TenantedRequest;
@@ -140,17 +89,3 @@ tenantsRouter.delete('/tenants/:slug/members/:id', async (req, res) => {
   await prisma.tenantUser.delete({ where: { id: m.id } });
   res.json({ ok: true });
 });
-
-function safeJSON(s: string): Record<string, unknown> {
-  try { return JSON.parse(s) as Record<string, unknown>; } catch { return {}; }
-}
-function maskConfig(type: string, cfg: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...cfg };
-  for (const k of ['admin_token', 'access_token', 'api_key', 'secret', 'password', 'client_secret']) {
-    if (typeof out[k] === 'string' && (out[k] as string).length > 0) {
-      const v = out[k] as string;
-      out[k] = v.length > 8 ? v.slice(0, 4) + '…' + v.slice(-4) : '••••';
-    }
-  }
-  return out;
-}
