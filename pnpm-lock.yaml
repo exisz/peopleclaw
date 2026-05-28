@@ -252,6 +252,9 @@ importers:
 
   packages/sdk:
     devDependencies:
+      '@types/node':
+        specifier: ^22.19.17
+        version: 22.19.17
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)

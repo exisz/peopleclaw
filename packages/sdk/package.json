@@ -34,8 +34,9 @@
     "test": "tsx --test src/app-artifact.test.ts"
   },
   "devDependencies": {
+    "@types/node": "^22.19.17",
     "tsup": "^8.0.0",
-    "typescript": "^5.5.0",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
   }
 }
