@@ -71,6 +71,26 @@ describe('Starter app template safety', () => {
     assert.match(productBrowser.code, /Connect store/);
   });
 
+  it('TC-PC-107 proves Shopify starter flow exposes no delete-app operation', () => {
+    const appsListSource = readFileSync(new URL('../../../client/pages/AppsList.tsx', import.meta.url), 'utf8');
+    const appsRouteSource = readFileSync(new URL('../../routes/apps.ts', import.meta.url), 'utf8');
+    const artifactText = JSON.stringify(starterAppTemplate);
+
+    for (const source of [appsListSource, appsRouteSource, artifactText]) {
+      assert.doesNotMatch(source, /delete[- ]?app/i);
+      assert.doesNotMatch(source, /destroy[- ]?app/i);
+      assert.doesNotMatch(source, /remove[- ]?app/i);
+      assert.doesNotMatch(source, /archive[- ]?app/i);
+    }
+
+    assert.doesNotMatch(appsRouteSource, /appsRouter\.delete\(/);
+    assert.doesNotMatch(appsRouteSource, /\.delete\s*\(/);
+    assert.doesNotMatch(appsListSource, /method:\s*['"]DELETE['"]/i);
+    assert.doesNotMatch(appsListSource, /apiClient\.delete/i);
+    assert.match(appsListSource, /createFromTemplate/);
+    assert.match(artifactText, /Shopify|SHOPIFY/);
+  });
+
   it('TC-PC-105 keeps Shopify starter navigation out of workflow/canvas primary UI', () => {
     const artifactText = JSON.stringify(starterAppTemplate);
     assert.equal('routes' in starterAppTemplate, false);
