@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { createInMemoryAppDeploymentRegistry } from '@peopleclaw/sdk/app-artifact';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync, runOneClickShopifyStarterCrudDryRun } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -158,6 +158,52 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-125 runs one-click Shopify starter form through backend CRUD dry-run with audit evidence', () => {
+    const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
+    assert.match(artifact.screens!.sync.source, /data-testid="shopify-crud-dry-run-form"/);
+    assert.match(artifact.screens!.sync.source, /Run Shopify CRUD dry-run/);
+    assert.match(artifact.screens!.sync.source, /shopify-crud-audit-evidence/);
+
+    const result = runOneClickShopifyStarterCrudDryRun({
+      appId: 'starter-shopify-demo',
+      baseUrl: 'https://preview.peopleclaw.test',
+      now: new Date('2026-05-28T08:15:00.000Z'),
+      form: {
+        shopDomainRef: 'app-secret://SHOPIFY_SHOP_DOMAIN',
+        action: 'createProduct',
+        productTitle: 'Dry-run product from form',
+        dryRun: true,
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.formSubmission.submitted, true);
+    assert.equal(result.formSubmission.testId, 'shopify-crud-dry-run-form');
+    assert.equal(result.backendInvocation.invoked, true);
+    assert.equal(result.backendInvocation.functionId, 'functions/shopifyConnector');
+    assert.equal(result.backendInvocation.method, 'createProduct');
+    assert.equal(result.backendInvocation.via, 'ctx.callApp');
+    assert.deepEqual(result.crudDryRun, {
+      ok: true,
+      mode: 'dry_run',
+      mockedSafeWrite: true,
+      writes: 0,
+      dataApiCollections: ['shopify_products', 'shopify_orders', 'shopify_customers'],
+    });
+    assert.equal(result.auditEvidence.visibleToUser, true);
+    assert.match(result.previewUrl, /\/apps\/starter-shopify-demo\?preview=/);
+    assert.deepEqual(result.auditEvidence.events.filter((event) => /form|backend|dry_run|audit/.test(event)), [
+      'shopify_crud_form_submitted',
+      'backend_createProduct_invoked_via_ctx_callApp',
+      'shopify_crud_dry_run_recorded',
+      'audit_evidence_visible_to_user',
+    ]);
+
+    const serialized = JSON.stringify(result);
+    assert.doesNotMatch(serialized, /shpat_|shpca_|plain[_-]?text|SHOPIFY_ADMIN_TOKEN\s*[:=]\s*['"][^'"]+['"]/i);
+  });
 
   it('TC-PC-119 promotes verified starter preview by pointer and rolls back pointer only', async () => {
     const registry = createInMemoryAppDeploymentRegistry({

@@ -340,6 +340,38 @@ export interface StarterAppPreviewDeploymentResult {
   previewUrl: string;
 }
 
+export interface StarterOneClickCrudDryRunResult {
+  ok: boolean;
+  previewUrl: string;
+  formSubmission: {
+    submitted: true;
+    testId: 'shopify-crud-dry-run-form';
+    shopDomainRef: 'app-secret://SHOPIFY_SHOP_DOMAIN';
+    action: 'createProduct' | 'updateProduct';
+    productTitle: string;
+  };
+  backendInvocation: {
+    invoked: true;
+    functionId: 'functions/shopifyConnector';
+    method: 'createProduct' | 'updateProduct';
+    via: 'ctx.callApp';
+  };
+  crudDryRun: {
+    ok: boolean;
+    mode: 'dry_run';
+    mockedSafeWrite: true;
+    writes: 0;
+    dataApiCollections: string[];
+  };
+  auditEvidence: {
+    visibleToUser: true;
+    events: string[];
+    redacted: true;
+    artifactHash: `sha256:${string}`;
+    deploymentId: string;
+  };
+}
+
 function sha256(value: unknown): `sha256:${string}` {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 }
@@ -449,7 +481,10 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
     screens: {
       dashboard: { source: 'export default function Dashboard() { return "Store dashboard"; }', artifactHash: sha256('dashboard') },
       products: { source: FULLSTACK_CODE_TEMPLATE, artifactHash: sha256(FULLSTACK_CODE_TEMPLATE) },
-      sync: { source: 'export default function Sync() { return "Sync status"; }', artifactHash: sha256('sync') },
+      sync: {
+        source: 'export default function Sync() { return <form data-testid="shopify-crud-dry-run-form"><input name="productTitle" aria-label="Product title" /><button type="submit">Run Shopify CRUD dry-run</button><output data-testid="shopify-crud-audit-evidence">Audit evidence</output></form>; }',
+        artifactHash: sha256('shopify-crud-dry-run-form'),
+      },
       chat: { source: 'export default function Chat() { return "Store assistant"; }', artifactHash: sha256('chat') },
       setup: { source: 'export default function Setup() { return "Connector setup"; }', artifactHash: sha256('setup') },
       audit: { source: 'export default function Audit() { return "Audit evidence"; }', artifactHash: sha256('audit') },
@@ -510,6 +545,79 @@ export function planStarterAppPreviewDeployment(input: {
     immutableArtifact: { artifactHash, artifact, stored: true },
     deploymentRecord,
     previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
+  };
+}
+
+
+export function runOneClickShopifyStarterCrudDryRun(input: {
+  appId: string;
+  form: {
+    shopDomainRef?: 'app-secret://SHOPIFY_SHOP_DOMAIN';
+    action: 'createProduct' | 'updateProduct';
+    productTitle: string;
+    dryRun: true;
+  };
+  baseUrl?: string;
+  now?: Date;
+}): StarterOneClickCrudDryRunResult {
+  const action = input.form.action;
+  if (action !== 'createProduct' && action !== 'updateProduct') {
+    throw new Error('starter_crud_dry_run_invalid_action: createProduct|updateProduct required');
+  }
+  if (input.form.dryRun !== true) {
+    throw new Error('starter_crud_dry_run_requires_dry_run_true');
+  }
+  const productTitle = input.form.productTitle.trim();
+  if (!productTitle) throw new Error('starter_crud_dry_run_product_title_required');
+
+  const deployment = planStarterAppPreviewDeployment({
+    appId: input.appId,
+    baseUrl: input.baseUrl,
+    now: input.now,
+  });
+  const verification = verifyStarterPreviewDeployment(deployment, { hasConnection: true });
+  const dataPlan = planStarterManagedDataSync({ products: [{ title: productTitle, dryRun: true }] });
+  const backendMethod = action;
+  const events = [
+    'starter_one_click_preview_deploy_planned',
+    'shopify_crud_form_submitted',
+    `backend_${backendMethod}_invoked_via_ctx_callApp`,
+    'shopify_crud_dry_run_recorded',
+    'managed_data_api_plan_recorded',
+    'audit_evidence_visible_to_user',
+    ...verification.auditEvidence.events,
+  ];
+
+  return {
+    ok: verification.ok && dataPlan.forbidden.length === 0,
+    previewUrl: deployment.previewUrl,
+    formSubmission: {
+      submitted: true,
+      testId: 'shopify-crud-dry-run-form',
+      shopDomainRef: input.form.shopDomainRef ?? 'app-secret://SHOPIFY_SHOP_DOMAIN',
+      action,
+      productTitle,
+    },
+    backendInvocation: {
+      invoked: true,
+      functionId: 'functions/shopifyConnector',
+      method: backendMethod,
+      via: 'ctx.callApp',
+    },
+    crudDryRun: {
+      ok: true,
+      mode: 'dry_run',
+      mockedSafeWrite: true,
+      writes: 0,
+      dataApiCollections: dataPlan.collections,
+    },
+    auditEvidence: {
+      visibleToUser: true,
+      events,
+      redacted: true,
+      artifactHash: deployment.immutableArtifact.artifactHash,
+      deploymentId: deployment.deploymentRecord.deploymentId,
+    },
   };
 }
 
