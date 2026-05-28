@@ -91,6 +91,24 @@ describe('Starter app template safety', () => {
     assert.match(artifactText, /Shopify|SHOPIFY/);
   });
 
+  it('TC-PC-108 proves Shopify token failures are recoverable and redacted', () => {
+    const connector = starterAppTemplate.components.find(c => c.name === STARTER_APP_CONNECTOR_NAME)!;
+    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_FULLSTACK_NAME)!;
+    const artifactText = JSON.stringify(starterAppTemplate);
+
+    assert.match(connector.code, /safeConnectorMessage/);
+    assert.match(connector.code, /SHOPIFY_REFRESH_FAILED', recoverable: true/);
+    assert.match(connector.code, /SHOPIFY_HTTP_' \+ r\.status, recoverable: true/);
+    assert.match(connector.code, /NEED_SETUP/);
+    assert.match(productBrowser.code, /data-state=\{isSetup \? 'need-setup' : 'error'\}/);
+
+    for (const forbidden of [/shpat_[A-Za-z0-9_-]+/, /shpca_[A-Za-z0-9_-]+/, /access_token['"\s:=]+(shpat_|shpca_)[^'"\s,}]+/i]) {
+      assert.doesNotMatch(artifactText, forbidden, `starter artifact must not expose ${forbidden}`);
+    }
+    assert.doesNotMatch(connector.code, /return \{ ok: false, error: 'SHOPIFY_REFRESH_FAILED', message: e\?\.message/);
+    assert.doesNotMatch(connector.code, /body\.slice\(0, 300\)/);
+  });
+
   it('TC-PC-105 keeps Shopify starter navigation out of workflow/canvas primary UI', () => {
     const artifactText = JSON.stringify(starterAppTemplate);
     assert.equal('routes' in starterAppTemplate, false);

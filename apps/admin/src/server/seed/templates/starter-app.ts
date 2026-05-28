@@ -67,6 +67,19 @@ export default async function run(input: any, ctx: any) {
   let token = ctx?.secrets?.SHOPIFY_ADMIN_TOKEN || '';
   const tokenExpiresAt = ctx?.secrets?.SHOPIFY_TOKEN_EXPIRES_AT || '';
 
+  function safeConnectorMessage(value: any): string {
+    let text = value && value.message ? String(value.message) : String(value || '');
+    for (const secret of [token, clientSecret, clientId]) {
+      if (secret && String(secret).length >= 6) text = text.split(String(secret)).join('[redacted]');
+    }
+    return text
+      .replace(/shpat_[A-Za-z0-9_\-]+/g, '[redacted]')
+      .replace(/shpca_[A-Za-z0-9_\-]+/g, '[redacted]')
+      .replace(/(access[_-]?token["'\\s:=]+)[^"'\\s,}]+/gi, '$1[redacted]')
+      .replace(/(client[_-]?secret["'\\s:=]+)[^"'\\s,}]+/gi, '$1[redacted]')
+      .slice(0, 300);
+  }
+
   if (!rawShop) {
     return {
       ok: false,
@@ -104,7 +117,7 @@ export default async function run(input: any, ctx: any) {
           SHOPIFY_TOKEN_EXPIRES_AT: exch.expiresAt,
         });
       } catch (e: any) {
-        return { ok: false, error: 'SHOPIFY_REFRESH_FAILED', message: e?.message || String(e) };
+        return { ok: false, error: 'SHOPIFY_REFRESH_FAILED', recoverable: true, message: safeConnectorMessage(e) };
       }
     }
   }
@@ -147,7 +160,7 @@ export default async function run(input: any, ctx: any) {
       const r = await callWithRetry((tok) => shopifyFetch(shop, tok, 'products.json?limit=' + limit));
       if (!r.ok) {
         const body = await r.text();
-        return { ok: false, error: 'SHOPIFY_HTTP_' + r.status, message: body.slice(0, 300) };
+        return { ok: false, error: 'SHOPIFY_HTTP_' + r.status, recoverable: true, message: safeConnectorMessage(body) };
       }
       const data: any = await r.json();
       const products = (data.products || []).map((p: any) => ({
@@ -165,7 +178,7 @@ export default async function run(input: any, ctx: any) {
         body: JSON.stringify({ product }),
       }));
       const data: any = await r.json();
-      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
+      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, recoverable: true, message: safeConnectorMessage(JSON.stringify(data)) };
     }
     if (method === 'updateProduct') {
       const id = input && input.id;
@@ -176,11 +189,11 @@ export default async function run(input: any, ctx: any) {
         body: JSON.stringify({ product: Object.assign({ id }, product) }),
       }));
       const data: any = await r.json();
-      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
+      return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, recoverable: true, message: safeConnectorMessage(JSON.stringify(data)) };
     }
     return { ok: false, error: 'UNKNOWN_METHOD', message: 'method must be listProducts|createProduct|updateProduct' };
   } catch (e: any) {
-    return { ok: false, error: 'EXCEPTION', message: e?.message || String(e) };
+    return { ok: false, error: 'EXCEPTION', recoverable: true, message: safeConnectorMessage(e) };
   }
 }
 `;
