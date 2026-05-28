@@ -56,6 +56,17 @@ describe('Starter app template safety', () => {
     assert.match(connector.code, /SHOPIFY_ADMIN_TOKEN|SHOPIFY_CLIENT_ID/);
   });
 
+  it('TC-PC-105 keeps Shopify starter navigation out of workflow/canvas primary UI', () => {
+    const artifactText = JSON.stringify(starterAppTemplate);
+    assert.equal('routes' in starterAppTemplate, false);
+    assert.equal('navigation' in starterAppTemplate, false);
+    for (const forbidden of [/workflow/i, /canvas/i, /case[- ]?first/i, /n8n/i, /react flow/i]) {
+      assert.doesNotMatch(artifactText, forbidden, `starter must not expose ${forbidden} as its primary UI model`);
+    }
+    assert.match(artifactText, /Product Browser/);
+    assert.match(artifactText, /Connect store/);
+  });
+
   it('TC-PC-104 rejects TODO placeholders and fake success states in starter artifacts', () => {
     const artifactText = JSON.stringify(starterAppTemplate);
     const forbiddenPlaceholderOrFakeSuccess = [
