@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -149,6 +149,37 @@ describe('Starter app template safety', () => {
       () => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo', template: unsupportedSignatureTemplate }),
       /starter_connector_surface_invalid: .*default async run\(input, ctx\)/,
     );
+  });
+
+
+  it('TC-PC-112 records Shopify starter post-deploy verification evidence', () => {
+    const deployment = planStarterAppPreviewDeployment({
+      appId: 'starter-shopify-demo',
+      baseUrl: 'https://preview.peopleclaw.test',
+      now: new Date('2026-05-28T04:20:00.000Z'),
+    });
+
+    const needsSetup = verifyStarterPreviewDeployment(deployment, { hasToken: false, hasConnection: false });
+    assert.equal(needsSetup.ok, true);
+    assert.deepEqual(needsSetup.routeRender, { ok: true, routeId: 'products', screen: 'products' });
+    assert.deepEqual(needsSetup.tokenState.state, 'needs_setup');
+    assert.match(needsSetup.tokenState.secretRefs.join(' '), /app-secret:\/\/SHOPIFY_SHOP_DOMAIN/);
+    assert.equal(needsSetup.connectorCompatibility.ok, true);
+    assert.deepEqual(needsSetup.syncDryRun, { ok: true, method: 'listProducts', mode: 'dry_run', writes: 0 });
+    assert.deepEqual(needsSetup.auditEvidence.events, [
+      'route_render_checked',
+      'token_state_needs_setup',
+      'connector_component_compatibility_checked',
+      'dry_run_recorded',
+      'starter_preview_verification_complete',
+    ]);
+    assert.equal(needsSetup.auditEvidence.artifactHash, deployment.immutableArtifact.artifactHash);
+    assert.equal(needsSetup.auditEvidence.deploymentId, deployment.deploymentRecord.deploymentId);
+
+    const ready = verifyStarterPreviewDeployment(deployment, { hasToken: true });
+    assert.equal(ready.tokenState.state, 'ready');
+    assert.equal(ready.syncDryRun.mode, 'sample_fetch');
+    assert.match(ready.auditEvidence.events.join(' '), /sample_fetch_recorded/);
   });
 
   it('TC-PC-109 proves one-click Shopify starter deploy creates preview deployment record', () => {

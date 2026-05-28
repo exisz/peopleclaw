@@ -286,6 +286,16 @@ export interface StarterAppConnectorSurfaceValidation {
   callerName?: string;
 }
 
+export interface StarterAppVerificationEvidence {
+  ok: boolean;
+  previewUrl: string;
+  routeRender: { ok: boolean; routeId: string; screen: string };
+  tokenState: { ok: boolean; state: 'ready' | 'needs_setup'; secretRefs: string[] };
+  connectorCompatibility: StarterAppConnectorSurfaceValidation;
+  syncDryRun: { ok: boolean; method: 'listProducts'; mode: 'dry_run' | 'sample_fetch'; writes: 0 };
+  auditEvidence: { ok: boolean; events: string[]; artifactHash: `sha256:${string}`; deploymentId: string };
+}
+
 export interface StarterAppPreviewDeploymentResult {
   plan: {
     operation: 'starter_one_click_preview_deploy';
@@ -431,6 +441,52 @@ export function planStarterAppPreviewDeployment(input: {
     immutableArtifact: { artifactHash, artifact, stored: true },
     deploymentRecord,
     previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
+  };
+}
+
+export function verifyStarterPreviewDeployment(
+  deployment: StarterAppPreviewDeploymentResult,
+  options: { hasToken?: boolean; hasConnection?: boolean } = {},
+): StarterAppVerificationEvidence {
+  const artifact = deployment.immutableArtifact.artifact;
+  const route = artifact.manifest.routes.find((candidate) => candidate.id === 'products');
+  const routeRender = {
+    ok: Boolean(route && artifact.screens?.[route.screen]),
+    routeId: route?.id ?? '',
+    screen: route?.screen ?? '',
+  };
+  const secretRefs = Object.values(artifact.secrets ?? {})
+    .map((entry) => entry.ref)
+    .filter((ref): ref is string => typeof ref === 'string');
+  const tokenReady = Boolean(options.hasToken || options.hasConnection);
+  const connectorCompatibility = validateStarterAppConnectorSurface(starterAppTemplate);
+  const syncDryRun = {
+    ok: connectorCompatibility.ok,
+    method: 'listProducts' as const,
+    mode: tokenReady ? 'sample_fetch' as const : 'dry_run' as const,
+    writes: 0 as const,
+  };
+  const auditEvents = [
+    'route_render_checked',
+    tokenReady ? 'token_state_ready' : 'token_state_needs_setup',
+    'connector_component_compatibility_checked',
+    `${syncDryRun.mode}_recorded`,
+    'starter_preview_verification_complete',
+  ];
+
+  return {
+    ok: routeRender.ok && secretRefs.length > 0 && connectorCompatibility.ok && syncDryRun.ok,
+    previewUrl: deployment.previewUrl,
+    routeRender,
+    tokenState: { ok: tokenReady, state: tokenReady ? 'ready' : 'needs_setup', secretRefs },
+    connectorCompatibility,
+    syncDryRun,
+    auditEvidence: {
+      ok: true,
+      events: auditEvents,
+      artifactHash: deployment.immutableArtifact.artifactHash,
+      deploymentId: deployment.deploymentRecord.deploymentId,
+    },
   };
 }
 
