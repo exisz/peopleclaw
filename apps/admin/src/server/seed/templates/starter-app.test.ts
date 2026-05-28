@@ -55,4 +55,25 @@ describe('Starter app template safety', () => {
     assert.match(connector.code, /SHOPIFY_SHOP_DOMAIN/);
     assert.match(connector.code, /SHOPIFY_ADMIN_TOKEN|SHOPIFY_CLIENT_ID/);
   });
+
+  it('TC-PC-104 rejects TODO placeholders and fake success states in starter artifacts', () => {
+    const artifactText = JSON.stringify(starterAppTemplate);
+    const forbiddenPlaceholderOrFakeSuccess = [
+      /\bTODO\b/i,
+      /lorem ipsum/i,
+      /coming soon/i,
+      /not implemented/i,
+      /fake success/i,
+      /successfully (deployed|synced|connected).*mock/i,
+      /unverified .*success/i,
+    ];
+
+    for (const forbidden of forbiddenPlaceholderOrFakeSuccess) {
+      assert.doesNotMatch(artifactText, forbidden, `starter artifact must not contain ${forbidden}`);
+    }
+
+    const connector = starterAppTemplate.components.find(c => c.name === STARTER_APP_CONNECTOR_NAME)!;
+    assert.match(connector.code, /error: 'NEED_SETUP'/);
+    assert.match(connector.code, /return \{ ok: true, products \}/);
+  });
 });
