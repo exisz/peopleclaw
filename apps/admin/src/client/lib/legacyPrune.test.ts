@@ -1,16 +1,42 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
 const clientRoot = new URL('../', import.meta.url);
+const adminRoot = new URL('../../', clientRoot);
 const slash = '/';
 const publishedRoute = slash + 'published';
 const securityRoute = slash + 'security';
 const oldFlowRoute = slash + 'work' + 'flows';
 const shopName = 'Shop' + 'ify';
+const internalTypeLabels = ['FULL' + 'STACK', 'FRONT' + 'END', 'BACK' + 'END'];
 
 function readClient(path: string): string {
   return readFileSync(new URL(path, clientRoot), 'utf8');
+}
+
+function readAdmin(path: string): string {
+  return readFileSync(new URL(path, adminRoot), 'utf8');
+}
+
+function collectTextFiles(rootPath: string): string[] {
+  const root = new URL(rootPath, adminRoot);
+  if (!existsSync(root)) return [];
+  const out: string[] = [];
+  const walk = (url: URL) => {
+    for (const entry of readdirSync(url)) {
+      if (['node_modules', '.next', 'dist', 'coverage', 'test-results'].includes(entry)) continue;
+      const child = new URL(entry + (entry.includes('.') ? '' : '/'), url);
+      const stat = statSync(child);
+      if (stat.isDirectory()) {
+        walk(new URL(entry + '/', url));
+      } else if (/\.(ts|tsx|js|jsx|md|json)$/.test(entry)) {
+        out.push(readFileSync(child, 'utf8'));
+      }
+    }
+  };
+  walk(root);
+  return out;
 }
 
 describe('legacy non-spec surfaces stay pruned', () => {
@@ -42,4 +68,56 @@ describe('legacy non-spec surfaces stay pruned', () => {
     assert.equal(boundary.includes(oldFlowRoute), false);
     assert.equal(boundary.includes('回到 Apps'), true);
   });
+
+  it('does not expose app-building internals in customer-facing app shell files', () => {
+    const userFacingSources = [
+      readClient('main.tsx'),
+      readClient('components/layout/AppInnerShell.tsx'),
+      readClient('pages/AppsList.tsx'),
+      readClient('pages/app/AppDashboardPage.tsx'),
+      readClient('pages/app/AppBuildPage.tsx'),
+      readClient('pages/app/AppChatPage.tsx'),
+    ].join('\n');
+
+    const forbiddenText = [
+      'AI 换脸' + '-处理',
+      'AI 换脸' + '-表单',
+      '公开' + '此组件',
+      'Module Flow',
+      'Runners',
+      'Connect Codex',
+      'Secrets',
+      'Logs',
+      'Canvas',
+      'Modules',
+      'App Page',
+      'component entries',
+      'Run backend',
+    ];
+
+    for (const term of [...forbiddenText, ...internalTypeLabels]) {
+      assert.equal(userFacingSources.includes(term), false, `unexpected user-facing internal label: ${term}`);
+    }
+  });
+
+  it('keeps shipped docs, seed templates, and e2e clear of old workflow and face-swap surfaces', () => {
+    const sources = [
+      readAdmin('README.md'),
+      ...collectTextFiles('e2e/'),
+      ...collectTextFiles('tests/e2e/'),
+      ...collectTextFiles('src/server/seed/templates/'),
+    ].join('\n');
+
+    const forbiddenText = [
+      oldFlowRoute,
+      'AI 换脸' + '-处理',
+      'AI 换脸' + '-表单',
+      '公开' + '此组件',
+    ];
+
+    for (const term of forbiddenText) {
+      assert.equal(sources.includes(term), false, `unexpected legacy shipped surface: ${term}`);
+    }
+  });
+
 });

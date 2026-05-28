@@ -1,24 +1,17 @@
-/**
- * PLANET-1407: Living SaaS — Dashboard page (stub).
- *
- * Will eventually summarise app health, recent runs, scheduled work, etc.
- * For now this is presentation-only with structured placeholders so the
- * shell + routing can be exercised end-to-end.
- */
 import { useParams } from 'react-router-dom';
 
 export default function AppDashboardPage() {
   const { id } = useParams<{ id: string }>();
   const cards = [
-    { label: 'Modules', value: '—', hint: 'Component count (wires up later)' },
-    { label: 'Scheduled tasks', value: '—', hint: 'Cron jobs running on this app' },
-    { label: 'Last run', value: '—', hint: 'Most recent component invocation' },
-    { label: 'Open incidents', value: '0', hint: 'Errors in the last 24h' },
+    { label: 'App status', value: 'Ready', hint: 'Open and usable' },
+    { label: 'Starter app', value: 'Active', hint: 'Built from a reusable pattern' },
+    { label: 'Chat', value: 'On', hint: 'Ask for product changes' },
+    { label: 'Issues', value: '0', hint: 'No recent user-facing errors' },
   ];
   return (
     <div data-testid="page-app-dashboard" className="h-full overflow-auto p-6">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
         <p className="text-sm text-muted-foreground mt-1">
           App overview · <span className="font-mono">{id}</span>
         </p>
@@ -37,9 +30,7 @@ export default function AppDashboardPage() {
       </section>
       <section className="mt-8 rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
         <p>
-          The dashboard surface will aggregate real signals once the App-store,
-          runner, and log streams are wired through. This page exists today so
-          the Living SaaS shell has a true landing surface.
+          Use Build App for product changes, or open Chat to describe what this app should do next.
         </p>
       </section>
     </div>

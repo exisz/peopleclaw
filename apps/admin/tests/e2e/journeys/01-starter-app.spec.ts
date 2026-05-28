@@ -1,5 +1,5 @@
 /**
- * USER STORY: 起步示例 App — 4 组件 + TRIGGER 全流程 (PLANET-1428, +Shopify Connector PLANET-1461)
+ * USER STORY: Starter Store App — product browser starter flow (PLANET-1428, +Shopify PLANET-1461)
  *
  * GIVEN 已登录
  * WHEN  选 starter-app 模板
@@ -33,11 +33,11 @@ test.describe('TC1: 起步示例 App 全流程', () => {
 
     // Step 3: 验证模块列表有 4 项 (PLANET-1461 加了 Shopify Connector)
     await app.openModuleList();
-    await expect(page.getByTestId('module-list-count')).toContainText('4', { timeout: 5_000 });
+    await expect(page.getByTestId('module-list-count')).toContainText('2', { timeout: 5_000 });
 
     // Step 4: 点模块列表里的 BACKEND (PLANET-1468: tabs 取代 sticky panel)
     await page.getByTestId('inner-nav-modules').click();
-    const backendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'AI 换脸-处理' }).first();
+    const backendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'Store data source' }).first();
     const backendCompId = (await backendRow.getAttribute('data-testid'))!.replace('module-list-row-', '');
     await backendRow.click({ timeout: 10_000 });
     await page.waitForTimeout(300);
@@ -76,7 +76,7 @@ test.describe('TC1: 起步示例 App 全流程', () => {
     // Step 7: 回 flow → 开 FRONTEND → preview tab
     await page.getByTestId('inner-nav-canvas').click();
     await page.getByTestId('inner-nav-modules').click();
-    const frontendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'AI 换脸-表单' }).first();
+    const frontendRow = page.locator('[data-testid^="module-list-row-"]').filter({ hasText: 'Product Browser' }).first();
     const frontendCompId = (await frontendRow.getAttribute('data-testid'))!.replace('module-list-row-', '');
     await frontendRow.click();
     await expect(page.getByTestId('page-app-component')).toBeVisible({ timeout: 5_000 });

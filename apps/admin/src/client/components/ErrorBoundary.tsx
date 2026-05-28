@@ -23,7 +23,7 @@ const AUTO_RETRY_DELAY_MS = 0;
 /**
  * PLANET-1051 + PLANET-1260: ErrorBoundary with auto-recovery and scoped rendering.
  * - Auto-retries any error up to MAX_AUTO_RETRIES times
- * - Logs full error details for debugging
+ * - Records full error details for debugging
  * - Tracks error fingerprint to avoid infinite retry loops
  * - Uses resetKey to force remount children on recovery
  */

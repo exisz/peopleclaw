@@ -1,7 +1,6 @@
 /**
  * Settings page — content only, AppShell provides chrome.
- * Global connector setup is intentionally absent; connector credentials live in
- * App artifacts/secrets, not workspace Settings.
+ * Only account-level Team and Billing settings are exposed here.
  */
 import { useSearchParams, useParams } from 'react-router-dom';
 import { Users, CreditCard } from 'lucide-react';

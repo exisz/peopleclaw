@@ -1,116 +1,12 @@
 /**
- * Starter App — 起步示例 (PLANET-1428, refactored under PLANET-1461)
+ * Starter App — store/catalog starter (PLANET-1428, refactored under PLANET-1461).
  *
- * 4 components on one canvas:
- * 1. FRONTEND  'AI 换脸-表单' (file + fields + submit)
- * 2. BACKEND   'AI 换脸-处理' (3-step probe stub)
- * 3. BACKEND   'Shopify Connector' (PLANET-1461 — exported, secret-driven)
- * 4. FULLSTACK 'Shopify 商品列表' (server fetch via ctx.callApp + client grid / setup CTA)
- *
- * Connections: 1→2 TRIGGER, 4→3 DATA_FLOW (商品列表 calls connector at runtime).
- *
- * The Shopify connector reads SHOPIFY_ADMIN_TOKEN + SHOPIFY_SHOP_DOMAIN from
- * App.secrets (PLANET-1458). When secrets are missing it returns
- * { ok: false, error: 'NEED_SETUP' } so the FULLSTACK component can render a
- * setup CTA instead of the broken empty state (PLANET-1465).
+ * Creates a usable Shopify product browser starter app. Implementation pieces
+ * stay behind the app shell; users see the app, not platform internals.
  *
  * Core no longer has any Shopify-specific code path (PLANET-1463).
  */
 import type { AppTemplate } from './ecommerce-starter.js';
-
-const FRONTEND_CODE = `import { useState } from 'react';
-
-export function Client({ onSubmit }: { onSubmit?: (data: any) => Promise<any> | void }) {
-  const [file, setFile] = useState<string | null>(null);
-  const [targetFace, setTargetFace] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleFile = (e: any) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setFile(reader.result as string);
-    reader.readAsDataURL(f);
-  };
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    if (!file) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = onSubmit ? await onSubmit({ imageUrl: file, targetFace }) : null;
-      if (res) setResult(res);
-    } catch (err: any) {
-      setError(err.message ?? '处理失败');
-    }
-    setLoading(false);
-  };
-
-  if (result) return (
-    <div style={{ padding: '1rem', fontFamily: 'system-ui' }}>
-      <h2>🎭 处理完成</h2>
-      {result.swappedUrl && <img src={result.swappedUrl} alt="swapped" data-testid="face-swap-result" style={{ width: 240, borderRadius: 8, marginTop: '0.5rem' }} />}
-      <p style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.5rem' }}>provider: {result.provider ?? 'unknown'}</p>
-      <button onClick={() => { setResult(null); setFile(null); }} style={{ marginTop: '0.5rem', padding: '0.25rem 0.75rem', border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}>重新开始</button>
-    </div>
-  );
-
-  return (
-    <form onSubmit={handleSubmit} style={{ padding: '1rem', fontFamily: 'system-ui', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 360 }}>
-      <h2>🎭 AI 换脸 - 上传</h2>
-      <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>原始图片</label>
-      <input type="file" accept="image/*" onChange={handleFile} data-testid="face-swap-file-input" />
-      {file && <img src={file} alt="preview" style={{ width: 160, borderRadius: 8 }} />}
-      <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>目标脸型 (可选)</label>
-      <input
-        name="targetFace"
-        placeholder="e.g. celebrity name"
-        value={targetFace}
-        onChange={e => setTargetFace(e.target.value)}
-        style={{ padding: '0.5rem', border: '1px solid #ccc', borderRadius: 4 }}
-      />
-      {error && <p style={{ color: 'red', fontSize: '0.875rem' }}>{error}</p>}
-      <button
-        type="submit"
-        disabled={!file || loading}
-        data-testid="face-swap-submit-btn"
-        style={{ padding: '0.5rem 1rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', opacity: file && !loading ? 1 : 0.5 }}
-      >
-        {loading ? '处理中...' : '提交换脸'}
-      </button>
-    </form>
-  );
-}
-
-export default Client;
-`;
-
-const BACKEND_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-export default async function run(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('uploadOriginal');
-
-  const imageUrl = input?.imageUrl ?? 'https://placekitten.com/400/400';
-  const targetFace = input?.targetFace ?? 'default';
-
-  await peopleClaw.nodeEntry('callFaceSwapAPI');
-
-  // TODO: v2 接真 provider (Replicate / fal.ai)
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  await peopleClaw.nodeEntry('saveResult');
-
-  return {
-    swappedUrl: imageUrl,
-    faceMatched: true,
-    provider: 'stub-v1',
-    targetFace,
-  };
-}
-`;
 
 /**
  * Shopify Connector (BACKEND, isExported=true) — PLANET-1461 / PLANET-1579.
@@ -178,7 +74,7 @@ export default async function run(input: any, ctx: any) {
     return {
       ok: false,
       error: 'NEED_SETUP',
-      message: '请去 🔐 Secrets tab 配置 SHOPIFY_SHOP_DOMAIN (+ SHOPIFY_ADMIN_TOKEN 或 SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET)',
+      message: 'Connect your Shopify store before loading products.',
     };
   }
 
@@ -188,7 +84,7 @@ export default async function run(input: any, ctx: any) {
     return {
       ok: false,
       error: 'NEED_SETUP',
-      message: '请去 🔐 Secrets tab 配置 SHOPIFY_ADMIN_TOKEN 或 (SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET)',
+      message: 'Connect your Shopify store before loading products.',
     };
   }
 
@@ -337,23 +233,23 @@ export function Client({ data }: { data: any }) {
     const isSetup = data.error === 'NEED_SETUP';
     return (
       <div data-testid="shopify-list-state" data-state={isSetup ? 'need-setup' : 'error'} style={{ padding: '1.5rem', fontFamily: 'system-ui', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
-        <h2>🛍️ Shopify 商品列表</h2>
+        <h2>🛍️ Product Browser</h2>
         {isSetup ? (
           <>
-            <p style={{ color: '#444', margin: '1rem 0' }}>需要先配置 Shopify 凭证才能拉取商品。</p>
+            <p style={{ color: '#444', margin: '1rem 0' }}>Connect your store to load products.</p>
             <button
               data-testid="shopify-setup-cta"
               onClick={() => { try { window.parent.postMessage({ type: 'open-secrets-tab' }, '*'); } catch {} }}
               style={{ padding: '0.75rem 1.5rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 6, fontSize: '1rem', cursor: 'pointer' }}
             >
-              🔐 配置 Shopify (去 Secrets tab)
+              Connect store
             </button>
             <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '1rem' }}>
-              在 🔐 Secrets tab 配置 <code>SHOPIFY_ADMIN_TOKEN</code> 和 <code>SHOPIFY_SHOP_DOMAIN</code>，刷新即可。
+              Add your store credentials in setup, then refresh this app.
             </p>
           </>
         ) : (
-          <p style={{ color: '#c00', margin: '1rem 0' }}>调用 Shopify 失败：{data.error}{data.message ? ' — ' + data.message : ''}</p>
+          <p style={{ color: '#c00', margin: '1rem 0' }}>Store request failed: {data.error}{data.message ? ' — ' + data.message : ''}</p>
         )}
       </div>
     );
@@ -362,8 +258,8 @@ export function Client({ data }: { data: any }) {
   const products = (data && data.products) || [];
   return (
     <div data-testid="shopify-list-state" data-state="ok" style={{ padding: '1rem', fontFamily: 'system-ui' }}>
-      <h2>🛍️ Shopify 商品列表</h2>
-      {products.length === 0 && <p>商品列表为空</p>}
+      <h2>🛍️ Product Browser</h2>
+      {products.length === 0 && <p>No products yet</p>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
         {products.map((p: any) => (
           <div key={p.id} style={{ border: '1px solid #eee', borderRadius: 8, padding: '0.75rem', textAlign: 'center' }}>
@@ -379,38 +275,22 @@ export function Client({ data }: { data: any }) {
 `;
 
 export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
-export const STARTER_APP_CONNECTOR_NAME = 'Shopify Connector';
-export const STARTER_APP_FULLSTACK_NAME = 'Shopify 商品列表';
+export const STARTER_APP_CONNECTOR_NAME = 'Store data source';
+export const STARTER_APP_FULLSTACK_NAME = 'Product Browser';
 
 export const starterAppTemplate: AppTemplate = {
   id: 'starter-app',
-  name: '起步示例 App',
+  name: 'Starter Store App',
   description:
-    'AI 换脸 (表单→后端) + Shopify Connector (secret-driven, exported) + Shopify 商品列表 (调 connector)',
+    'A ready product browser you can adapt for a store or catalog.',
   components: [
-    {
-      name: 'AI 换脸-表单',
-      type: 'FRONTEND',
-      icon: '🎭',
-      code: FRONTEND_CODE,
-      canvasX: 150,
-      canvasY: 200,
-    },
-    {
-      name: 'AI 换脸-处理',
-      type: 'BACKEND',
-      icon: '⚙️',
-      code: BACKEND_CODE,
-      canvasX: 500,
-      canvasY: 200,
-    },
     {
       name: STARTER_APP_CONNECTOR_NAME,
       type: 'BACKEND',
       icon: '🔌',
       code: SHOPIFY_CONNECTOR_CODE,
       canvasX: 100,
-      canvasY: 450,
+      canvasY: 200,
       isExported: true,
     },
     {
@@ -420,12 +300,10 @@ export const starterAppTemplate: AppTemplate = {
       // Will be patched at create time with real {appId, connectorId}.
       code: FULLSTACK_CODE_TEMPLATE,
       canvasX: 450,
-      canvasY: 450,
+      canvasY: 200,
     },
   ],
   connections: [
-    { fromIndex: 0, toIndex: 1, type: 'TRIGGER' },
-    // FULLSTACK (3) DATA_FLOW from connector (2) — visualizes the runtime call.
-    { fromIndex: 2, toIndex: 3, type: 'DATA_FLOW' },
+    { fromIndex: 0, toIndex: 1, type: 'DATA_FLOW' },
   ],
 };

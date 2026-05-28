@@ -1,6 +1,6 @@
 # PeopleClaw Admin — E2E Tests (PLANET-889)
 
-Playwright e2e tests covering auth, workflow editor, and the e-commerce case flow.
+Legacy Playwright e2e notes. Current product-facing checks live under the active test suite and focus on Apps, Build App, and Chat.
 
 ## Prerequisites
 
@@ -40,13 +40,13 @@ pnpm --filter @peopleclaw/admin exec playwright show-report
 
 - `playwright.config.ts` — config (project root)
 - `e2e/auth.spec.ts` — Logto sign-in + nav smoke
-- `e2e/workflow-editor.spec.ts` — open editor, add step, save, reopen
+- Legacy workflow editor specs have been archived; they are not part of the current non-technical App shell.
 - `e2e/case-flow.spec.ts` — full e-commerce case flow (create → human steps → AI → Shopify → done)
 - `e2e/fixtures/auth.ts` — shared auth fixture (signs in once, stores state)
 
 ## CI
 
-GitHub Actions workflow: `.github/workflows/e2e.yml` — runs on push to `main`
+GitHub Actions workflow: the GitHub Actions e2e workflow — runs on push to `main`
 against the deployed admin URL.
 
 ## App Chat mutation smoke (PLANET-1675)

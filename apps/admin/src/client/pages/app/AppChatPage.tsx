@@ -27,7 +27,7 @@ export default function AppChatPage() {
           <AgentChatSurface
             appId={appId}
             emptyTitle="Talk to this App"
-            emptyDescription="Ask for product decisions, component plans, implementation notes, or the next safest action."
+            emptyDescription="Ask for product decisions, app changes, launch notes, or the next safest action."
             inputPlaceholder="Message this App…"
             transport={transport}
           />

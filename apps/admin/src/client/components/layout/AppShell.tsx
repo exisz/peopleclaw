@@ -1,12 +1,4 @@
-/**
- * PLANET-1407: Outer AppShell — used for top-level routes only
- * (Apps / Published / Security / Settings).
- *
- * The legacy `/app/:id` special-case (hide system sidebar when inside an
- * App) is gone: every `/app/:id/*` route is now wrapped by
- * `AppInnerShell` instead of `AppShell`, and there is no remaining
- * Chat/Canvas dual-pane.
- */
+/** Top-level shell for Apps and Settings. */
 import AppTopBar from '../AppTopBar';
 import AppsSidebar from '../AppsSidebar';
 

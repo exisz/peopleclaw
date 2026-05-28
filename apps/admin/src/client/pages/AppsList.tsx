@@ -20,7 +20,7 @@ export default function AppsList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [templates, setTemplates] = useState<{ id: string; name: string; description: string; componentCount: number }[]>([]);
+  const [templates, setTemplates] = useState<{ id: string; name: string; description: string }[]>([]);
 
   useEffect(() => {
     apiFetch('/api/me')
@@ -130,7 +130,7 @@ export default function AppsList() {
                   className="w-full text-left p-3 rounded border border-border hover:bg-muted transition"
                 >
                   <span className="font-medium">{t.name}</span>
-                  <p className="text-xs text-muted-foreground">{t.description} ({t.componentCount} 组件)</p>
+                  <p className="text-xs text-muted-foreground">{t.description}</p>
                 </button>
               ))}
             </div>

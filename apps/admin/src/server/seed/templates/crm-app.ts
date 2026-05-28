@@ -1,7 +1,7 @@
 /**
  * CRM App Template — 第 2 模板 (PLANET-1542)
  *
- * 4 components, connector-free, demos that PeopleClaw is a generic platform.
+ * CRM starter that shows PeopleClaw can produce non-commerce apps.
  * All data lives in ctx.appStore (generic per-App KV — Core-allowed primitive,
  * §1.4 compliant, no SaaS-specific schema).
  *
@@ -289,7 +289,7 @@ export const crmAppTemplate: AppTemplate = {
   id: 'crm-app',
   name: 'CRM 起步示例 App',
   description:
-    '联系人 + 跟进记录 — connector-free 的本地 CRM，证明 PeopleClaw 不是只能做电商',
+    '联系人 + 跟进记录 — ready-to-use CRM starter app',
   components: [
     {
       name: CRM_APP_CONTACT_FORM_NAME,

@@ -24,7 +24,6 @@ templatesRouter.get('/apps/templates', (_req, res) => {
     id: t.id,
     name: t.name,
     description: t.description,
-    componentCount: t.components.length,
   }));
   res.json({ templates: list });
 });

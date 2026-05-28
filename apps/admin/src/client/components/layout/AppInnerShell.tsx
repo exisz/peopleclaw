@@ -1,42 +1,25 @@
 /**
- * PLANET-1742: Living SaaS shell for inside-an-App navigation.
+ * PeopleClaw per-App shell for non-technical users.
  *
- * Single App shell rule:
- *   - Left sidebar is the route source of truth.
- *   - Chat / Canvas / System pages / user-defined component pages are peer
- *     sidebar entries.
- *   - No second top route/tab row is rendered inside page content.
+ * The shell intentionally exposes product/app surfaces only. Runtime component,
+ * canvas, cron, runner, secret, and flow internals remain API-backed platform
+ * details and are not navigation items in the customer UI.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useParams, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useParams } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Boxes,
   MessageSquare,
-  Workflow,
-  Clock,
-  KeyRound,
-  Cpu,
-  Bot,
-  ScrollText,
   ArrowLeft,
-  Puzzle,
-  List,
+  Sparkles,
 } from 'lucide-react';
 import AppTopBar from '../AppTopBar';
 import { cn } from '../../lib/utils';
-import { apiClient } from '../../lib/api';
 
 interface NavItemDef {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   testId: string;
-}
-
-interface ComponentSummary {
-  id: string;
-  name: string;
 }
 
 interface AppInnerShellProps {
@@ -48,37 +31,11 @@ interface AppInnerShellProps {
 export default function AppInnerShell({ title, children }: AppInnerShellProps) {
   const { id } = useParams<{ id: string }>();
   const base = `/app/${id ?? ''}`;
-  const [components, setComponents] = useState<ComponentSummary[]>([]);
-
-  useEffect(() => {
-    if (!id) return;
-    apiClient
-      .get<{ app: { components: ComponentSummary[] } }>(`/api/apps/${id}`)
-      .then(d => setComponents(d.app.components ?? []))
-      .catch(() => setComponents([]));
-  }, [id]);
 
   const appSection: NavItemDef[] = [
-    { to: `${base}/dashboard`, label: 'Dashboard', icon: LayoutDashboard, testId: 'inner-nav-dashboard' },
-    { to: `${base}/canvas`,    label: 'Canvas',    icon: Boxes,           testId: 'inner-nav-canvas' },
-    { to: `${base}/modules`,   label: 'Modules',   icon: List,            testId: 'inner-nav-modules' },
+    { to: `${base}/dashboard`, label: 'Overview', icon: LayoutDashboard, testId: 'inner-nav-dashboard' },
+    { to: `${base}/build`,     label: 'Build App', icon: Sparkles,        testId: 'inner-nav-build' },
     { to: `${base}/chat`,      label: 'Chat',      icon: MessageSquare,   testId: 'inner-nav-chat' },
-  ];
-
-  const componentSection: NavItemDef[] = useMemo(() => components.map(c => ({
-    to: `${base}/components/${c.id}`,
-    label: c.name,
-    icon: Puzzle,
-    testId: `inner-nav-component-${c.id}`,
-  })), [base, components]);
-
-  const systemSection: NavItemDef[] = [
-    { to: `${base}/system/flow`,    label: 'Module Flow', icon: Workflow,    testId: 'inner-nav-system-flow' },
-    { to: `${base}/system/cron`,    label: 'Cron',        icon: Clock,       testId: 'inner-nav-system-cron' },
-    { to: `${base}/system/secrets`, label: 'Secrets',     icon: KeyRound,    testId: 'inner-nav-system-secrets' },
-    { to: `${base}/system/runners`, label: 'Runners',     icon: Cpu,         testId: 'inner-nav-system-runners' },
-    { to: `${base}/system/external-agent`, label: 'Connect Codex', icon: Bot, testId: 'inner-nav-system-external-agent' },
-    { to: `${base}/system/logs`,    label: 'Logs',        icon: ScrollText,  testId: 'inner-nav-system-logs' },
   ];
 
   return (
@@ -87,8 +44,6 @@ export default function AppInnerShell({ title, children }: AppInnerShellProps) {
       <div className="flex flex-1 min-h-0">
         <AppInnerSidebar
           appSection={appSection}
-          componentSection={componentSection}
-          systemSection={systemSection}
           appId={id ?? ''}
         />
         <main
@@ -104,13 +59,9 @@ export default function AppInnerShell({ title, children }: AppInnerShellProps) {
 
 function AppInnerSidebar({
   appSection,
-  componentSection,
-  systemSection,
   appId,
 }: {
   appSection: NavItemDef[];
-  componentSection: NavItemDef[];
-  systemSection: NavItemDef[];
   appId: string;
 }) {
   return (
@@ -131,8 +82,6 @@ function AppInnerSidebar({
 
       <nav className="flex-1 p-2 space-y-4 overflow-y-auto">
         <NavSection label="App" testId="inner-nav-section-app" items={appSection} />
-        <NavSection label="Pages" testId="inner-nav-section-components" items={componentSection} emptyLabel="No custom pages" />
-        <NavSection label="System" testId="inner-nav-section-system" items={systemSection} />
       </nav>
 
       <div className="p-3 border-t border-border text-[10px] text-muted-foreground">
@@ -148,12 +97,10 @@ function NavSection({
   label,
   testId,
   items,
-  emptyLabel,
 }: {
   label: string;
   testId: string;
   items: NavItemDef[];
-  emptyLabel?: string;
 }) {
   return (
     <div data-testid={testId}>
@@ -161,9 +108,7 @@ function NavSection({
         {label}
       </div>
       <div className="space-y-0.5">
-        {items.length === 0 && emptyLabel ? (
-          <div className="px-2 py-1 text-xs text-muted-foreground/70">{emptyLabel}</div>
-        ) : items.map(item => (
+        {items.map(item => (
           <SidebarNavLink key={item.to} item={item} />
         ))}
       </div>

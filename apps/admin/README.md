@@ -8,16 +8,16 @@ Backend: Express + Prisma + Turso (libSQL). Auth: Logto SSO.
 |------|-------------|
 | `/` | Public landing / sign-in entry |
 | `/signin` → `/callback` | Logto OIDC flow |
-| `/dashboard` | Authenticated home |
-| `/workflows` | Workflow editor (React Flow canvas, sidebar of all workflows) |
-| `/workflows/:id` | Specific workflow loaded in the editor |
-| `/cases` | All cases list |
-| `/cases/:id` | Single case detail (P3 placeholder) |
+| `/dashboard` | Authenticated Apps home |
+| `/apps` | App library and starter app picker |
+| `/app/:id/dashboard` | Per-App overview |
+| `/app/:id/build` | App-building guidance surface |
+| `/app/:id/chat` | App chat for iterative changes |
 
 ## Stack
 - UI primitives: shadcn/ui (Radix + Tailwind v4). No DaisyUI.
-- Workflow canvas: `@xyflow/react` 12.x
-- State: local component state + `localStorage` (`peopleclaw-workflows`) — server persistence is P5.
+- User shell: Apps list, per-App overview, Build App, and Chat.
+- State: server-backed App records and per-App chat sessions.
 
 
 ## App Chat model integration
@@ -45,29 +45,16 @@ DeepSeek is not part of the current App Chat/model path. The old `/api/chat` Dee
 
 ## data-testid Convention (for Playwright e2e)
 
-| Element                   | Pattern                                    |
-|---------------------------|--------------------------------------------|
-| Sidebar workflow item     | `sidebar-workflow-{workflowId}`            |
-| Sidebar category          | `sidebar-category-{categoryName}`          |
-| Sidebar search input      | `sidebar-search`                           |
-| Step node (React Flow)    | `step-node-{stepId}`                       |
-| Step status indicator     | `step-status-{stepId}`                     |
-| Step subflow toggle       | `step-action-toggle-{stepId}`              |
-| Subflow group container   | `subflow-group-{label}`                    |
-| Subflow collapse button   | `subflow-collapse`                         |
-| Add step button           | `add-step-button`                          |
-| Add step modal            | `add-step-modal`                           |
-| Step type option          | `step-type-{type}`                         |
-| Detail panel container    | `detail-panel`                             |
-| Detail panel field        | `step-detail-{fieldName}` (e.g. `step-detail-name`, `step-detail-assignee`, `step-detail-description`, `step-detail-estimatedTime`, `step-detail-type`) |
-| Save / Cancel / Delete    | `action-save` / `action-cancel` / `action-delete` |
-| Tab                       | `tab-{name}` (`tab-workflow`, `tab-cases`) |
-| Cases table / grid        | `cases-table`                              |
-| Case row                  | `case-row-{caseId}`                        |
-| Case banner (in canvas)   | `case-banner`                              |
-| Case detail page          | `case-detail-{caseId}`                     |
-| Top-nav workflows link    | `nav-workflows`                            |
-| Top-nav cases link        | `nav-cases`                                |
+| Element | Pattern |
+|---------|---------|
+| Apps list page | `page-apps-list` |
+| App template button | `template-{templateId}` |
+| Per-App overview | `page-app-dashboard` |
+| Build App page | `page-app-build` |
+| App chat page | `page-app-chat` |
+| Inner nav overview | `inner-nav-dashboard` |
+| Inner nav build | `inner-nav-build` |
+| Inner nav chat | `inner-nav-chat` |
 
 ## Build
 ```

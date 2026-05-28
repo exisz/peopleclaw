@@ -116,7 +116,7 @@ export function Client({ data }: { data: any }) {
 export const ecommerceStarterTemplate: AppTemplate = {
   id: 'ecommerce-starter',
   name: '电商起步',
-  description: 'Shopify 商品搜索 + 拉取 + 展示，3 组件联动',
+  description: 'Shopify product search and display starter app',
   components: [
     {
       name: '商品搜索',

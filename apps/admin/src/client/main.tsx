@@ -2,7 +2,7 @@
  * PeopleClaw Living SaaS shell routing.
  *
  * Top-level shell: Apps + Settings.
- * Per-App shell: `/app/:id/{dashboard|canvas|chat|modules|system/...}`.
+ * Per-App shell: `/app/:id/{dashboard|build|chat}`.
  * Runtime soft route: `/apps/:appId/*` resolves App deployment artifacts.
  */
 import { StrictMode } from 'react';
@@ -21,16 +21,8 @@ import Settings from './pages/Settings';
 import AppShell from './components/layout/AppShell';
 import AppInnerShell from './components/layout/AppInnerShell';
 import AppDashboardPage from './pages/app/AppDashboardPage';
-import AppCanvasPage from './pages/app/AppCanvasPage';
+import AppBuildPage from './pages/app/AppBuildPage';
 import AppChatPage from './pages/app/AppChatPage';
-import AppModuleFlowPage from './pages/app/AppModuleFlowPage';
-import AppCronPage from './pages/app/AppCronPage';
-import AppSecretsPage from './pages/app/AppSecretsPage';
-import AppRunnersPage from './pages/app/AppRunnersPage';
-import AppLogsPage from './pages/app/AppLogsPage';
-import AppComponentPage from './pages/app/AppComponentPage';
-import AppModulesPage from './pages/app/AppModulesPage';
-import AppExternalAgentPage from './pages/app/AppExternalAgentPage';
 import UserAppRuntimePage from './pages/app/UserAppRuntimePage';
 
 createRoot(document.getElementById('root')!).render(
@@ -47,18 +39,14 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/settings" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
           <Route path="/settings/:tab" element={<ErrorBoundary><AppShell title="Settings"><Settings /></AppShell></ErrorBoundary>} />
 
-          <Route path="/app/:id" element={<Navigate to="canvas" replace />} />
-          <Route path="/app/:id/dashboard" element={<ErrorBoundary><AppInnerShell title="Dashboard"><AppDashboardPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/canvas" element={<ErrorBoundary><AppInnerShell title="Canvas"><AppCanvasPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/modules" element={<ErrorBoundary><AppInnerShell title="Modules"><AppModulesPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id" element={<Navigate to="dashboard" replace />} />
+          <Route path="/app/:id/dashboard" element={<ErrorBoundary><AppInnerShell title="Overview"><AppDashboardPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/build" element={<ErrorBoundary><AppInnerShell title="Build App"><AppBuildPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/chat" element={<ErrorBoundary><AppInnerShell title="Chat"><AppChatPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/components/:componentId" element={<ErrorBoundary><AppInnerShell title="App Page"><AppComponentPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/flow" element={<ErrorBoundary><AppInnerShell title="Module Flow"><AppModuleFlowPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/cron" element={<ErrorBoundary><AppInnerShell title="Cron"><AppCronPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/secrets" element={<ErrorBoundary><AppInnerShell title="Secrets"><AppSecretsPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/runners" element={<ErrorBoundary><AppInnerShell title="Runners"><AppRunnersPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/external-agent" element={<ErrorBoundary><AppInnerShell title="Connect Codex"><AppExternalAgentPage /></AppInnerShell></ErrorBoundary>} />
-          <Route path="/app/:id/system/logs" element={<ErrorBoundary><AppInnerShell title="Logs"><AppLogsPage /></AppInnerShell></ErrorBoundary>} />
+          <Route path="/app/:id/canvas" element={<Navigate to="../dashboard" replace />} />
+          <Route path="/app/:id/modules" element={<Navigate to="../build" replace />} />
+          <Route path="/app/:id/components/:componentId" element={<Navigate to="../../build" replace />} />
+          <Route path="/app/:id/system/*" element={<Navigate to="../build" replace />} />
 
           <Route path="/app" element={<Navigate to="/apps" replace />} />
           <Route path="/dashboard" element={<Navigate to="/apps" replace />} />
