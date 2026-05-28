@@ -42,7 +42,7 @@ appsRouter.post('/apps', requireAuth, requireTenant, async (req, res) => {
 appsRouter.post('/apps/:appId/components', requireAuth, requireTenant, async (req, res) => {
   const r = req as unknown as TenantedRequest;
   const prisma = getPrisma();
-  const { name, type, code, runtime, canvasX, canvasY, isExported } = req.body ?? {};
+  const { name, type, code, runtime, isExported } = req.body ?? {};
   if (!name || typeof name !== 'string') {
     res.status(400).json({ error: 'name is required' });
     return;
@@ -65,15 +65,13 @@ appsRouter.post('/apps/:appId/components', requireAuth, requireTenant, async (re
       type: type as any,
       runtime: (runtime as any) ?? 'PEOPLECLAW_CLOUD',
       code: typeof code === 'string' ? code : '',
-      canvasX: typeof canvasX === 'number' ? canvasX : 0,
-      canvasY: typeof canvasY === 'number' ? canvasY : 0,
       isExported: Boolean(isExported),
     },
   });
   res.json({ component });
 });
 
-// GET /api/apps/:id — get app with components + connections
+// GET /api/apps/:id — get app with code components
 appsRouter.get('/apps/:id', requireAuth, requireTenant, async (req, res) => {
   const r = req as unknown as TenantedRequest;
   const prisma = getPrisma();
@@ -81,7 +79,6 @@ appsRouter.get('/apps/:id', requireAuth, requireTenant, async (req, res) => {
     where: { id: req.params.id, tenantId: r.tenant.id },
     include: {
       components: { orderBy: { createdAt: 'asc' } },
-      connections: { orderBy: { createdAt: 'asc' } },
     },
   });
   if (!app) {

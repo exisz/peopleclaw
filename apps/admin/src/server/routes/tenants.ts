@@ -16,10 +16,7 @@ tenantsRouter.post('/tenants', requireAuth, async (req, res) => {
     data: { name, slug: finalSlug },
   });
   await prisma.tenantUser.create({ data: { tenantId: t.id, userId: r.user.id, role: 'owner' } });
-  // Users now choose workflows from the template library (/templates).
-  // try {
-  // } catch (err) {
-  //   console.error('[tenants] starter workflow provisioning failed for', t.id, err);
+  // Users choose starter apps from the template library.
   // }
   res.json({ tenant: { id: t.id, name: t.name, slug: t.slug, plan: t.plan, credits: t.credits, role: 'owner' } });
 });

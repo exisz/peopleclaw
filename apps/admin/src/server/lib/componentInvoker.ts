@@ -8,14 +8,13 @@
  *   - ctx.callApp helper injected into running components
  *
  * Call modes:
- *   - withProbe(component, input, probe) → awaitable result; emits SSE probe events
- *     via the supplied probe (when running inside createSSEStream)
- *   - invokeSync(component, input) → awaitable result; collects probes into an array
- *     (no streaming) — used by /api/apps/:targetAppId/invoke/:componentId and
+ *   - withProgress(component, input, progress) → awaitable result; emits SSE progress events
+ *     via the supplied progress (when running inside createSSEStream)
+ *   - invokeSync(component, input) → awaitable result; used by /api/apps/:targetAppId/invoke/:componentId and
  *     ctx.callApp.
  */
 import { transformSync } from 'esbuild';
-import type { SSEProbe } from '@peopleclaw/sdk/sse';
+import type { SSEProgress } from '@peopleclaw/sdk/sse';
 import { decryptSecretsBag } from './secretCrypto.js';
 import { buildUpdateAppSecretsCtx } from './appSecretsCtx.js';
 import type { Component, App } from '../generated/prisma/index.js';
@@ -104,9 +103,9 @@ function buildSecretsBag(component: ComponentWithApp): Record<string, string> {
   }
 }
 
-function makeAllowedGlobals(probe: SSEProbe): Record<string, unknown> {
+function makeAllowedGlobals(progress: SSEProgress): Record<string, unknown> {
   return {
-    peopleClaw: probe,
+    peopleClaw: progress,
     fetch: globalThis.fetch,
     console,
     JSON,
@@ -147,13 +146,13 @@ function makeAllowedGlobals(probe: SSEProbe): Record<string, unknown> {
 }
 
 /**
- * Run a component, streaming probes through the supplied SSE probe.
+ * Run a component with optional progress events.
  * Throws on failure; caller is expected to be inside createSSEStream.
  */
-export async function runComponentWithProbe(
+export async function runComponentWithProgress(
   component: ComponentWithApp,
   input: any,
-  probe: SSEProbe,
+  progress: SSEProgress,
   ext: InvokeContextExtensions = {},
 ): Promise<unknown> {
   const { factory } = compileComponent(component);
@@ -169,7 +168,7 @@ export async function runComponentWithProbe(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
   try {
-    const exports = factory(makeAllowedGlobals(probe), controller.signal);
+    const exports = factory(makeAllowedGlobals(progress), controller.signal);
     const runFn = (exports as any).default ?? (exports as any).run ?? (exports as any).server;
     if (typeof runFn !== 'function') {
       throw new Error('Component has no default, "run", or "server" export');
@@ -195,26 +194,20 @@ export async function runComponentWithProbe(
   }
 }
 
-export interface SyncProbeRecord {
-  node: string;
-  ts: number;
-}
-
 /**
- * Synchronous (non-streaming) invocation. Returns { result, probes }.
+ * Synchronous (non-streaming) invocation. Returns { result }.
  * Used by /api/apps/:targetAppId/invoke/:componentId and ctx.callApp.
  */
 export async function runComponentSync(
   component: ComponentWithApp,
-  input: any,
+  input: unknown,
   ext: InvokeContextExtensions = {},
-): Promise<{ result: unknown; probes: SyncProbeRecord[] }> {
-  const probes: SyncProbeRecord[] = [];
-  const probe: SSEProbe = {
-    async nodeEntry(node: string) {
-      probes.push({ node, ts: Date.now() });
+): Promise<{ result: unknown }> {
+  const progress: SSEProgress = {
+    async step(_name: string) {
+      // Code execution progress is event-based, not a visual builder model.
     },
   };
-  const result = await runComponentWithProbe(component, input, probe, ext);
-  return { result, probes };
+  const result = await runComponentWithProgress(component, input, progress, ext);
+  return { result };
 }

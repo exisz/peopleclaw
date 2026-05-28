@@ -12,13 +12,13 @@
  *   4. FULLSTACK '跟进时间线'   — server reads, client renders timeline
  *
  * Each FULLSTACK exports BOTH `server` (display) AND `default` (write handler).
- * Form's onSubmit hits TRIGGER target's /run endpoint, which invokes the
+ * Form's onSubmit hits backend function's /run endpoint, which invokes the
  * `default` export → writes to ctx.appStore. Reopening the FULLSTACK tab
  * re-fetches /server → fresh data appears.
  *
  * Connections:
- *   [联系人表单] ──TRIGGER──▶ [联系人列表]
- *   [跟进记录表单] ──TRIGGER──▶ [跟进时间线]
+ *   [联系人表单] ──submit──▶ [联系人列表]
+ *   [跟进记录表单] ──submit──▶ [跟进时间线]
  */
 import type { AppTemplate } from './ecommerce-starter.js';
 
@@ -70,16 +70,12 @@ export default Client;
 `;
 
 /**
- * FULLSTACK '联系人列表' — server reads + default writes (TRIGGER target).
+ * FULLSTACK '联系人列表' — server reads + default writes (backend function).
  */
-const CONTACT_LIST_FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-// --- WRITE PATH (TRIGGER target — invoked by form's onSubmit via /run) ---
+const CONTACT_LIST_FULLSTACK_CODE = `// --- WRITE PATH (backend function — invoked by form's onSubmit via /run) ---
 export default async function writeContact(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('validate');
   const name = (input?.name || '').trim();
   if (!name) return { ok: false, error: 'NAME_REQUIRED' };
-  await peopleClaw.nodeEntry('persist');
   const tags = (input?.tags || '').toString()
     .split(',').map((s: string) => s.trim()).filter(Boolean);
   const row = ctx?.appStore
@@ -91,13 +87,11 @@ export default async function writeContact(input: any, ctx: any) {
         tags,
       })
     : { id: 'noop', name };
-  await peopleClaw.nodeEntry('done');
   return { ok: true, id: row.id, name: row.name };
 }
 
 // --- READ PATH (display — invoked by /server) ---
 export async function server(ctx: any) {
-  await peopleClaw.nodeEntry('loadContacts');
   const contacts = ctx?.appStore ? ctx.appStore.list('contacts') : [];
   const followups = ctx?.appStore ? ctx.appStore.list('followups') : [];
   const lastByContact = new Map<string, number>();
@@ -105,7 +99,6 @@ export async function server(ctx: any) {
     const prev = lastByContact.get(f.contactId) || 0;
     if (f.createdAt > prev) lastByContact.set(f.contactId, f.createdAt);
   }
-  await peopleClaw.nodeEntry('done');
   return {
     ok: true,
     contacts: contacts.map((c: any) => ({
@@ -207,17 +200,13 @@ export default Client;
 `;
 
 /**
- * FULLSTACK '跟进时间线' — server reads + default writes (TRIGGER target).
+ * FULLSTACK '跟进时间线' — server reads + default writes (backend function).
  */
-const TIMELINE_FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-// --- WRITE PATH ---
+const TIMELINE_FULLSTACK_CODE = `// --- WRITE PATH ---
 export default async function writeFollowup(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('validate');
   const contactId = (input?.contactId || '').trim();
   if (!contactId) return { ok: false, error: 'CONTACT_ID_REQUIRED' };
   const type = ['call', 'email', 'meeting'].includes(input?.type) ? input.type : 'call';
-  await peopleClaw.nodeEntry('persist');
   const row = ctx?.appStore
     ? ctx.appStore.insert('followups', {
         contactId,
@@ -225,19 +214,16 @@ export default async function writeFollowup(input: any, ctx: any) {
         note: (input?.note || '').toString(),
       })
     : { id: 'noop' };
-  await peopleClaw.nodeEntry('done');
   return { ok: true, id: row.id };
 }
 
 // --- READ PATH ---
 export async function server(ctx: any) {
-  await peopleClaw.nodeEntry('loadFollowups');
   const followups = ctx?.appStore ? ctx.appStore.list('followups') : [];
   const contacts = ctx?.appStore ? ctx.appStore.list('contacts') : [];
   const nameById = new Map<string, string>();
   for (const c of contacts) nameById.set(c.id, c.name);
   const sorted = [...followups].sort((a: any, b: any) => b.createdAt - a.createdAt);
-  await peopleClaw.nodeEntry('done');
   return {
     ok: true,
     items: sorted.map((f: any) => ({
@@ -296,36 +282,24 @@ export const crmAppTemplate: AppTemplate = {
       type: 'FRONTEND',
       icon: '👤',
       code: CONTACT_FORM_CODE,
-      canvasX: 150,
-      canvasY: 150,
     },
     {
       name: CRM_APP_CONTACT_LIST_NAME,
       type: 'FULLSTACK',
       icon: '📇',
       code: CONTACT_LIST_FULLSTACK_CODE,
-      canvasX: 550,
-      canvasY: 150,
     },
     {
       name: CRM_APP_FOLLOWUP_FORM_NAME,
       type: 'FRONTEND',
       icon: '📞',
       code: FOLLOWUP_FORM_CODE,
-      canvasX: 150,
-      canvasY: 450,
     },
     {
       name: CRM_APP_TIMELINE_NAME,
       type: 'FULLSTACK',
       icon: '🕒',
       code: TIMELINE_FULLSTACK_CODE,
-      canvasX: 550,
-      canvasY: 450,
     },
-  ],
-  connections: [
-    { fromIndex: 0, toIndex: 1, type: 'TRIGGER' }, // 联系人表单 → 联系人列表
-    { fromIndex: 2, toIndex: 3, type: 'TRIGGER' }, // 跟进记录表单 → 跟进时间线
   ],
 };

@@ -79,7 +79,7 @@ Idempotent. Ensures a canonical acceptance state:
   (set `LOGTO_M2M_APP_ID` + `LOGTO_M2M_APP_SECRET`; falls back to placeholder
   logtoId if M2M creds aren't present so DB seeding still works)
 - Tenant slug `acceptance` with the demo user as `owner`
-- Workflows `shopify-auto-smoketest` (3 nodes) and `shopify-product-listing-demo` (5 nodes)
+- Starter apps are code functions/routes; no visual builder is exposed.
 - 12 step templates (delegates to `seed-step-templates.mjs`)
 - Shopify Connection (copies `client_id`/`client_secret` from default tenant if present)
 

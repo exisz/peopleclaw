@@ -7,7 +7,7 @@
  *   - target Component must have isExported = true
  *   - body is forwarded as input to the component
  *
- * Returns { ok: true, result, probes } on success, { ok: false, error } on failure.
+ * Returns { ok: true, result } on success, { ok: false, error } on failure.
  */
 import { Router } from 'express';
 import { getPrisma } from '../lib/prisma.js';
@@ -50,12 +50,12 @@ appInvokeRouter.post(
 
     try {
       const callApp = buildCallAppCtx(r.tenant.id);
-      const { result, probes } = await runComponentSync(
+      const { result } = await runComponentSync(
         component as ComponentWithApp,
         req.body ?? {},
         { extraCtx: { callApp, input: req.body ?? {} } },
       );
-      res.json({ ok: true, result, probes });
+      res.json({ ok: true, result });
     } catch (err: any) {
       res.status(500).json({ ok: false, error: err?.message ?? 'invoke failed' });
     }

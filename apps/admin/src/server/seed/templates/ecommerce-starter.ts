@@ -1,42 +1,30 @@
 /**
- * Ecommerce Starter — 电商起步 预制 App template (PLANET-1422)
+ * Ecommerce Starter — form + backend functions.
  *
- * Creates 3 components + 2 connections that demonstrate a real
- * Shopify product listing flow using PEOPLECLAW_CLOUD runtime.
+ * Code/functions/routes are the primitive; there is no graph, layout, or
+ * visual workflow model in starter apps.
  */
 
-import type { ComponentType, ConnectionType } from '../../generated/prisma/index.js';
+import type { ComponentType } from '../../generated/prisma/index.js';
 
 export interface TemplateComponent {
   name: string;
   type: ComponentType;
   icon: string;
   code: string;
-  canvasX: number;
-  canvasY: number;
-  /** PLANET-1461: when true, component is callable via ctx.callApp from sibling components. */
+  /** PLANET-1461: when true, component is callable via ctx.callApp from sibling functions. */
   isExported?: boolean;
 }
 
-export interface TemplateConnection {
-  fromIndex: number; // index into components array
-  toIndex: number;
-  type: ConnectionType;
-}
 
 export interface AppTemplate {
   id: string;
   name: string;
   description: string;
   components: TemplateComponent[];
-  connections: TemplateConnection[];
 }
 
-const BACKEND_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-export default async function run(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('loadConnection');
-  await peopleClaw.nodeEntry('fetchProducts');
+const BACKEND_CODE = `export default async function run(input: any, ctx: any) {
 
   const shop = ctx.env.SHOPIFY_DEV_SHOP;
   const token = ctx.env.SHOPIFY_DEV_ADMIN_TOKEN;
@@ -46,8 +34,6 @@ export default async function run(input: any, ctx: any) {
     headers: { 'X-Shopify-Access-Token': token },
   });
   const data = await res.json();
-
-  await peopleClaw.nodeEntry('done');
   return {
     products: (data.products ?? []).map((p: any) => ({
       id: p.id,
@@ -59,22 +45,15 @@ export default async function run(input: any, ctx: any) {
 }
 `;
 
-const FRONTEND_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-export default async function run(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('renderForm');
+const FRONTEND_CODE = `export default async function run(input: any, ctx: any) {
   // Frontend search form — sends query downstream
   const query = input?.query ?? '';
-  await peopleClaw.nodeEntry('done');
   return { query };
 }
 `;
 
-const FULLSTACK_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-// --- SERVER ---
+const FULLSTACK_CODE = `// --- SERVER ---
 export async function server(ctx: any) {
-  await peopleClaw.nodeEntry('fetchProducts');
   const shop = ctx.env.SHOPIFY_DEV_SHOP;
   const token = ctx.env.SHOPIFY_DEV_ADMIN_TOKEN;
   const url = \`https://\${shop}/admin/api/2024-10/products.json?limit=20\`;
@@ -82,7 +61,6 @@ export async function server(ctx: any) {
     headers: { 'X-Shopify-Access-Token': token },
   });
   const data = await res.json();
-  await peopleClaw.nodeEntry('done');
   return {
     products: (data.products ?? []).map((p: any) => ({
       id: p.id,
@@ -123,28 +101,18 @@ export const ecommerceStarterTemplate: AppTemplate = {
       type: 'FRONTEND',
       icon: '🔍',
       code: FRONTEND_CODE,
-      canvasX: 100,
-      canvasY: 200,
     },
     {
       name: 'Shopify 商品列表',
       type: 'BACKEND',
       icon: '🛍️',
       code: BACKEND_CODE,
-      canvasX: 400,
-      canvasY: 200,
     },
     {
       name: '商品列表卡片',
       type: 'FULLSTACK',
       icon: '📋',
       code: FULLSTACK_CODE,
-      canvasX: 700,
-      canvasY: 200,
     },
-  ],
-  connections: [
-    { fromIndex: 0, toIndex: 1, type: 'TRIGGER' },
-    { fromIndex: 1, toIndex: 2, type: 'DATA_FLOW' },
   ],
 };

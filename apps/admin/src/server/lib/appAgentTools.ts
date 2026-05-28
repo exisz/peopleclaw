@@ -51,8 +51,6 @@ export const appAgentTools: Tool[] = [
       inputSchema: { type: 'string', description: 'Optional JSON schema string for inputs.' },
       outputSchema: { type: 'string', description: 'Optional JSON schema string for outputs.' },
       icon: { type: 'string', maxLength: 40 },
-      canvasX: { type: 'number' },
-      canvasY: { type: 'number' },
       isExported: { type: 'boolean', description: 'Whether this component is exposed in the app shell. Defaults true for pages, false otherwise.' },
     }, ['kind', 'name']),
   },
@@ -66,8 +64,6 @@ export const appAgentTools: Tool[] = [
       inputSchema: { type: 'string' },
       outputSchema: { type: 'string' },
       icon: { type: 'string', maxLength: 40 },
-      canvasX: { type: 'number' },
-      canvasY: { type: 'number' },
       isExported: { type: 'boolean' },
     }, ['componentId']),
   },
@@ -93,8 +89,6 @@ function sanitizeComponent(component: any, includeSourcePreview = false): Record
     runtime: component.runtime,
     isExported: component.isExported,
     icon: component.icon ?? undefined,
-    canvasX: component.canvasX,
-    canvasY: component.canvasY,
     hasInputSchema: Boolean(component.inputSchema),
     hasOutputSchema: Boolean(component.outputSchema),
     sourceLength: typeof component.code === 'string' ? component.code.length : 0,
@@ -142,9 +136,8 @@ async function runTool(ctx: AppAgentToolContext, name: string, args: Record<stri
   const app = await requireScopedApp(ctx);
 
   if (name === 'inspect_current_app') {
-    const [componentCount, connectionCount, scheduledTaskCount, storeRecordCount] = await Promise.all([
+    const [componentCount, scheduledTaskCount, storeRecordCount] = await Promise.all([
       prisma.component.count({ where: { appId: app.id } }),
-      prisma.componentConnection.count({ where: { appId: app.id } }),
       prisma.scheduledTask.count({ where: { appId: app.id } }),
       prisma.appStoreRecord.count({ where: { tenantId: ctx.tenantId, appId: app.id } }),
     ]);
@@ -156,9 +149,9 @@ async function runTool(ctx: AppAgentToolContext, name: string, args: Record<stri
         createdAt: app.createdAt.toISOString(),
         updatedAt: app.updatedAt.toISOString(),
       },
-      counts: { components: componentCount, connections: connectionCount, scheduledTasks: scheduledTaskCount, appStoreRecords: storeRecordCount },
+      counts: { components: componentCount, scheduledTasks: scheduledTaskCount, appStoreRecords: storeRecordCount },
     };
-    return { summary: `Inspected app “${app.name}”: ${componentCount} components, ${connectionCount} connections.`, result };
+    return { summary: `Inspected app “${app.name}”: ${componentCount} code components.`, result };
   }
 
   if (name === 'list_app_modules') {
@@ -193,8 +186,6 @@ async function runTool(ctx: AppAgentToolContext, name: string, args: Record<stri
         inputSchema: safeJsonSchemaText(args.inputSchema, 'inputSchema'),
         outputSchema: safeJsonSchemaText(args.outputSchema, 'outputSchema'),
         icon: typeof args.icon === 'string' ? args.icon.slice(0, 40) : undefined,
-        canvasX: typeof args.canvasX === 'number' ? Math.trunc(args.canvasX) : 0,
-        canvasY: typeof args.canvasY === 'number' ? Math.trunc(args.canvasY) : 0,
         isExported: typeof args.isExported === 'boolean' ? args.isExported : kind === 'page',
       },
     });
@@ -221,14 +212,6 @@ async function runTool(ctx: AppAgentToolContext, name: string, args: Record<stri
     if (args.inputSchema !== undefined) data.inputSchema = safeJsonSchemaText(args.inputSchema, 'inputSchema');
     if (args.outputSchema !== undefined) data.outputSchema = safeJsonSchemaText(args.outputSchema, 'outputSchema');
     if (args.icon !== undefined) data.icon = typeof args.icon === 'string' && args.icon.trim() ? args.icon.slice(0, 40) : null;
-    if (args.canvasX !== undefined) {
-      if (typeof args.canvasX !== 'number') throw new Error('canvasX must be a number');
-      data.canvasX = Math.trunc(args.canvasX);
-    }
-    if (args.canvasY !== undefined) {
-      if (typeof args.canvasY !== 'number') throw new Error('canvasY must be a number');
-      data.canvasY = Math.trunc(args.canvasY);
-    }
     if (args.isExported !== undefined) {
       if (typeof args.isExported !== 'boolean') throw new Error('isExported must be a boolean');
       data.isExported = args.isExported;

@@ -23,7 +23,6 @@ export const TID = {
 
   // Tabs
   tabComponentDetail: 'tab-component-detail',
-  tabFlowGraph: 'tab-flow-graph',
 
   // Detail panel
   detailMetaName: 'detail-meta-name',
@@ -32,8 +31,6 @@ export const TID = {
   detailSubTabPreview: 'detail-sub-tab-run',
   detailSubTabRun: 'detail-sub-tab-run',
   detailSubTabCode: 'detail-sub-tab-code',
-  detailProbeStep: (nodeName: string) => `detail-probe-step-${nodeName}`,
-  detailProbeExpected: (nodeName: string) => `detail-probe-expected-${nodeName}`,
   detailResultJson: 'detail-result-json',
   detailFullstackPreview: 'detail-fullstack-preview',
 

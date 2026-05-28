@@ -27,7 +27,7 @@ describe('Starter app template safety', () => {
     }
   });
 
-  it('TC-PC-2201 keeps the store integration sidecar wired to a renderable product list', () => {
+  it('TC-PC-2201 keeps the starter as code functions, not a graph/workflow', () => {
     const connectorIndex = starterAppTemplate.components.findIndex(c => c.name === STARTER_APP_CONNECTOR_NAME);
     const fullstackIndex = starterAppTemplate.components.findIndex(c => c.name === STARTER_APP_FULLSTACK_NAME);
     assert.notEqual(connectorIndex, -1, 'starter app includes store data source');
@@ -40,10 +40,9 @@ describe('Starter app template safety', () => {
     assert.equal(fullstack.type, 'FULLSTACK');
     assert.match(fullstack.code, /__CONNECTOR_ID__/);
 
-    assert.ok(
-      starterAppTemplate.connections.some(c => c.fromIndex === connectorIndex && c.toIndex === fullstackIndex && c.type === 'DATA_FLOW'),
-      'store data source is wired to the product browser',
-    );
+    assert.equal('connections' in starterAppTemplate, false);
+    assert.doesNotMatch(JSON.stringify(starterAppTemplate), /canvas|workflow|graph|probe|DATA_FLOW|TRIGGER/i);
+
   });
 
   it('TC-PC-2202 keeps Shopify setup out of global Settings', () => {

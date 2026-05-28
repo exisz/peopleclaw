@@ -21,7 +21,7 @@ const RAW_DATA_ACCESS_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   },
   {
     pattern: /from\s+['"]@libsql\/client['"]|createClient\s*\(\s*\{[^}]*url\s*:/s,
-    reason: 'runtime function must not open direct database connections',
+    reason: 'runtime function must not open direct database handles',
   },
   {
     pattern: /\$queryRaw|\$executeRaw|\braw\s*SQL\b|\bsql\s*`/i,

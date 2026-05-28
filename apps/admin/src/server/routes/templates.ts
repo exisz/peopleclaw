@@ -9,7 +9,6 @@ import {
   STARTER_APP_FULLSTACK_NAME,
 } from '../seed/templates/starter-app.js';
 import { crmAppTemplate } from '../seed/templates/crm-app.js';
-import { distillProbes } from '../compiler/distill-probes.js';
 
 export const templatesRouter = Router();
 
@@ -46,7 +45,7 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
 
   const prisma = getPrisma();
 
-  // Create app + components + connections in a transaction
+  // Create app + code functions in a transaction
   const app = await prisma.$transaction(async (tx) => {
     const newApp = await tx.app.create({
       data: {
@@ -57,7 +56,7 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
       },
     });
 
-    // First pass: create non-FULLSTACK components so we know the connector id
+    // First pass: create non-FULLSTACK code functions so we know the connector id
     // before we patch the FULLSTACK code.
     const componentIds: (string | null)[] = template.components.map(() => null);
     let connectorId: string | null = null;
@@ -65,9 +64,6 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
     for (let i = 0; i < template.components.length; i++) {
       const comp = template.components[i]!;
       if (comp.type === 'FULLSTACK') continue; // defer
-      const probes = comp.type === 'BACKEND'
-        ? JSON.stringify(distillProbes(comp.code))
-        : null;
       const created = await tx.component.create({
         data: {
           appId: newApp.id,
@@ -76,9 +72,6 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
           runtime: 'PEOPLECLAW_CLOUD',
           icon: comp.icon,
           code: comp.code,
-          canvasX: comp.canvasX,
-          canvasY: comp.canvasY,
-          probes,
           isExported: Boolean(comp.isExported),
         },
       });
@@ -99,7 +92,6 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
           .replace(/__APP_ID__/g, newApp.id)
           .replace(/__CONNECTOR_ID__/g, connectorId ?? '');
       }
-      const probes = JSON.stringify(distillProbes(code));
       const created = await tx.component.create({
         data: {
           appId: newApp.id,
@@ -108,25 +100,10 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
           runtime: 'PEOPLECLAW_CLOUD',
           icon: comp.icon,
           code,
-          canvasX: comp.canvasX,
-          canvasY: comp.canvasY,
-          probes,
           isExported: Boolean(comp.isExported),
         },
       });
       componentIds[i] = created.id;
-    }
-
-    // Create connections
-    for (const conn of template.connections) {
-      await tx.componentConnection.create({
-        data: {
-          appId: newApp.id,
-          fromComponentId: componentIds[conn.fromIndex]!,
-          toComponentId: componentIds[conn.toIndex]!,
-          type: conn.type,
-        },
-      });
     }
 
     return newApp;

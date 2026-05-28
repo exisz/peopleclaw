@@ -1,11 +1,19 @@
-// PLANET-1408: image-storage stub — old implementation removed with workflow cleanup
-// Re-implement when Stage 2 needs image uploads
+// PLANET-1408: minimal image storage adapter retained for upload route compatibility.
+import { randomUUID } from 'node:crypto';
+
+export interface StoredImage {
+  url: string;
+  key: string;
+}
 
 export const imageStorage = {
-  async upload(_file: { filename?: string; buffer: Buffer; contentType?: string; originalname?: string; mimetype?: string }): Promise<{ url: string; key: string }> {
-    throw new Error('Image storage not configured (PLANET-1408 cleanup)');
+  async upload(file: { filename: string; buffer: Buffer; contentType: string }): Promise<StoredImage> {
+    const key = `${randomUUID()}-${file.filename}`;
+    // UploadThing is the production path; this fallback keeps the legacy direct
+    // upload API buildable without reintroducing visual-builder internals.
+    return { key, url: `data:${file.contentType};base64,${file.buffer.toString('base64')}` };
   },
-  async delete(_key: string) {
-    // no-op
+  async delete(_key: string): Promise<void> {
+    return;
   },
 };

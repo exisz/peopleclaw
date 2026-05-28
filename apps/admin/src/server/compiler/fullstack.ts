@@ -2,14 +2,12 @@
  * Fullstack compiler — compiles a .fullstack.tsx source into:
  * 1. serverHandler (ESM string)
  * 2. clientBundle (ESM string for browser)
- * 3. probes (JSON object)
  * (PLANET-1435: React externalized → esm.sh CDN, no resolveDir needed)
  */
 
 import { buildSync, transformSync } from 'esbuild';
 import { extractExports } from './extract-exports.js';
 import { injectGlue } from './inject-glue.js';
-import { distillProbes } from './distill-probes.js';
 import { rewriteReactImports } from './rewrite-react-imports.js';
 
 // process.cwd() = monorepo root where node_modules lives
@@ -17,7 +15,6 @@ import { rewriteReactImports } from './rewrite-react-imports.js';
 export interface CompileResult {
   serverHandler: string;
   clientBundle: string;
-  probes: { nodes: string[]; order: string[] };
   compiledAt: string;
 }
 
@@ -26,7 +23,7 @@ export function compileFullstack(source: string, componentId: string): CompileRe
 
   // Build server handler — strip SDK import, inline peopleClaw stub
   const sdkStub = `
-const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] enter ' + node + ' @ ' + Date.now()); } };
+const peopleClaw = { async step(name) { console.log('[peopleclaw:step] ' + name + ' @ ' + Date.now()); } };
 `;
   // Remove import lines that reference @peopleclaw/sdk
   const serverImports = imports.split('\n').filter(l => !l.includes('@peopleclaw/sdk')).join('\n');
@@ -56,13 +53,9 @@ const peopleClaw = { async nodeEntry(node) { console.log('[peopleclaw:probe] ent
   });
   const clientBundle = rewriteReactImports(clientBuildResult.outputFiles[0].text);
 
-  // Extract probes
-  const probes = distillProbes(source);
-
   return {
     serverHandler,
     clientBundle,
-    probes,
     compiledAt: new Date().toISOString(),
   };
 }

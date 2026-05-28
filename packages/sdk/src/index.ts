@@ -1,17 +1,16 @@
-export type { ProbeEvent, ResultEvent, ErrorEvent, SSEEvent } from './types';
+export type { ProgressEvent, ResultEvent, ErrorEvent, SSEEvent } from './types';
 
-export interface PeopleClawProbe {
-  nodeEntry(node: string): Promise<void>;
+export interface PeopleClawRuntime {
+  step(name: string): Promise<void>;
 }
 
-class PeopleClawInstance implements PeopleClawProbe {
-  async nodeEntry(node: string): Promise<void> {
-    // Standalone probe — logs for now, future: report to collector
-    console.log(`[peopleclaw:probe] enter ${node} @ ${Date.now()}`);
+class PeopleClawInstance implements PeopleClawRuntime {
+  async step(name: string): Promise<void> {
+    console.log(`[peopleclaw:step] ${name} @ ${Date.now()}`);
   }
 }
 
-export const peopleClaw: PeopleClawProbe = new PeopleClawInstance();
+export const peopleClaw: PeopleClawRuntime = new PeopleClawInstance();
 
 // Fullstack component definition
 export interface FullstackDefinition {

@@ -28,7 +28,6 @@ export async function signIn(page: Page) {
 
   // Back in app — wait for app page
   await page.waitForURL(/\/app/, { timeout: 30_000 });
-  // Dashboard has nav-cases (small header); Workflows has nav-workflows.
   // Just check we're in the app (not auth page) by confirming body has loaded.
   await page.waitForLoadState('networkidle', { timeout: 15_000 });
   await expect(page.locator('body')).not.toContainText(/sign.?in/i, { timeout: 5_000 }).catch(() => {});

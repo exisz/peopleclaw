@@ -44,7 +44,6 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/app/:id/build" element={<ErrorBoundary><AppInnerShell title="Build App"><AppBuildPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/chat" element={<ErrorBoundary><AppInnerShell title="Chat"><AppChatPage /></AppInnerShell></ErrorBoundary>} />
           <Route path="/app/:id/modules" element={<Navigate to="../build" replace />} />
-          <Route path="/app/:id/components/:componentId" element={<Navigate to="../../build" replace />} />
           <Route path="/app/:id/system/*" element={<Navigate to="../build" replace />} />
 
           <Route path="/app" element={<Navigate to="/apps" replace />} />

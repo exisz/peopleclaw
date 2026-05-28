@@ -32,7 +32,7 @@ model Tenant {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   members           TenantUser[]
-  connections       Connection[]
+  tenantIntegrations Connection[]
   usageLogs         UsageLog[]
   apps              App[]
   externalAgentKeys ExternalAgentKey[]
@@ -75,10 +75,6 @@ enum ComponentRuntime {
   EDGE
 }
 
-enum ConnectionType {
-  TRIGGER
-  DATA_FLOW
-}
 
 model App {
   id                String                @id @default(cuid())
@@ -90,7 +86,6 @@ model App {
   updatedAt         DateTime              @updatedAt
   tenant            Tenant                @relation(fields: [tenantId], references: [id])
   components        Component[]
-  connections       ComponentConnection[]
   scheduledTasks    ScheduledTask[]
   externalAgentKeys ExternalAgentKey[]
 
@@ -99,7 +94,7 @@ model App {
 
 /// PLANET-1937 / PLANET-1941 — user-owned external coding-agent API keys.
 /// Stores only hashed one-time tokens. Keys are tenant-scoped and optionally
-/// app-scoped; external agents must go through low-code/component APIs only.
+/// app-scoped; external agents must go through scoped code-function APIs only.
 model ExternalAgentKey {
   id              String    @id @default(cuid())
   tenantId        String
@@ -131,36 +126,17 @@ model Component {
   code              String                @default("")
   inputSchema       String?
   outputSchema      String?
-  probes            String?
-  canvasX           Int                   @default(0)
-  canvasY           Int                   @default(0)
   icon              String?
   compiledArtifacts String?
   isExported        Boolean               @default(false)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   app               App                   @relation(fields: [appId], references: [id], onDelete: Cascade)
-  connectionsFrom   ComponentConnection[] @relation("FromComponent")
-  connectionsTo     ComponentConnection[] @relation("ToComponent")
   scheduledTasks    ScheduledTask[]
 
   @@index([appId])
 }
 
-model ComponentConnection {
-  id              String         @id @default(cuid())
-  appId           String
-  fromComponentId String
-  toComponentId   String
-  type            ConnectionType
-  createdAt       DateTime       @default(now())
-  app             App            @relation(fields: [appId], references: [id], onDelete: Cascade)
-  fromComponent   Component      @relation("FromComponent", fields: [fromComponentId], references: [id], onDelete: Cascade)
-  toComponent     Component      @relation("ToComponent", fields: [toComponentId], references: [id], onDelete: Cascade)
-
-  @@unique([fromComponentId, toComponentId, type])
-  @@index([appId])
-}
 
 model ScheduledTask {
   id          String         @id @default(cuid())

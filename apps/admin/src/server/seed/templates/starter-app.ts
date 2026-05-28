@@ -16,9 +16,7 @@ import type { AppTemplate } from './ecommerce-starter.js';
  *
  * input.method: 'listProducts' | 'createProduct' | 'updateProduct'
  */
-const SHOPIFY_CONNECTOR_CODE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-function normalizeShopDomain(s: string): string {
+const SHOPIFY_CONNECTOR_CODE = `function normalizeShopDomain(s: string): string {
   let v = (s || '').trim();
   if (!v) return v;
   if (!v.includes('.')) v = v + '.myshopify.com';
@@ -63,7 +61,6 @@ async function exchangeShopifyToken(shop: string, clientId: string, clientSecret
 }
 
 export default async function run(input: any, ctx: any) {
-  await peopleClaw.nodeEntry('readSecrets');
   const rawShop = ctx?.secrets?.SHOPIFY_SHOP_DOMAIN || '';
   const clientId = ctx?.secrets?.SHOPIFY_CLIENT_ID || '';
   const clientSecret = ctx?.secrets?.SHOPIFY_CLIENT_SECRET || '';
@@ -100,7 +97,6 @@ export default async function run(input: any, ctx: any) {
     const expired = !token || (Number.isFinite(expMs) && expMs - Date.now() < 60_000);
     if (expired) {
       try {
-        await peopleClaw.nodeEntry('refreshToken');
         const exch = await exchangeShopifyToken(shop, clientId, clientSecret);
         token = exch.token;
         await ctx.updateAppSecrets({
@@ -132,7 +128,6 @@ export default async function run(input: any, ctx: any) {
     let r = await doCall(token);
     if (r.status === 401 && canRefresh) {
       try {
-        await peopleClaw.nodeEntry('refreshToken');
         const exch = await exchangeShopifyToken(shop, clientId, clientSecret);
         token = exch.token;
         await ctx.updateAppSecrets({
@@ -146,8 +141,6 @@ export default async function run(input: any, ctx: any) {
     }
     return r;
   }
-
-  await peopleClaw.nodeEntry('callShopify');
   try {
     if (method === 'listProducts') {
       const limit = (input && input.limit) || 20;
@@ -163,7 +156,6 @@ export default async function run(input: any, ctx: any) {
         image: (p.images && p.images[0] && p.images[0].src) || null,
         price: (p.variants && p.variants[0] && p.variants[0].price) || '0.00',
       }));
-      await peopleClaw.nodeEntry('done');
       return { ok: true, products };
     }
     if (method === 'createProduct') {
@@ -173,7 +165,6 @@ export default async function run(input: any, ctx: any) {
         body: JSON.stringify({ product }),
       }));
       const data: any = await r.json();
-      await peopleClaw.nodeEntry('done');
       return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
     }
     if (method === 'updateProduct') {
@@ -185,7 +176,6 @@ export default async function run(input: any, ctx: any) {
         body: JSON.stringify({ product: Object.assign({ id }, product) }),
       }));
       const data: any = await r.json();
-      await peopleClaw.nodeEntry('done');
       return r.ok ? { ok: true, product: data.product } : { ok: false, error: 'SHOPIFY_HTTP_' + r.status, body: data };
     }
     return { ok: false, error: 'UNKNOWN_METHOD', message: 'method must be listProducts|createProduct|updateProduct' };
@@ -203,11 +193,8 @@ export default async function run(input: any, ctx: any) {
  * we don't have to hardcode anything. The starter-app provisioner stamps both
  * IDs into a per-template `code` placeholder __CONNECTOR_ID__ at create time.
  */
-const FULLSTACK_CODE_TEMPLATE = `import { peopleClaw } from '@peopleclaw/sdk';
-
-// --- SERVER ---
+const FULLSTACK_CODE_TEMPLATE = `// --- SERVER ---
 export async function server(ctx: any) {
-  await peopleClaw.nodeEntry('callConnector');
   const appId = ctx?.app?.id || ctx?.appId || '__APP_ID__';
   const connectorId = '__CONNECTOR_ID__';
   let result: any = null;
@@ -220,7 +207,6 @@ export async function server(ctx: any) {
   } catch (e: any) {
     result = { ok: false, error: 'CALLAPP_THREW', message: e?.message || String(e) };
   }
-  await peopleClaw.nodeEntry('done');
   if (result && result.ok) {
     return { ok: true, products: result.products || [] };
   }
@@ -289,8 +275,6 @@ export const starterAppTemplate: AppTemplate = {
       type: 'BACKEND',
       icon: '🔌',
       code: SHOPIFY_CONNECTOR_CODE,
-      canvasX: 100,
-      canvasY: 200,
       isExported: true,
     },
     {
@@ -299,11 +283,6 @@ export const starterAppTemplate: AppTemplate = {
       icon: '🛍️',
       // Will be patched at create time with real {appId, connectorId}.
       code: FULLSTACK_CODE_TEMPLATE,
-      canvasX: 450,
-      canvasY: 200,
     },
-  ],
-  connections: [
-    { fromIndex: 0, toIndex: 1, type: 'DATA_FLOW' },
   ],
 };

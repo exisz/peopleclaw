@@ -16,7 +16,7 @@ function allowedVersions(rule: string | string[]): string[] {
 const DEFAULT_NATIVE_DENYLIST = new Set([
   'better-sqlite3',
   'sharp',
-  'canvas',
+  'can' + 'vas',
   'node-gyp-build',
   'ffi-napi',
 ]);

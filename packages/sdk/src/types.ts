@@ -1,9 +1,7 @@
-export interface ProbeEvent {
-  type: 'probe';
-  node: string;
+export interface ProgressEvent {
+  type: 'progress';
+  name: string;
   ts: number;
-  phase: 'enter' | 'exit';
-  duration_ms?: number;
 }
 
 export interface ResultEvent {
@@ -17,4 +15,4 @@ export interface ErrorEvent {
   stack?: string;
 }
 
-export type SSEEvent = ProbeEvent | ResultEvent | ErrorEvent;
+export type SSEEvent = ProgressEvent | ResultEvent | ErrorEvent;

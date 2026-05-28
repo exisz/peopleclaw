@@ -3,7 +3,7 @@ import { getPrisma } from '../../lib/prisma.js';
 import { requireAuth } from '../../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../../middleware/tenant.js';
 import { createSSEStream } from '@peopleclaw/sdk/sse';
-import { runComponentWithProbe, type ComponentWithApp } from '../../lib/componentInvoker.js';
+import { runComponentWithProgress, type ComponentWithApp } from '../../lib/componentInvoker.js';
 import { buildCallAppCtx } from '../../lib/callAppCtx.js';
 import { buildAppStoreCtx } from '../../lib/appStoreCtx.js';
 
@@ -11,7 +11,7 @@ export const componentRunRouter = Router();
 
 /**
  * POST /api/components/:id/run
- * Compiles user TS code → executes in restricted sandbox → streams SSE probes + result.
+ * Compiles user TS code → executes in restricted sandbox → streams SSE progresss + result.
  * (PLANET-1419, refactored under PLANET-1459 to use shared componentInvoker.)
  */
 componentRunRouter.post(
@@ -50,12 +50,12 @@ componentRunRouter.post(
       ? await buildAppStoreCtx({ tenantId: r.tenant.id, appId: component.app.id })
       : undefined;
 
-    const sseResponse = createSSEStream(async (probe) => {
+    const sseResponse = createSSEStream(async (progress) => {
       try {
-        return await runComponentWithProbe(
+        return await runComponentWithProgress(
           component as ComponentWithApp,
           input,
-          probe,
+          progress,
           { extraCtx: { callApp, appStore, input } },
         );
       } finally {

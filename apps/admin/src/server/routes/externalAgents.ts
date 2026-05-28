@@ -141,8 +141,6 @@ function publicComponent(component: any) {
     type: component.type,
     runtime: component.runtime,
     icon: component.icon ?? null,
-    canvasX: component.canvasX,
-    canvasY: component.canvasY,
     isExported: component.isExported,
     hasInputSchema: Boolean(component.inputSchema),
     hasOutputSchema: Boolean(component.outputSchema),
@@ -176,23 +174,15 @@ externalAgentsRouter.get('/external-agent/apps/:appId', requireExternalAgent('in
   const app = await requireExternalApp(req, res, req.params.appId);
   if (!app) return;
   const prisma = getPrisma();
-  const [components, connections, scheduledTaskCount, storeRecordCount] = await Promise.all([
+  const [components, scheduledTaskCount, storeRecordCount] = await Promise.all([
     prisma.component.findMany({ where: { appId: app.id }, orderBy: { createdAt: 'asc' } }),
-    prisma.componentConnection.findMany({ where: { appId: app.id }, orderBy: { createdAt: 'asc' } }),
     prisma.scheduledTask.count({ where: { appId: app.id } }),
     prisma.appStoreRecord.count({ where: { tenantId: app.tenantId, appId: app.id } }),
   ]);
   res.json({
     app: publicApp(app),
     components: components.map(publicComponent),
-    connections: connections.map((connection) => ({
-      id: connection.id,
-      fromComponentId: connection.fromComponentId,
-      toComponentId: connection.toComponentId,
-      type: connection.type,
-      createdAt: connection.createdAt.toISOString(),
-    })),
-    counts: { components: components.length, connections: connections.length, scheduledTasks: scheduledTaskCount, appStoreRecords: storeRecordCount },
+    counts: { components: components.length, scheduledTasks: scheduledTaskCount, appStoreRecords: storeRecordCount },
     safety: { rawSql: false, secretsPlaintext: false, tenantScoped: true },
   });
 });

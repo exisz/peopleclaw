@@ -20,7 +20,7 @@ componentCompileRouter.post('/components/:id/compile', async (req, res) => {
         where: { id: component.id },
         data: { compiledArtifacts: JSON.stringify(result) },
       });
-      res.json({ ok: true, compiledAt: result.compiledAt, probes: result.probes });
+      res.json({ ok: true, compiledAt: result.compiledAt });
     } else {
       // FRONTEND: compile client-only bundle
       const result = compileFrontend(component.code, component.id);
