@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { apiFetch, apiClient } from '../lib/api';
+import { userFacingAppName } from '../lib/userFacingLanguage';
 
 interface App {
   id: string;
@@ -97,7 +98,7 @@ export default function AppsList() {
               <div className="w-full h-20 bg-muted rounded mb-3 flex items-center justify-center">
                 <span className="text-2xl">📦</span>
               </div>
-              <h3 className="text-sm font-medium text-foreground truncate">{app.name}</h3>
+              <h3 className="text-sm font-medium text-foreground truncate">{userFacingAppName(app.name)}</h3>
               {app.updatedAt && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {new Date(app.updatedAt).toLocaleDateString()}
