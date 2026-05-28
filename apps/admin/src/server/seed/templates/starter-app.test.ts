@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -107,6 +107,28 @@ describe('Starter app template safety', () => {
     }
     assert.doesNotMatch(connector.code, /return \{ ok: false, error: 'SHOPIFY_REFRESH_FAILED', message: e\?\.message/);
     assert.doesNotMatch(connector.code, /body\.slice\(0, 300\)/);
+  });
+
+  it('TC-PC-109 proves one-click Shopify starter deploy creates preview deployment record', () => {
+    const result = planStarterAppPreviewDeployment({
+      appId: 'starter-shopify-demo',
+      baseUrl: 'https://preview.peopleclaw.test',
+      now: new Date('2026-05-28T03:07:00.000Z'),
+    });
+
+    assert.deepEqual(result.plan, {
+      operation: 'starter_one_click_preview_deploy',
+      dryRun: true,
+      coreRedeploy: 'not_required',
+    });
+    assert.equal(result.immutableArtifact.stored, true);
+    assert.match(result.immutableArtifact.artifactHash, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(result.immutableArtifact.artifact.manifest.appId, 'starter-shopify-demo');
+    assert.match(result.immutableArtifact.artifact.functions?.shopifyConnector?.source ?? '', /SHOPIFY_ADMIN_TOKEN/);
+    assert.equal(result.deploymentRecord.channel, 'preview');
+    assert.equal(result.deploymentRecord.artifactHash, result.immutableArtifact.artifactHash);
+    assert.equal(result.deploymentRecord.createdAt, '2026-05-28T03:07:00.000Z');
+    assert.equal(result.previewUrl, 'https://preview.peopleclaw.test/apps/starter-shopify-demo?preview=dep_starter-shopify-demo_preview_1');
   });
 
   it('TC-PC-105 keeps Shopify starter navigation out of workflow/canvas primary UI', () => {

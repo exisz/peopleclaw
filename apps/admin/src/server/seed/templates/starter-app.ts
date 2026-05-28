@@ -6,6 +6,8 @@
  *
  * Core no longer has any Shopify-specific code path (PLANET-1463).
  */
+import { createHash } from 'node:crypto';
+import type { AppArtifactTree, AppDeploymentRecord } from '@peopleclaw/sdk/app-artifact';
 import type { AppTemplate } from './ecommerce-starter.js';
 
 /**
@@ -276,6 +278,89 @@ export function Client({ data }: { data: any }) {
 export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
 export const STARTER_APP_CONNECTOR_NAME = 'Store data source';
 export const STARTER_APP_FULLSTACK_NAME = 'Product Browser';
+
+export interface StarterAppPreviewDeploymentResult {
+  plan: {
+    operation: 'starter_one_click_preview_deploy';
+    dryRun: true;
+    coreRedeploy: 'not_required';
+  };
+  immutableArtifact: {
+    artifactHash: `sha256:${string}`;
+    artifact: AppArtifactTree;
+    stored: true;
+  };
+  deploymentRecord: AppDeploymentRecord;
+  previewUrl: string;
+}
+
+function sha256(value: unknown): `sha256:${string}` {
+  return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
+}
+
+export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
+  return {
+    manifest: {
+      appId,
+      name: 'Starter Store App',
+      version: '0.1.0',
+      routes: [{ id: 'products', path: `/apps/${appId}`, screen: 'products' }],
+    },
+    sidebar: {
+      sections: [{
+        id: 'store',
+        title: 'Store',
+        kind: 'app',
+        items: [{ id: 'products', label: STARTER_APP_FULLSTACK_NAME, routeId: 'products' }],
+      }],
+    },
+    screens: {
+      products: { source: FULLSTACK_CODE_TEMPLATE, artifactHash: sha256(FULLSTACK_CODE_TEMPLATE) },
+    },
+    functions: {
+      shopifyConnector: {
+        source: SHOPIFY_CONNECTOR_CODE,
+        inputSchema: { method: 'listProducts|createProduct|updateProduct' },
+        outputSchema: { ok: 'boolean' },
+      },
+    },
+    secrets: {
+      SHOPIFY_SHOP_DOMAIN: { ref: 'app-secret://SHOPIFY_SHOP_DOMAIN' },
+      SHOPIFY_ADMIN_TOKEN: { ref: 'app-secret://SHOPIFY_ADMIN_TOKEN' },
+    },
+  };
+}
+
+export function planStarterAppPreviewDeployment(input: {
+  appId: string;
+  baseUrl?: string;
+  now?: Date;
+}): StarterAppPreviewDeploymentResult {
+  const appId = input.appId.trim();
+  if (!appId) throw new Error('appId is required');
+  const artifact = buildStarterAppArtifactTree(appId);
+  const artifactHash = sha256(artifact);
+  const deploymentId = `dep_${appId}_preview_1`;
+  const createdAt = (input.now ?? new Date()).toISOString();
+  const deploymentRecord: AppDeploymentRecord = {
+    id: `record_${deploymentId}`,
+    appId,
+    deploymentId,
+    channel: 'preview',
+    artifactHash,
+    sdkCompatibilityVersion: '0.1.0',
+    runtimeCompatibilityVersion: 'peopleclaw-cloud-v1',
+    dependencyVersions: { react: '19' },
+    createdAt,
+  };
+  const baseUrl = (input.baseUrl ?? 'https://app.peopleclaw.com').replace(/\/$/, '');
+  return {
+    plan: { operation: 'starter_one_click_preview_deploy', dryRun: true, coreRedeploy: 'not_required' },
+    immutableArtifact: { artifactHash, artifact, stored: true },
+    deploymentRecord,
+    previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
+  };
+}
 
 export const starterAppTemplate: AppTemplate = {
   id: 'starter-app',
