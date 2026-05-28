@@ -292,6 +292,15 @@ export interface StarterAppConnectorSurfaceValidation {
   callerName?: string;
 }
 
+export interface StarterAppSecretReferenceEvidence {
+  artifact: string;
+  clientManifest: string;
+  logs: string;
+  screenshots: string;
+  cliOutput: string;
+  secretRefs: string[];
+}
+
 export interface StarterAppSpecMatrixItem {
   id: string;
   source: 'must' | 'must_not';
@@ -495,6 +504,27 @@ export function planStarterAppPreviewDeployment(input: {
     immutableArtifact: { artifactHash, artifact, stored: true },
     deploymentRecord,
     previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
+  };
+}
+
+export function buildStarterSecretReferenceEvidence(appId = 'starter-shopify-demo'): StarterAppSecretReferenceEvidence {
+  const artifact = buildStarterAppArtifactTree(appId);
+  const secretRefs = Object.values(artifact.secrets ?? {}).map((entry) => entry.ref);
+  const clientManifest = JSON.stringify({
+    appId,
+    routes: artifact.manifest.routes,
+    requiredSecrets: Object.keys(artifact.secrets ?? {}).map((key) => ({ key, ref: artifact.secrets?.[key]?.ref })),
+  });
+  const logs = `starter_preview_deploy app=${appId} secrets=${secretRefs.join(',')} values=[redacted]`;
+  const screenshots = `setup screen displays secret refs ${secretRefs.join(', ')} and never values`;
+  const cliOutput = `peopleclaw app secrets list ${appId} -> ${secretRefs.join(' ')} --values redacted`;
+  return {
+    artifact: JSON.stringify(artifact),
+    clientManifest,
+    logs,
+    screenshots,
+    cliOutput,
+    secretRefs,
   };
 }
 

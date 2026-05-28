@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5 } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -154,6 +154,34 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-117 keeps Shopify starter secrets as references across artifacts and evidence outputs', () => {
+    const evidence = buildStarterSecretReferenceEvidence('starter-shopify-demo');
+    assert.deepEqual(evidence.secretRefs.sort(), [
+      'app-secret://SHOPIFY_ADMIN_TOKEN',
+      'app-secret://SHOPIFY_SHOP_DOMAIN',
+    ]);
+    const combined = [
+      evidence.artifact,
+      evidence.clientManifest,
+      evidence.logs,
+      evidence.screenshots,
+      evidence.cliOutput,
+    ].join('\n');
+    assert.match(combined, /app-secret:\/\/SHOPIFY_ADMIN_TOKEN/);
+    assert.match(combined, /app-secret:\/\/SHOPIFY_SHOP_DOMAIN/);
+    for (const plaintextPattern of [
+      /shpat_[A-Za-z0-9_-]+/,
+      /shpca_[A-Za-z0-9_-]+/,
+      /SHOPIFY_ADMIN_TOKEN\s*[:=]\s*['"][^'"]+['"]/,
+      /SHOPIFY_CLIENT_SECRET\s*[:=]\s*['"][^'"]+['"]/,
+      /access[_-]?token\s*[:=]\s*['"](?!\[redacted\])[^'"]+['"]/i,
+      /client[_-]?secret\s*[:=]\s*['"](?!\[redacted\])[^'"]+['"]/i,
+    ]) {
+      assert.doesNotMatch(combined, plaintextPattern);
+    }
+  });
 
   it('TC-PC-116 exposes business and system pages through starter sidebar artifact config', () => {
     const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
