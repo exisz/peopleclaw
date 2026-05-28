@@ -93,6 +93,51 @@ describe('durable production Codex auth state', () => {
     assert.equal(durable.profile?.refresh, envProfile.refresh);
   });
 
+
+
+  it('TC-PC-123 production chat auth smoke contract obtains refreshed Codex token from durable storage', async () => {
+    const staleEnv: TestProfile = {
+      type: 'oauth',
+      provider: 'openai-codex',
+      access: 'stale-env-access-token-value',
+      refresh: 'stale-env-refresh-token-value',
+      expires: Date.now() - 60_000,
+      email: 'codex@example.test',
+    };
+    const expiredPersisted: TestProfile = {
+      type: 'oauth',
+      provider: 'openai-codex',
+      access: 'expired-durable-access-token-value',
+      refresh: 'durable-refresh-token-value',
+      expires: Date.now() - 60_000,
+      email: 'codex@example.test',
+    };
+    const refreshed: TestProfile = {
+      ...expiredPersisted,
+      access: 'fresh-durable-access-token-value',
+      refresh: 'rotated-durable-refresh-token-value',
+      expires: Date.now() + 60 * 60 * 1000,
+    };
+    setProductionEnv(staleEnv);
+    const durable = memoryDurableStore(expiredPersisted);
+    const refreshInputs: string[] = [];
+    __setCodexAuthTestOverrides({
+      durableStore: durable.store,
+      refreshTokenFn: async (refreshToken) => {
+        refreshInputs.push(refreshToken);
+        return refreshed;
+      },
+    });
+
+    const auth = await getCodexAccessToken();
+
+    assert.equal(auth.profileId, 'durable-db');
+    assert.equal(auth.accessToken, refreshed.access);
+    assert.deepEqual(refreshInputs, [expiredPersisted.refresh]);
+    assert.equal(durable.profile?.refresh, refreshed.refresh);
+    assert.notEqual(durable.profile?.refresh, staleEnv.refresh);
+    assert.ok((auth.expires ?? 0) > Date.now());
+  });
   it('TC-PC-2200 reuses persisted refreshed credentials instead of stale env refresh tokens on later calls', async () => {
     const staleEnv: TestProfile = {
       type: 'oauth',
