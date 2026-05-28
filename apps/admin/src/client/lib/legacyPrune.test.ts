@@ -89,6 +89,11 @@ describe('legacy non-spec surfaces stay pruned', () => {
       'Secrets',
       'Logs',
       'Canvas',
+      '/canvas',
+      'canvas-pane',
+      'React Flow',
+      'workflow editor',
+      'no-code',
       'Modules',
       'App Page',
       'component entries',
@@ -110,6 +115,9 @@ describe('legacy non-spec surfaces stay pruned', () => {
 
     const forbiddenText = [
       oldFlowRoute,
+      'workflow editor',
+      'React Flow',
+      'no-code',
       'AI 换脸' + '-处理',
       'AI 换脸' + '-表单',
       '公开' + '此组件',

@@ -3,10 +3,10 @@
  *
  * GIVEN 已登录
  * WHEN  导航到 /apps
- * THEN  AppShell sidebar 可见 (Apps/Published/Security/Settings, no Home)
+ * THEN  AppShell sidebar 可见 (Apps/Settings, no Home)
  * AND   主区域标题 "Apps" + "+ Create new app" 卡可见
  * WHEN  点击 + Create new app
- * THEN  模板弹窗出现 → 选 starter-app → 跳 /app/:id → canvas 出节点
+ * THEN  模板弹窗出现 → 选 starter-app → 跳 /app/:id/dashboard
  */
 import { test, expect } from '../fixtures/auth';
 
@@ -21,10 +21,8 @@ test.describe('TC0: Apps 列表页 + AppShell', () => {
     const sidebar = page.locator('[data-testid="apps-sidebar"]');
     await expect(sidebar).toBeVisible({ timeout: 10_000 });
 
-    // Sidebar nav items — no Home, has Apps/Published/Security/Settings
+    // Sidebar nav items — no Home, has Apps/Settings only.
     await expect(sidebar.getByText('Apps')).toBeVisible();
-    await expect(sidebar.getByText('Published')).toBeVisible();
-    await expect(sidebar.getByText('Security')).toBeVisible();
     await expect(sidebar.getByText('Settings')).toBeVisible();
     await expect(sidebar.getByText('Home')).not.toBeVisible();
 
@@ -81,11 +79,10 @@ test.describe('TC0: Apps 列表页 + AppShell', () => {
     // Select starter-app template
     await page.locator('[data-testid="template-starter-app-btn"]').click();
 
-    // Should navigate to /app/:id
-    await page.waitForURL(/\/app\/[a-zA-Z0-9-]+/, { timeout: 30_000 });
-
-    // Canvas should show nodes
-    const canvas = page.locator('[data-testid="canvas-pane"]');
-    await expect(canvas).toBeVisible({ timeout: 15_000 });
+    // Should navigate to per-App overview.
+    await page.waitForURL(/\/app\/[a-zA-Z0-9-]+\/dashboard$/, { timeout: 30_000 });
+    await expect(page.getByTestId('page-app-dashboard')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('inner-nav-build')).toBeVisible();
+    await expect(page.getByTestId('inner-nav-chat')).toBeVisible();
   });
 });

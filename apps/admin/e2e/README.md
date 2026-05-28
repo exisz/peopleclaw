@@ -40,7 +40,7 @@ pnpm --filter @peopleclaw/admin exec playwright show-report
 
 - `playwright.config.ts` — config (project root)
 - `e2e/auth.spec.ts` — Logto sign-in + nav smoke
-- Legacy workflow editor specs have been archived; they are not part of the current non-technical App shell.
+- Legacy workflow-builder specs have been removed; they are not part of the current agent-builds-code App shell.
 - `e2e/case-flow.spec.ts` — full e-commerce case flow (create → human steps → AI → Shopify → done)
 - `e2e/fixtures/auth.ts` — shared auth fixture (signs in once, stores state)
 
@@ -63,5 +63,5 @@ Manual prod QA, when Codex is connected:
 2. Open or create a test App, then go to `/app/<appId>/chat`.
 3. Ask: “Add a new public dashboard page called Smoke Metrics to this App.”
 4. Confirm the chat reports a tool/action completed.
-5. Open the App canvas/modules/API view and confirm `Smoke Metrics` appears as an exported page/component.
+5. Open the App overview/build/chat surfaces and confirm no visual workflow builder is exposed.
 6. Reopen the chat session and confirm the prompt, tool result, and assistant summary remain visible.

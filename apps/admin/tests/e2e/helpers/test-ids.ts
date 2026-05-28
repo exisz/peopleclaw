@@ -21,12 +21,6 @@ export const TID = {
   chatSendBtn: 'chat-send-btn',
   chatMessage: (idx: number) => `chat-message-${idx}`,
 
-  // Canvas
-  canvasPane: 'canvas-pane',
-  canvasNode: (id: string) => `canvas-node-${id}`,
-  canvasNodeRunBtn: (id: string) => `canvas-node-${id}-run-btn`,
-  canvasNodeStatus: (id: string, status: string) => `canvas-node-${id}-status-${status}`,
-
   // Tabs
   tabComponentDetail: 'tab-component-detail',
   tabFlowGraph: 'tab-flow-graph',

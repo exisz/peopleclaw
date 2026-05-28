@@ -1,16 +1,9 @@
 import { type Page, expect } from '@playwright/test';
 import { TID } from '../helpers/test-ids';
-import { CanvasPage } from './CanvasPage';
 
-/**
- * Page Object for /app — the dual-pane Chat + Canvas interface.
- */
+/** Page Object for Apps and per-App overview/build/chat shell. */
 export class AppPage {
-  readonly canvas: CanvasPage;
-
-  constructor(private page: Page) {
-    this.canvas = new CanvasPage(page);
-  }
+  constructor(private page: Page) {}
 
   async goto() {
     // PLANET-1407: legacy /app dual-pane removed; the canonical entry point
@@ -49,9 +42,8 @@ export class AppPage {
     await this.page.getByTestId(TID.templateBtn(templateId)).click();
   }
 
-  async openModuleList() {
-    // PLANET-1742: Module list is a sidebar-routed App page, not a content top tab.
-    await this.page.getByTestId('inner-nav-modules').click();
+  async openBuildPage() {
+    await this.page.getByTestId('inner-nav-build').click();
   }
 
   async expectModuleStatus(componentId: string, status: string) {

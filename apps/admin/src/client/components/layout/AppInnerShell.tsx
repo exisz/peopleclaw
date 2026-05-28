@@ -1,9 +1,8 @@
 /**
  * PeopleClaw per-App shell for non-technical users.
  *
- * The shell intentionally exposes product/app surfaces only. Runtime component,
- * canvas, cron, runner, secret, and flow internals remain API-backed platform
- * details and are not navigation items in the customer UI.
+ * The shell intentionally exposes product/app surfaces only. Runtime implementation
+ * details remain API-backed platform internals, not customer navigation items.
  */
 import { Link, NavLink, useLocation, useParams } from 'react-router-dom';
 import {
