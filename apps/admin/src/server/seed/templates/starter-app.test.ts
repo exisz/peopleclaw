@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync } from './starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -155,6 +155,38 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-118 writes Shopify sync data only through managed document Data API', () => {
+    const plan = planStarterManagedDataSync({
+      products: [{ id: 'p1' }],
+      orders: [{ id: 'o1' }, { id: 'o2' }],
+      customers: [{ id: 'c1' }],
+    });
+    assert.deepEqual(plan.collections, ['shopify_products', 'shopify_orders', 'shopify_customers']);
+    assert.deepEqual(plan.operations.map((operation) => operation.api), [
+      'ctx.data.documents.upsertMany',
+      'ctx.data.documents.upsertMany',
+      'ctx.data.documents.upsertMany',
+    ]);
+    assert.deepEqual(plan.operations.map((operation) => operation.count), [1, 2, 1]);
+    assert.deepEqual(plan.forbidden, []);
+
+    const serializedPlan = JSON.stringify(plan);
+    for (const forbidden of [
+      /DATABASE_URL/i,
+      /TURSO_/i,
+      /prisma\./i,
+      /createClient\(/i,
+      /db\.execute/i,
+      /ALTER\s+TABLE/i,
+      /CREATE\s+TABLE/i,
+      /raw\s+DB/i,
+      /migration/i,
+    ]) {
+      assert.doesNotMatch(serializedPlan, forbidden);
+    }
+  });
 
   it('TC-PC-117 keeps Shopify starter secrets as references across artifacts and evidence outputs', () => {
     const evidence = buildStarterSecretReferenceEvidence('starter-shopify-demo');

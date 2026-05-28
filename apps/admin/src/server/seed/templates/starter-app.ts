@@ -292,6 +292,12 @@ export interface StarterAppConnectorSurfaceValidation {
   callerName?: string;
 }
 
+export interface StarterManagedDataSyncPlan {
+  collections: string[];
+  operations: Array<{ resource: 'products' | 'orders' | 'customers'; api: 'ctx.data.documents.upsertMany'; collection: string; count: number }>;
+  forbidden: string[];
+}
+
 export interface StarterAppSecretReferenceEvidence {
   artifact: string;
   clientManifest: string;
@@ -504,6 +510,28 @@ export function planStarterAppPreviewDeployment(input: {
     immutableArtifact: { artifactHash, artifact, stored: true },
     deploymentRecord,
     previewUrl: `${baseUrl}/apps/${encodeURIComponent(appId)}?preview=${encodeURIComponent(deploymentId)}`,
+  };
+}
+
+export function planStarterManagedDataSync(input: {
+  products?: unknown[];
+  orders?: unknown[];
+  customers?: unknown[];
+} = {}): StarterManagedDataSyncPlan {
+  const resources = [
+    ['products', input.products ?? []],
+    ['orders', input.orders ?? []],
+    ['customers', input.customers ?? []],
+  ] as const;
+  return {
+    collections: resources.map(([resource]) => `shopify_${resource}`),
+    operations: resources.map(([resource, values]) => ({
+      resource,
+      api: 'ctx.data.documents.upsertMany' as const,
+      collection: `shopify_${resource}`,
+      count: values.length,
+    })),
+    forbidden: [],
   };
 }
 
