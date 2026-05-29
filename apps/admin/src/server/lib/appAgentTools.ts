@@ -17,6 +17,8 @@ export interface AppAgentExecutedTool {
 type ComponentTypeInput = 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
 type ComponentRuntimeInput = 'PEOPLECLAW_CLOUD' | 'USER_BYO_NODE' | 'EDGE';
 
+export const INVALID_APP_AGENT_COMPONENT_TYPE_ERROR = 'Choose a page, module, or component for this app part.';
+
 type JsonSchema = Record<string, unknown>;
 
 const objectSchema = (properties: JsonSchema, required: string[] = []): JsonSchema => ({
@@ -122,7 +124,7 @@ function safeJsonSchemaText(value: unknown, field: string): string | undefined {
 function validateComponentType(value: unknown, fallback: ComponentTypeInput): ComponentTypeInput {
   if (value === undefined) return fallback;
   if (value === 'FRONTEND' || value === 'BACKEND' || value === 'FULLSTACK') return value;
-  throw new Error('type must be FRONTEND, BACKEND, or FULLSTACK');
+  throw new Error(INVALID_APP_AGENT_COMPONENT_TYPE_ERROR);
 }
 
 function validateRuntime(value: unknown): ComponentRuntimeInput {

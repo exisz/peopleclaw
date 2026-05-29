@@ -4,6 +4,8 @@ import { createScopedAppNotFoundBody } from '../lib/scopedNotFound.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 
+export const INVALID_COMPONENT_TYPE_ERROR = 'Choose a page, module, or component for this app part.';
+
 export const appsRouter = Router();
 
 // GET /api/apps — list apps for current tenant
@@ -48,7 +50,7 @@ appsRouter.post('/apps/:appId/components', requireAuth, requireTenant, async (re
     return;
   }
   if (!['FRONTEND', 'BACKEND', 'FULLSTACK'].includes(type)) {
-    res.status(400).json({ error: 'type must be FRONTEND|BACKEND|FULLSTACK' });
+    res.status(400).json({ error: INVALID_COMPONENT_TYPE_ERROR });
     return;
   }
   const app = await prisma.app.findFirst({
