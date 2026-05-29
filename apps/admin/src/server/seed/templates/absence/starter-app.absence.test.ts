@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { createInMemoryAppDeploymentRegistry } from '@peopleclaw/sdk/app-artifact';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync, runOneClickShopifyStarterCrudDryRun } from '../starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_PRODUCT_BROWSER_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync, runOneClickShopifyStarterCrudDryRun } from '../starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -30,7 +30,7 @@ describe('Starter app template safety', () => {
 
   it('TC-PC-2201 keeps the starter as code functions, not a graph/workflow', () => {
     const connectorIndex = starterAppTemplate.components.findIndex(c => c.name === STARTER_APP_CONNECTOR_NAME);
-    const fullstackIndex = starterAppTemplate.components.findIndex(c => c.name === STARTER_APP_FULLSTACK_NAME);
+    const fullstackIndex = starterAppTemplate.components.findIndex(c => c.name === STARTER_APP_PRODUCT_BROWSER_NAME);
     assert.notEqual(connectorIndex, -1, 'starter app includes store data source');
     assert.notEqual(fullstackIndex, -1, 'starter app includes product browser');
 
@@ -67,7 +67,7 @@ describe('Starter app template safety', () => {
     assert.match(connector.code, /SHOPIFY_SHOP_DOMAIN/);
     assert.match(connector.code, /SHOPIFY_ADMIN_TOKEN|SHOPIFY_CLIENT_ID/);
 
-    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_FULLSTACK_NAME)!;
+    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_PRODUCT_BROWSER_NAME)!;
     assert.match(productBrowser.code, /shopify-setup-cta/);
     assert.match(productBrowser.code, /Connect store/);
   });
@@ -111,7 +111,7 @@ describe('Starter app template safety', () => {
 
   it('TC-PC-108 proves Shopify token failures are recoverable and redacted', () => {
     const connector = starterAppTemplate.components.find(c => c.name === STARTER_APP_CONNECTOR_NAME)!;
-    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_FULLSTACK_NAME)!;
+    const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_PRODUCT_BROWSER_NAME)!;
     const artifactText = JSON.stringify(starterAppTemplate);
 
     assert.match(connector.code, /safeConnectorMessage/);
@@ -132,7 +132,7 @@ describe('Starter app template safety', () => {
     const accepted = validateStarterAppConnectorSurface(starterAppTemplate);
     assert.equal(accepted.ok, true, accepted.errors.join('; '));
     assert.equal(accepted.connectorName, STARTER_APP_CONNECTOR_NAME);
-    assert.equal(accepted.callerName, STARTER_APP_FULLSTACK_NAME);
+    assert.equal(accepted.callerName, STARTER_APP_PRODUCT_BROWSER_NAME);
 
     assert.doesNotThrow(() => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo' }));
 
@@ -183,7 +183,7 @@ describe('Starter app template safety', () => {
       components: starterAppTemplate.components.map((component) =>
         component.name === STARTER_APP_CONNECTOR_NAME
           ? { ...component, type: 'FRONTEND' as const }
-          : component.name === STARTER_APP_FULLSTACK_NAME
+          : component.name === STARTER_APP_PRODUCT_BROWSER_NAME
             ? { ...component, type: 'BACKEND' as const }
             : component,
       ),
@@ -414,7 +414,7 @@ describe('Starter app template safety', () => {
     const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
     const sections = artifact.sidebar.sections;
     assert.deepEqual(sections.map((section) => section.id), ['business', 'system']);
-    assert.deepEqual(sections[0].items.map((item) => item.label), ['Dashboard', STARTER_APP_FULLSTACK_NAME, 'Sync', 'Chat']);
+    assert.deepEqual(sections[0].items.map((item) => item.label), ['Dashboard', STARTER_APP_PRODUCT_BROWSER_NAME, 'Sync', 'Chat']);
     assert.deepEqual(sections[1].items.map((item) => item.label), ['Setup', 'Audit']);
     assert.equal(sections[0].kind, 'app');
     assert.equal(sections[1].kind, 'system');

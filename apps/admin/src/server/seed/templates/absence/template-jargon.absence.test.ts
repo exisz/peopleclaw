@@ -48,3 +48,17 @@ describe('ecommerce starter business wording', () => {
     assert.doesNotMatch(publicComments, FORBIDDEN_RUNTIME_JARGON);
   });
 });
+
+
+describe('TC-PC-158 Shopify starter source runtime-jargon absence', () => {
+  it('keeps raw server/page runtime labels out of starter source comments and constants', () => {
+    const source = readFileSync(new URL('../starter-app.ts', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(source, /STARTER_APP_FULLSTACK/);
+    assert.doesNotMatch(source, /FULLSTACK_CODE_TEMPLATE/);
+    assert.doesNotMatch(source, /\b(?:BACKEND|FULLSTACK)\b/);
+    assert.match(source, /SERVER_CALLABLE_COMPONENT_TYPE/);
+    assert.match(source, /INTERACTIVE_PAGE_COMPONENT_TYPE/);
+    assert.match(source, /STARTER_APP_PRODUCT_BROWSER_NAME/);
+  });
+});

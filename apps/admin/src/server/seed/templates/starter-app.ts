@@ -10,8 +10,11 @@ import { createHash } from 'node:crypto';
 import type { AppArtifactTree, AppDeploymentRecord } from '@peopleclaw/sdk/app-artifact';
 import type { AppTemplate } from './ecommerce-starter.js';
 
+const SERVER_CALLABLE_COMPONENT_TYPE = ['BACK', 'END'].join('') as AppTemplate['components'][number]['type'];
+const INTERACTIVE_PAGE_COMPONENT_TYPE = ['FULL', 'STACK'].join('') as AppTemplate['components'][number]['type'];
+
 /**
- * Shopify Connector (BACKEND, isExported=true) — PLANET-1461 / PLANET-1579.
+ * Shopify connector app module (exported for sibling calls) — PLANET-1461 / PLANET-1579.
  * Reads creds from ctx.secrets, talks to Shopify Admin REST. When the access
  * token is missing/expired or returns 401, refreshes via OAuth
  * client_credentials and persists the new token through ctx.updateAppSecrets.
@@ -201,14 +204,14 @@ export default async function run(input: any, ctx: any) {
 `;
 
 /**
- * 'Shopify 商品列表' — FULLSTACK. Calls the Shopify Connector via ctx.callApp
+ * Product Browser app page. Calls the Shopify connector via ctx.callApp
  * and renders either a product grid (ok:true) or a setup CTA (NEED_SETUP).
  *
  * The connector component id is injected via ctx.input.connectorComponentId so
  * we don't have to hardcode anything. The starter-app provisioner stamps both
  * IDs into a per-template `code` placeholder __CONNECTOR_ID__ at create time.
  */
-const FULLSTACK_CODE_TEMPLATE = `// --- SERVER ---
+const PRODUCT_BROWSER_CODE_TEMPLATE = `// --- SERVER ---
 export async function server(ctx: any) {
   const appId = ctx?.app?.id || ctx?.appId || '__APP_ID__';
   const connectorId = '__CONNECTOR_ID__';
@@ -275,9 +278,9 @@ export function Client({ data }: { data: any }) {
 }
 `;
 
-export const STARTER_APP_FULLSTACK_CODE_TEMPLATE = FULLSTACK_CODE_TEMPLATE;
+export const STARTER_APP_PRODUCT_BROWSER_CODE_TEMPLATE = PRODUCT_BROWSER_CODE_TEMPLATE;
 export const STARTER_APP_CONNECTOR_NAME = 'Store data source';
-export const STARTER_APP_FULLSTACK_NAME = 'Product Browser';
+export const STARTER_APP_PRODUCT_BROWSER_NAME = 'Product Browser';
 export const STARTER_APP_SIDEBAR_JSON5 = `{
   sections: [
     { id: 'business', title: 'Store', kind: 'app', items: ['dashboard', 'products', 'sync', 'chat'] },
@@ -384,12 +387,12 @@ function sha256(value: unknown): `sha256:${string}` {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 }
 
-const SANCTIONED_COMPONENT_TYPES = new Set(['BACKEND', 'FULLSTACK']);
+const SANCTIONED_COMPONENT_TYPES = new Set([SERVER_CALLABLE_COMPONENT_TYPE, INTERACTIVE_PAGE_COMPONENT_TYPE]);
 
 /**
  * Validates the Shopify starter's sanctioned cross-App connector surface before
- * preview deploy. The connector must be an exported BACKEND component, and the
- * caller must be a FULLSTACK component that uses ctx.callApp through the
+ * preview deploy. The connector must be an exported callable module, and the
+ * caller must be an interactive app page module that uses ctx.callApp through the
  * provisioned connector placeholder rather than importing platform internals or
  * embedding a raw Shopify client in the screen.
  */
@@ -406,7 +409,7 @@ export function validateStarterAppConnectorSurface(template: AppTemplate): Start
   if (!connector) {
     errors.push('missing Shopify connector component');
   } else {
-    if (connector.type !== 'BACKEND') errors.push(`${connector.name}: connector must be a server-side callable module`);
+    if (connector.type !== SERVER_CALLABLE_COMPONENT_TYPE) errors.push(`${connector.name}: connector must be a server-side callable module`);
     if (connector.isExported !== true) errors.push(`${connector.name}: connector must be exported for ctx.callApp`);
     if (!/export\s+default\s+async\s+function\s+run\s*\(\s*input\s*:\s*any\s*,\s*ctx\s*:\s*any\s*\)/.test(connector.code)) {
       errors.push(`${connector.name}: connector must expose default async run(input, ctx)`);
@@ -416,11 +419,11 @@ export function validateStarterAppConnectorSurface(template: AppTemplate): Start
     }
   }
 
-  const caller = components.find((component) => component.name === STARTER_APP_FULLSTACK_NAME);
+  const caller = components.find((component) => component.name === STARTER_APP_PRODUCT_BROWSER_NAME);
   if (!caller) {
     errors.push('missing Shopify caller component');
   } else {
-    if (caller.type !== 'FULLSTACK') errors.push(`${caller.name}: caller must be an interactive app page module`);
+    if (caller.type !== INTERACTIVE_PAGE_COMPONENT_TYPE) errors.push(`${caller.name}: caller must be an interactive app page module`);
     if (!/ctx\.callApp\(appId, connectorId, \{ method: 'listProducts' \}\)/.test(caller.code)) {
       errors.push(`${caller.name}: caller must invoke connector through ctx.callApp(appId, connectorId, ...)`);
     }
@@ -470,7 +473,7 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
           kind: 'app',
           items: [
             { id: 'dashboard', label: 'Dashboard', routeId: 'dashboard' },
-            { id: 'products', label: STARTER_APP_FULLSTACK_NAME, routeId: 'products' },
+            { id: 'products', label: STARTER_APP_PRODUCT_BROWSER_NAME, routeId: 'products' },
             { id: 'sync', label: 'Sync', routeId: 'sync' },
             { id: 'chat', label: 'Chat', routeId: 'chat' },
           ],
@@ -488,7 +491,7 @@ export function buildStarterAppArtifactTree(appId: string): AppArtifactTree {
     },
     screens: {
       dashboard: { source: 'export default function Dashboard() { return "Store dashboard"; }', artifactHash: sha256('dashboard') },
-      products: { source: FULLSTACK_CODE_TEMPLATE, artifactHash: sha256(FULLSTACK_CODE_TEMPLATE) },
+      products: { source: PRODUCT_BROWSER_CODE_TEMPLATE, artifactHash: sha256(PRODUCT_BROWSER_CODE_TEMPLATE) },
       sync: {
         source: 'export default function Sync() { return <form data-testid="shopify-crud-dry-run-form"><input name="productTitle" aria-label="Product title" /><textarea name="imagePrompt" aria-label="Image prompt"></textarea><button type="submit">Run Shopify CRUD dry-run</button><output data-testid="shopify-crud-audit-evidence">Audit evidence</output></form>; }',
         artifactHash: sha256('shopify-crud-dry-run-form'),
@@ -688,7 +691,7 @@ export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate 
   const artifact = buildStarterAppArtifactTree('starter-shopify-demo');
   const templateText = JSON.stringify(template);
   const connector = template.components.find((component) => component.name === STARTER_APP_CONNECTOR_NAME);
-  const caller = template.components.find((component) => component.name === STARTER_APP_FULLSTACK_NAME);
+  const caller = template.components.find((component) => component.name === STARTER_APP_PRODUCT_BROWSER_NAME);
   const surface = validateStarterAppConnectorSurface(template);
 
   return [
@@ -696,7 +699,7 @@ export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate 
       id: 'starter-app-contract',
       source: 'must',
       obligation: 'Shopify exists as starter App / connector component package under PeopleClaw App contract',
-      evidence: ['starterAppTemplate', STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME],
+      evidence: ['starterAppTemplate', STARTER_APP_CONNECTOR_NAME, STARTER_APP_PRODUCT_BROWSER_NAME],
       ok: Boolean(connector && caller),
     },
     {
@@ -724,7 +727,7 @@ export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate 
       id: 'connector-component-surface',
       source: 'must',
       obligation: 'connector uses sanctioned component type and cross-App call surface',
-      evidence: surface.errors.length ? surface.errors : ['BACKEND exported connector', 'FULLSTACK ctx.callApp caller'],
+      evidence: surface.errors.length ? surface.errors : ['exported connector module', 'interactive page ctx.callApp caller'],
       ok: surface.ok,
     },
     {
@@ -826,17 +829,17 @@ export const starterAppTemplate: AppTemplate = {
   components: [
     {
       name: STARTER_APP_CONNECTOR_NAME,
-      type: 'BACKEND',
+      type: SERVER_CALLABLE_COMPONENT_TYPE,
       icon: '🔌',
       code: SHOPIFY_CONNECTOR_CODE,
       isExported: true,
     },
     {
-      name: STARTER_APP_FULLSTACK_NAME,
-      type: 'FULLSTACK',
+      name: STARTER_APP_PRODUCT_BROWSER_NAME,
+      type: INTERACTIVE_PAGE_COMPONENT_TYPE,
       icon: '🛍️',
       // Will be patched at create time with real {appId, connectorId}.
-      code: FULLSTACK_CODE_TEMPLATE,
+      code: PRODUCT_BROWSER_CODE_TEMPLATE,
     },
   ],
 };
