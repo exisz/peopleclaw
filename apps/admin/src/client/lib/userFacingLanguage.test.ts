@@ -1,6 +1,41 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, it } from 'node:test';
 import { userFacingAppName } from './userFacingLanguage';
+
+const userFacingSourceRoots = [
+  join(process.cwd(), 'src/client/components'),
+  join(process.cwd(), 'src/client/pages'),
+  join(process.cwd(), 'src/client/i18n'),
+  join(process.cwd(), 'src/client/index.html'),
+];
+
+const forbiddenComponentTypeLabels = [/\bFULLSTACK\b/, /\bFRONTEND\b/, /\bBACKEND\b/];
+
+function listUserFacingSourceFiles(path: string): string[] {
+  const stat = statSync(path);
+  if (stat.isFile()) return /\.(tsx?|json|html)$/.test(path) ? [path] : [];
+
+  const entries = readdirSync(path, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const fullPath = join(path, entry.name);
+    if (entry.isDirectory()) return listUserFacingSourceFiles(fullPath);
+    if (!/\.(tsx?|json|html)$/.test(entry.name)) return [];
+    return [fullPath];
+  });
+}
+
+function scanForbiddenComponentTypeLabels() {
+  return userFacingSourceRoots
+    .flatMap((root) => listUserFacingSourceFiles(root))
+    .flatMap((file) => {
+      const text = readFileSync(file, 'utf8');
+      return forbiddenComponentTypeLabels
+        .filter((pattern) => pattern.test(text))
+        .map((pattern) => `${relative(process.cwd(), file)}: ${pattern}`);
+    });
+}
 
 const forbidden = [
   /\bComponent\b/i,
@@ -22,5 +57,11 @@ describe('TC-PC-124 user-facing app language', () => {
 
     assert.deepEqual(violations, []);
     assert.equal(visible.includes('App'), true);
+  });
+});
+
+describe('TC-PC-133 client source user-facing component type language', () => {
+  it('keeps FULLSTACK/FRONTEND/BACKEND out of rendered client surfaces and locale copy', () => {
+    assert.deepEqual(scanForbiddenComponentTypeLabels(), []);
   });
 });
