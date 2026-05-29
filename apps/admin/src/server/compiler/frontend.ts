@@ -1,5 +1,5 @@
 /**
- * Frontend compiler — compiles a FRONTEND component's client-only code into
+ * Browser screen compiler — compiles a client-only app screen module into
  * an ESM bundle that exports a default React component.
  * (PLANET-1428, PLANET-1432, PLANET-1435)
  *
