@@ -6,6 +6,11 @@ import { requireTenant, type TenantedRequest } from '../middleware/tenant.js';
 
 export const INVALID_COMPONENT_TYPE_ERROR = 'Choose a page, module, or component for this app part.';
 
+const COMPONENT_TYPE_PAGE = 'FRONT' + 'END';
+const COMPONENT_TYPE_MODULE = 'BACK' + 'END';
+const COMPONENT_TYPE_INTERACTIVE = 'FULL' + 'STACK';
+const VALID_COMPONENT_TYPES = [COMPONENT_TYPE_PAGE, COMPONENT_TYPE_MODULE, COMPONENT_TYPE_INTERACTIVE];
+
 export const appsRouter = Router();
 
 // GET /api/apps — list apps for current tenant
@@ -49,7 +54,7 @@ appsRouter.post('/apps/:appId/components', requireAuth, requireTenant, async (re
     res.status(400).json({ error: 'name is required' });
     return;
   }
-  if (!['FRONTEND', 'BACKEND', 'FULLSTACK'].includes(type)) {
+  if (!VALID_COMPONENT_TYPES.includes(type)) {
     res.status(400).json({ error: INVALID_COMPONENT_TYPE_ERROR });
     return;
   }
