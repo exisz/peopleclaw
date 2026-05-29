@@ -12,6 +12,7 @@ const userFacingSourceRoots = [
 ];
 
 const forbiddenComponentTypeLabels = [/\bFULLSTACK\b/, /\bFRONTEND\b/, /\bBACKEND\b/];
+const forbiddenCanvasLabels = [/\bCanvas\b/, /\bcanvas\b/];
 
 function listUserFacingSourceFiles(path: string): string[] {
   const stat = statSync(path);
@@ -26,12 +27,12 @@ function listUserFacingSourceFiles(path: string): string[] {
   });
 }
 
-function scanForbiddenComponentTypeLabels() {
+function scanForbiddenLabels(patterns: RegExp[]) {
   return userFacingSourceRoots
     .flatMap((root) => listUserFacingSourceFiles(root))
     .flatMap((file) => {
       const text = readFileSync(file, 'utf8');
-      return forbiddenComponentTypeLabels
+      return patterns
         .filter((pattern) => pattern.test(text))
         .map((pattern) => `${relative(process.cwd(), file)}: ${pattern}`);
     });
@@ -62,6 +63,13 @@ describe('TC-PC-124 user-facing app language', () => {
 
 describe('TC-PC-133 client source user-facing component type language', () => {
   it('keeps FULLSTACK/FRONTEND/BACKEND out of rendered client surfaces and locale copy', () => {
-    assert.deepEqual(scanForbiddenComponentTypeLabels(), []);
+    assert.deepEqual(scanForbiddenLabels(forbiddenComponentTypeLabels), []);
+  });
+});
+
+
+describe('TC-PC-134 client source user-facing canvas language', () => {
+  it('keeps Canvas/canvas product-surface labels out of rendered client surfaces and locale copy', () => {
+    assert.deepEqual(scanForbiddenLabels(forbiddenCanvasLabels), []);
   });
 });
