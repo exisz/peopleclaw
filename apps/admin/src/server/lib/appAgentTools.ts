@@ -43,11 +43,11 @@ export const appAgentTools: Tool[] = [
   },
   {
     name: 'create_app_component',
-    description: 'Create a module, page, or component in the current App using the existing Component schema/API conventions.',
+    description: 'Create a page, module, or app part in the current App using PeopleClaw app-part conventions.',
     parameters: objectSchema({
-      kind: { type: 'string', enum: ['component', 'module', 'page'], description: 'Conceptual item to create. Stored as a Component in PeopleClaw.' },
+      kind: { type: 'string', enum: ['component', 'module', 'page'], description: 'Conceptual app part to create: page, module, or component.' },
       name: { type: 'string', minLength: 1, maxLength: 120 },
-      type: { type: 'string', enum: ['FRONTEND', 'BACKEND', 'FULLSTACK'], description: 'Component runtime surface. Defaults to FRONTEND for page/module/component.' },
+      type: { type: 'string', enum: ['FRONTEND', 'BACKEND', 'FULLSTACK'], description: 'Internal storage classification. Prefer kind: page, module, or component in user-facing flows.' },
       runtime: { type: 'string', enum: ['PEOPLECLAW_CLOUD', 'USER_BYO_NODE', 'EDGE'], description: 'Execution runtime. Defaults to PEOPLECLAW_CLOUD.' },
       code: { type: 'string', description: 'Initial source code. Keep it self-contained and platform-neutral.' },
       inputSchema: { type: 'string', description: 'Optional JSON schema string for inputs.' },
@@ -58,7 +58,7 @@ export const appAgentTools: Tool[] = [
   },
   {
     name: 'update_app_component',
-    description: 'Update safe metadata/source fields on an existing component in the current App. Tenant/app scoped; cannot touch secrets or integrations.',
+    description: 'Update safe metadata/source fields on an existing app part. Tenant/app scoped; cannot touch secrets or integrations.',
     parameters: objectSchema({
       componentId: { type: 'string', minLength: 1 },
       name: { type: 'string', minLength: 1, maxLength: 120 },
