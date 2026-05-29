@@ -24,7 +24,7 @@ componentCompileRouter.post('/components/:id/compile', async (req, res) => {
       });
       res.json({ ok: true, compiledAt: result.compiledAt });
     } else {
-      // FRONTEND: compile client-only bundle
+      // Compile client-only bundle
       const result = compileFrontend(component.code, component.id);
       await prisma.component.update({
         where: { id: component.id },

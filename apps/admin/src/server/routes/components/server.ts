@@ -35,7 +35,7 @@ componentServerRouter.get('/components/:id/server', async (req, res) => {
       console.error('[component/server] failed to decrypt secrets', err);
     }
 
-    // Inject callApp so FULLSTACK server() can fan out to sibling components
+    // Inject callApp so server handlers can fan out to sibling app parts
     // inside the same App.
     const callApp = component.app
       ? buildCallAppCtx(component.app.tenantId)
