@@ -3,6 +3,8 @@ import { getPrisma } from '../../lib/prisma.js';
 import { compileFullstack } from '../../compiler/fullstack.js';
 import { compileFrontend } from '../../compiler/frontend.js';
 
+export const UNSUPPORTED_COMPILE_COMPONENT_ERROR = 'This app part cannot be compiled for browser preview.';
+
 export const componentCompileRouter = Router();
 
 // POST /api/components/:id/compile
@@ -11,7 +13,7 @@ componentCompileRouter.post('/components/:id/compile', async (req, res) => {
     const prisma = getPrisma();
     const component = await prisma.component.findUnique({ where: { id: req.params.id } });
     if (!component) return res.status(404).json({ error: 'Component not found' });
-    if (component.type !== 'FULLSTACK' && component.type !== 'FRONTEND') return res.status(400).json({ error: 'Component is not FULLSTACK or FRONTEND type' });
+    if (component.type !== 'FULLSTACK' && component.type !== 'FRONTEND') return res.status(400).json({ error: UNSUPPORTED_COMPILE_COMPONENT_ERROR });
     if (!component.code) return res.status(400).json({ error: 'Component has no code' });
 
     if (component.type === 'FULLSTACK') {
