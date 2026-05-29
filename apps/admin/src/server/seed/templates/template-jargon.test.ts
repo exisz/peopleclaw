@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { crmAppTemplate } from './crm-app';
 import { ecommerceStarterTemplate, type AppTemplate } from './ecommerce-starter';
@@ -23,5 +24,27 @@ describe('starter template artifact wording', () => {
     for (const copy of shippableCopy) {
       assert.doesNotMatch(copy, FORBIDDEN_RUNTIME_JARGON, `${copy.slice(0, 160)} must not expose runtime component type jargon`);
     }
+  });
+});
+
+
+describe('ecommerce starter business wording', () => {
+  it('TC-PC-148 keeps ecommerce artifacts and generated app descriptions free of runtime jargon', () => {
+    const generatedDescriptionCopy = [
+      ecommerceStarterTemplate.id,
+      ecommerceStarterTemplate.name,
+      ecommerceStarterTemplate.description,
+      ...ecommerceStarterTemplate.components.flatMap(component => [component.name, component.icon, component.code]),
+    ].join('\n');
+
+    assert.match(generatedDescriptionCopy, /shopify|product|商品|电商/i);
+    assert.doesNotMatch(generatedDescriptionCopy, FORBIDDEN_RUNTIME_JARGON);
+
+    const source = readFileSync(new URL('./ecommerce-starter.ts', import.meta.url), 'utf8');
+    const publicComments = source
+      .split('\n')
+      .filter((line) => line.trim().startsWith('*') || line.trim().startsWith('//'))
+      .join('\n');
+    assert.doesNotMatch(publicComments, FORBIDDEN_RUNTIME_JARGON);
   });
 });

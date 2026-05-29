@@ -1,5 +1,5 @@
 /**
- * Ecommerce Starter — form + backend functions.
+ * Ecommerce Starter — product search and listing modules.
  *
  * Code/functions/routes are the primitive; there is no graph, layout, or
  * visual workflow model in starter apps.
@@ -12,7 +12,7 @@ export interface TemplateComponent {
   type: ComponentType;
   icon: string;
   code: string;
-  /** PLANET-1461: when true, component is callable via ctx.callApp from sibling functions. */
+  /** PLANET-1461: when true, this app module is callable via ctx.callApp from sibling functions. */
   isExported?: boolean;
 }
 
@@ -24,7 +24,7 @@ export interface AppTemplate {
   components: TemplateComponent[];
 }
 
-const BACKEND_CODE = `export default async function run(input: any, ctx: any) {
+const PRODUCT_SYNC_CODE = `export default async function run(input: any, ctx: any) {
 
   const shop = ctx.env.SHOPIFY_DEV_SHOP;
   const token = ctx.env.SHOPIFY_DEV_ADMIN_TOKEN;
@@ -45,14 +45,14 @@ const BACKEND_CODE = `export default async function run(input: any, ctx: any) {
 }
 `;
 
-const FRONTEND_CODE = `export default async function run(input: any, ctx: any) {
-  // Frontend search form — sends query downstream
+const PRODUCT_SEARCH_CODE = `export default async function run(input: any, ctx: any) {
+  // Product search form — sends query downstream
   const query = input?.query ?? '';
   return { query };
 }
 `;
 
-const FULLSTACK_CODE = `// --- SERVER ---
+const PRODUCT_LIST_PAGE_CODE = `// --- SERVER ---
 export async function server(ctx: any) {
   const shop = ctx.env.SHOPIFY_DEV_SHOP;
   const token = ctx.env.SHOPIFY_DEV_ADMIN_TOKEN;
@@ -100,19 +100,19 @@ export const ecommerceStarterTemplate: AppTemplate = {
       name: '商品搜索',
       type: 'FRONTEND',
       icon: '🔍',
-      code: FRONTEND_CODE,
+      code: PRODUCT_SEARCH_CODE,
     },
     {
       name: 'Shopify 商品列表',
       type: 'BACKEND',
       icon: '🛍️',
-      code: BACKEND_CODE,
+      code: PRODUCT_SYNC_CODE,
     },
     {
       name: '商品列表卡片',
       type: 'FULLSTACK',
       icon: '📋',
-      code: FULLSTACK_CODE,
+      code: PRODUCT_LIST_PAGE_CODE,
     },
   ],
 };
