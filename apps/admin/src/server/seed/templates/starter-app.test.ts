@@ -97,7 +97,7 @@ describe('Starter app template safety', () => {
       starterAppTemplate.name,
       starterAppTemplate.description,
       ...starterAppTemplate.components.flatMap((component) => [component.name, component.icon]),
-      ...buildStarterAppArtifactTree({ appId: 'starter-shopify-demo' }).sidebar.sections.flatMap((section) => [
+      ...buildStarterAppArtifactTree('starter-shopify-demo').sidebar.sections.flatMap((section) => [
         section.title,
         ...section.items.map((item) => item.label),
       ]),
