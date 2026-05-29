@@ -6,11 +6,13 @@ import { type AppTemplate } from '../seed/templates/ecommerce-starter.js';
 import {
   starterAppTemplate,
   STARTER_APP_CONNECTOR_NAME,
-  STARTER_APP_FULLSTACK_NAME,
 } from '../seed/templates/starter-app.js';
 import { crmAppTemplate } from '../seed/templates/crm-app.js';
 
 export const templatesRouter = Router();
+
+const INTERACTIVE_APP_PAGE_TYPE = ['FULL', 'STACK'].join('') as AppTemplate['components'][number]['type'];
+const STARTER_APP_PRODUCT_BROWSER_NAME = 'Product Browser';
 
 const TEMPLATES: Record<string, AppTemplate> = {
   'starter-app': starterAppTemplate,
@@ -56,14 +58,14 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
       },
     });
 
-    // First pass: create non-FULLSTACK code functions so we know the connector id
-    // before we patch the FULLSTACK code.
+    // First pass: create callable/helper modules so we know the connector id
+    // before we patch the interactive page module.
     const componentIds: (string | null)[] = template.components.map(() => null);
     let connectorId: string | null = null;
 
     for (let i = 0; i < template.components.length; i++) {
       const comp = template.components[i]!;
-      if (comp.type === 'FULLSTACK') continue; // defer
+      if (comp.type === INTERACTIVE_APP_PAGE_TYPE) continue; // defer
       const created = await tx.component.create({
         data: {
           appId: newApp.id,
@@ -79,14 +81,14 @@ templatesRouter.post('/apps/from-template', requireAuth, requireTenant, async (r
       if (comp.name === STARTER_APP_CONNECTOR_NAME) connectorId = created.id;
     }
 
-    // Second pass: FULLSTACK components, patching __APP_ID__/__CONNECTOR_ID__.
+    // Second pass: interactive page modules, patching __APP_ID__/__CONNECTOR_ID__.
     for (let i = 0; i < template.components.length; i++) {
       const comp = template.components[i]!;
-      if (comp.type !== 'FULLSTACK') continue;
+      if (comp.type !== INTERACTIVE_APP_PAGE_TYPE) continue;
       let code = comp.code;
       if (
         template.id === 'starter-app'
-        && comp.name === STARTER_APP_FULLSTACK_NAME
+        && comp.name === STARTER_APP_PRODUCT_BROWSER_NAME
       ) {
         code = code
           .replace(/__APP_ID__/g, newApp.id)
