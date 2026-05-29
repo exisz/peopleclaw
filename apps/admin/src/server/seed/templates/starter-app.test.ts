@@ -92,6 +92,23 @@ describe('Starter app template safety', () => {
     assert.match(artifactText, /Shopify|SHOPIFY/);
   });
 
+  it('TC-PC-135 keeps starter public wording business-facing, not runtime component jargon', () => {
+    const publicCopy = [
+      starterAppTemplate.name,
+      starterAppTemplate.description,
+      ...starterAppTemplate.components.flatMap((component) => [component.name, component.icon]),
+      ...buildStarterAppArtifactTree({ appId: 'starter-shopify-demo' }).sidebar.sections.flatMap((section) => [
+        section.title,
+        ...section.items.map((item) => item.label),
+      ]),
+    ].filter(Boolean);
+
+    assert.ok(publicCopy.some((copy) => /store|catalog|product|sync|chat|dashboard/i.test(copy)), 'starter exposes business wording');
+    for (const copy of publicCopy) {
+      assert.doesNotMatch(copy, /(?:FULLSTACK|FRONTEND|BACKEND)/, `${copy} must not expose runtime component type jargon`);
+    }
+  });
+
   it('TC-PC-108 proves Shopify token failures are recoverable and redacted', () => {
     const connector = starterAppTemplate.components.find(c => c.name === STARTER_APP_CONNECTOR_NAME)!;
     const productBrowser = starterAppTemplate.components.find(c => c.name === STARTER_APP_FULLSTACK_NAME)!;
