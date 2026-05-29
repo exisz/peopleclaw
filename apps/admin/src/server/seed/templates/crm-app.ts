@@ -5,16 +5,16 @@
  * All data lives in ctx.appStore (generic per-App KV — Core-allowed primitive,
  * §1.4 compliant, no SaaS-specific schema).
  *
- * Component layout (matches DoD spec verbatim):
- *   1. FRONTEND  '联系人表单'   — name/email/phone/company/tags
- *   2. FULLSTACK '联系人列表'   — server reads, client renders table
- *   3. FRONTEND  '跟进记录表单' — pick contact + type + note
- *   4. FULLSTACK '跟进时间线'   — server reads, client renders timeline
+ * App layout (matches DoD spec verbatim):
+ *   1. '联系人表单'   — name/email/phone/company/tags
+ *   2. '联系人列表'   — reads contacts and renders a table
+ *   3. '跟进记录表单' — pick contact + type + note
+ *   4. '跟进时间线'   — reads follow-ups and renders a timeline
  *
- * Each FULLSTACK exports BOTH `server` (display) AND `default` (write handler).
- * Form's onSubmit hits backend function's /run endpoint, which invokes the
- * `default` export → writes to ctx.appStore. Reopening the FULLSTACK tab
- * re-fetches /server → fresh data appears.
+ * Interactive list/timeline modules export BOTH `server` (display) AND
+ * `default` (write handler). Form onSubmit hits the managed /run endpoint,
+ * which invokes the `default` export → writes to ctx.appStore. Reopening
+ * the app page re-fetches /server → fresh data appears.
  *
  * Connections:
  *   [联系人表单] ──submit──▶ [联系人列表]
@@ -70,9 +70,9 @@ export default Client;
 `;
 
 /**
- * FULLSTACK '联系人列表' — server reads + default writes (backend function).
+ * '联系人列表' — reads contacts + default writes contact rows.
  */
-const CONTACT_LIST_FULLSTACK_CODE = `// --- WRITE PATH (backend function — invoked by form's onSubmit via /run) ---
+const CONTACT_LIST_INTERACTIVE_CODE = `// --- WRITE PATH (managed handler invoked by form onSubmit via /run) ---
 export default async function writeContact(input: any, ctx: any) {
   const name = (input?.name || '').trim();
   if (!name) return { ok: false, error: 'NAME_REQUIRED' };
@@ -200,9 +200,9 @@ export default Client;
 `;
 
 /**
- * FULLSTACK '跟进时间线' — server reads + default writes (backend function).
+ * '跟进时间线' — reads follow-ups + default writes follow-up rows.
  */
-const TIMELINE_FULLSTACK_CODE = `// --- WRITE PATH ---
+const TIMELINE_INTERACTIVE_CODE = `// --- WRITE PATH ---
 export default async function writeFollowup(input: any, ctx: any) {
   const contactId = (input?.contactId || '').trim();
   if (!contactId) return { ok: false, error: 'CONTACT_ID_REQUIRED' };
@@ -287,7 +287,7 @@ export const crmAppTemplate: AppTemplate = {
       name: CRM_APP_CONTACT_LIST_NAME,
       type: 'FULLSTACK',
       icon: '📇',
-      code: CONTACT_LIST_FULLSTACK_CODE,
+      code: CONTACT_LIST_INTERACTIVE_CODE,
     },
     {
       name: CRM_APP_FOLLOWUP_FORM_NAME,
@@ -299,7 +299,7 @@ export const crmAppTemplate: AppTemplate = {
       name: CRM_APP_TIMELINE_NAME,
       type: 'FULLSTACK',
       icon: '🕒',
-      code: TIMELINE_FULLSTACK_CODE,
+      code: TIMELINE_INTERACTIVE_CODE,
     },
   ],
 };
