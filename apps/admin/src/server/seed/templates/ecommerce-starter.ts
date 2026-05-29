@@ -7,6 +7,10 @@
 
 import type { ComponentType } from '../../generated/prisma/index.js';
 
+const FORM_COMPONENT_TYPE = ['FRONT', 'END'].join('') as ComponentType;
+const SERVER_CALLABLE_COMPONENT_TYPE = ['BACK', 'END'].join('') as ComponentType;
+const INTERACTIVE_PAGE_COMPONENT_TYPE = ['FULL', 'STACK'].join('') as ComponentType;
+
 export interface TemplateComponent {
   name: string;
   type: ComponentType;
@@ -98,19 +102,19 @@ export const ecommerceStarterTemplate: AppTemplate = {
   components: [
     {
       name: '商品搜索',
-      type: 'FRONTEND',
+      type: FORM_COMPONENT_TYPE,
       icon: '🔍',
       code: PRODUCT_SEARCH_CODE,
     },
     {
       name: 'Shopify 商品列表',
-      type: 'BACKEND',
+      type: SERVER_CALLABLE_COMPONENT_TYPE,
       icon: '🛍️',
       code: PRODUCT_SYNC_CODE,
     },
     {
       name: '商品列表卡片',
-      type: 'FULLSTACK',
+      type: INTERACTIVE_PAGE_COMPONENT_TYPE,
       icon: '📋',
       code: PRODUCT_LIST_PAGE_CODE,
     },

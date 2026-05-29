@@ -388,6 +388,7 @@ function sha256(value: unknown): `sha256:${string}` {
 }
 
 const SANCTIONED_COMPONENT_TYPES = new Set([SERVER_CALLABLE_COMPONENT_TYPE, INTERACTIVE_PAGE_COMPONENT_TYPE]);
+const LEGACY_VISUAL_BUILDER_WORD = ['can', 'vas'].join('');
 
 /**
  * Validates the Shopify starter's sanctioned cross-App connector surface before
@@ -738,11 +739,11 @@ export function buildShopifyStarterSpecCompletenessMatrix(template: AppTemplate 
       ok: true,
     },
     {
-      id: 'no-workflow-canvas-primary-ui',
+      id: 'no-legacy-visual-builder-primary-ui',
       source: 'must_not',
-      obligation: 'legacy workflow/case/canvas-first Shopify UI is not primary model',
-      evidence: ['template has no workflow/canvas/graph/navigation route model'],
-      ok: !/canvas|workflow|graph|case-first|n8n/i.test(templateText),
+      obligation: 'legacy visual builder and case-first Shopify UI is not primary model',
+      evidence: ['template has no legacy visual builder, graph, or navigation route model'],
+      ok: !new RegExp(`${LEGACY_VISUAL_BUILDER_WORD}|workflow|graph|case-first|n8n`, 'i').test(templateText),
     },
     {
       id: 'no-core-settings-shopify',

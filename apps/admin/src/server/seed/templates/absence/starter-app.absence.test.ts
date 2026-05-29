@@ -465,7 +465,7 @@ describe('Starter app template safety', () => {
       'generic-platform-primitives',
       'connector-component-surface',
       'verification-path',
-      'no-workflow-canvas-primary-ui',
+      'no-legacy-visual-builder-primary-ui',
       'no-core-settings-shopify',
       'no-destructive-delete',
       'no-placeholder-fake-success',

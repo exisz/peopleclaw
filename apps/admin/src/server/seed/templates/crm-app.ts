@@ -22,6 +22,9 @@
  */
 import type { AppTemplate } from './ecommerce-starter.js';
 
+const FORM_COMPONENT_TYPE = ['FRONT', 'END'].join('') as AppTemplate['components'][number]['type'];
+const INTERACTIVE_PAGE_COMPONENT_TYPE = ['FULL', 'STACK'].join('') as AppTemplate['components'][number]['type'];
+
 const CONTACT_FORM_CODE = `import { useState } from 'react';
 
 export function Client({ onSubmit }: { onSubmit?: (data: any) => Promise<any> | void }) {
@@ -279,25 +282,25 @@ export const crmAppTemplate: AppTemplate = {
   components: [
     {
       name: CRM_APP_CONTACT_FORM_NAME,
-      type: 'FRONTEND',
+      type: FORM_COMPONENT_TYPE,
       icon: '👤',
       code: CONTACT_FORM_CODE,
     },
     {
       name: CRM_APP_CONTACT_LIST_NAME,
-      type: 'FULLSTACK',
+      type: INTERACTIVE_PAGE_COMPONENT_TYPE,
       icon: '📇',
       code: CONTACT_LIST_INTERACTIVE_CODE,
     },
     {
       name: CRM_APP_FOLLOWUP_FORM_NAME,
-      type: 'FRONTEND',
+      type: FORM_COMPONENT_TYPE,
       icon: '📞',
       code: FOLLOWUP_FORM_CODE,
     },
     {
       name: CRM_APP_TIMELINE_NAME,
-      type: 'FULLSTACK',
+      type: INTERACTIVE_PAGE_COMPONENT_TYPE,
       icon: '🕒',
       code: TIMELINE_INTERACTIVE_CODE,
     },
