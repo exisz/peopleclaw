@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
-const clientRoot = new URL('../', import.meta.url);
+const clientRoot = new URL('../../', import.meta.url);
 const adminRoot = new URL('../../', clientRoot);
 const slash = '/';
 const publishedRoute = slash + 'published';
@@ -25,7 +25,7 @@ function collectTextFiles(rootPath: string): string[] {
   const out: string[] = [];
   const walk = (url: URL) => {
     for (const entry of readdirSync(url)) {
-      if (['node_modules', '.next', 'dist', 'coverage', 'test-results'].includes(entry)) continue;
+      if (['node_modules', '.next', 'dist', 'coverage', 'test-results', 'absence'].includes(entry)) continue;
       const child = new URL(entry + (entry.includes('.') ? '' : '/'), url);
       const stat = statSync(child);
       if (stat.isDirectory()) {

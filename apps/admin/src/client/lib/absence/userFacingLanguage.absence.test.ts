@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, it } from 'node:test';
-import { userFacingAppName } from './userFacingLanguage';
+import { userFacingAppName } from '../userFacingLanguage';
 
 const userFacingSourceRoots = [
   join(process.cwd(), 'src/client/components'),

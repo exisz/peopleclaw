@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { createInMemoryAppDeploymentRegistry } from '@peopleclaw/sdk/app-artifact';
-import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync, runOneClickShopifyStarterCrudDryRun } from './starter-app';
+import { planStarterAppPreviewDeployment, starterAppTemplate, STARTER_APP_CONNECTOR_NAME, STARTER_APP_FULLSTACK_NAME, validateStarterAppConnectorSurface, verifyStarterPreviewDeployment, buildShopifyStarterSpecCompletenessMatrix, buildStarterAppArtifactTree, STARTER_APP_SIDEBAR_JSON5, buildStarterSecretReferenceEvidence, planStarterManagedDataSync, runOneClickShopifyStarterCrudDryRun } from '../starter-app';
 
 describe('Starter app template safety', () => {
   it('TC-PC-089 proves starter-app template has no SaaS-specific core code', () => {
@@ -47,9 +47,9 @@ describe('Starter app template safety', () => {
   });
 
   it('TC-PC-106 proves Shopify setup is absent from core Settings and present in starter connector', () => {
-    const settingsSource = readFileSync(new URL('../../../client/pages/Settings.tsx', import.meta.url), 'utf8');
-    const settingsEn = readFileSync(new URL('../../../client/i18n/locales/en/settings.json', import.meta.url), 'utf8');
-    const settingsZh = readFileSync(new URL('../../../client/i18n/locales/zh/settings.json', import.meta.url), 'utf8');
+    const settingsSource = readFileSync(new URL('../../../../client/pages/Settings.tsx', import.meta.url), 'utf8');
+    const settingsEn = readFileSync(new URL('../../../../client/i18n/locales/en/settings.json', import.meta.url), 'utf8');
+    const settingsZh = readFileSync(new URL('../../../../client/i18n/locales/zh/settings.json', import.meta.url), 'utf8');
 
     for (const source of [settingsSource, settingsEn, settingsZh]) {
       assert.doesNotMatch(source, /shopify/i);
@@ -73,8 +73,8 @@ describe('Starter app template safety', () => {
   });
 
   it('TC-PC-107 proves Shopify starter flow exposes no delete-app operation', () => {
-    const appsListSource = readFileSync(new URL('../../../client/pages/AppsList.tsx', import.meta.url), 'utf8');
-    const appsRouteSource = readFileSync(new URL('../../routes/apps.ts', import.meta.url), 'utf8');
+    const appsListSource = readFileSync(new URL('../../../../client/pages/AppsList.tsx', import.meta.url), 'utf8');
+    const appsRouteSource = readFileSync(new URL('../../../routes/apps.ts', import.meta.url), 'utf8');
     const artifactText = JSON.stringify(starterAppTemplate);
 
     for (const source of [appsListSource, appsRouteSource, artifactText]) {

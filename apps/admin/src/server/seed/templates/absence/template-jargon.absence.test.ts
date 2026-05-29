@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { crmAppTemplate } from './crm-app';
-import { ecommerceStarterTemplate, type AppTemplate } from './ecommerce-starter';
-import { starterAppTemplate } from './starter-app';
+import { crmAppTemplate } from '../crm-app';
+import { ecommerceStarterTemplate, type AppTemplate } from '../ecommerce-starter';
+import { starterAppTemplate } from '../starter-app';
 
 const FORBIDDEN_RUNTIME_JARGON = /\b(?:FULLSTACK|FRONTEND|BACKEND)\b/;
 
@@ -40,7 +40,7 @@ describe('ecommerce starter business wording', () => {
     assert.match(generatedDescriptionCopy, /shopify|product|商品|电商/i);
     assert.doesNotMatch(generatedDescriptionCopy, FORBIDDEN_RUNTIME_JARGON);
 
-    const source = readFileSync(new URL('./ecommerce-starter.ts', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../ecommerce-starter.ts', import.meta.url), 'utf8');
     const publicComments = source
       .split('\n')
       .filter((line) => line.trim().startsWith('*') || line.trim().startsWith('//'))

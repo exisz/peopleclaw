@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { UNSUPPORTED_COMPILE_COMPONENT_ERROR } from './compile';
+import { UNSUPPORTED_COMPILE_COMPONENT_ERROR } from '../compile';
 
 describe('TC-PC-136 component compile public API errors', () => {
   it('uses user-safe wording instead of raw component runtime type jargon', () => {
@@ -12,7 +12,7 @@ describe('TC-PC-136 component compile public API errors', () => {
     }
     assert.match(UNSUPPORTED_COMPILE_COMPONENT_ERROR, /app part|browser preview/i);
 
-    const routeSource = readFileSync(new URL('./compile.ts', import.meta.url), 'utf8');
+    const routeSource = readFileSync(new URL('../compile.ts', import.meta.url), 'utf8');
     assert.doesNotMatch(routeSource, /error:\s*['"]Component is not FULLSTACK or FRONTEND type['"]/);
   });
 });
@@ -36,7 +36,7 @@ describe('TC-PC-145 component route/public wording guardrails', () => {
     const publicText = [UNSUPPORTED_COMPILE_COMPONENT_ERROR];
 
     for (const file of routeFiles) {
-      const source = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
+      const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
       const commentAndResponseLines = source
         .split('\n')
         .filter((line) => /\/\/|res\.(?:status\([^)]*\)\.)?(?:json|send)\(/.test(line))
@@ -44,7 +44,7 @@ describe('TC-PC-145 component route/public wording guardrails', () => {
       publicText.push(commentAndResponseLines.join('\n'));
     }
 
-    publicText.push(readFileSync(new URL('../../../../README.md', import.meta.url), 'utf8'));
+    publicText.push(readFileSync(new URL('../../../../../README.md', import.meta.url), 'utf8'));
 
     for (const text of publicText) {
       for (const pattern of forbiddenPublicWording) {

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { extractExports } from '../../compiler/extract-exports';
-import { crmAppTemplate, CRM_APP_CONTACT_LIST_NAME } from './crm-app';
+import { extractExports } from '../../../compiler/extract-exports';
+import { crmAppTemplate, CRM_APP_CONTACT_LIST_NAME } from '../crm-app';
 
 describe('CRM starter app preview flow', () => {
   it('TC-PC-088 proves CRM preview create contact works end-to-end', () => {
@@ -38,6 +38,6 @@ describe('CRM starter app business wording', () => {
 });
 
 function readCrmTemplateSourceComments(): string {
-  const source = readFileSync(new URL('./crm-app.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../crm-app.ts', import.meta.url), 'utf8');
   return source.split('\n').filter((line: string) => line.trim().startsWith('*') || line.trim().startsWith('//')).join('\n');
 }

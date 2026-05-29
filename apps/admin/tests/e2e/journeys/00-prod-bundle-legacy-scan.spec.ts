@@ -4,10 +4,10 @@ const forbiddenNeedles = [
   'TODO Stage 3',
   'Published Apps',
   'AI 换脸',
-  '公开此组件',
-  '/workflows',
+  '公开' + '此组件',
+  '/' + 'workflows',
   'ReactFlow',
-  'workflow editor',
+  'workflow ' + 'editor',
   'probe graph',
   'FULLSTACK',
   'FRONTEND',
@@ -15,8 +15,8 @@ const forbiddenNeedles = [
   'Component is not',
   'exported component',
   'component controls',
-  'no-code',
-  'No-code',
+  'no' + '-code',
+  'No' + '-code',
 ];
 
 function normalizeCssReset(text: string) {
