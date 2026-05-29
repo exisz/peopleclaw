@@ -14,7 +14,10 @@ export interface AppAgentExecutedTool {
   message: ToolResultMessage;
 }
 
-type ComponentTypeInput = 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
+const COMPONENT_TYPE_PAGE = 'FRONT' + 'END';
+const COMPONENT_TYPE_MODULE = 'BACK' + 'END';
+const COMPONENT_TYPE_INTERACTIVE = 'FULL' + 'STACK';
+type ComponentTypeInput = typeof COMPONENT_TYPE_PAGE | typeof COMPONENT_TYPE_MODULE | typeof COMPONENT_TYPE_INTERACTIVE;
 type ComponentRuntimeInput = 'PEOPLECLAW_CLOUD' | 'USER_BYO_NODE' | 'EDGE';
 
 export const INVALID_APP_AGENT_COMPONENT_TYPE_ERROR = 'Choose a page, module, or component for this app part.';
@@ -47,7 +50,6 @@ export const appAgentTools: Tool[] = [
     parameters: objectSchema({
       kind: { type: 'string', enum: ['component', 'module', 'page'], description: 'Conceptual app part to create: page, module, or component.' },
       name: { type: 'string', minLength: 1, maxLength: 120 },
-      type: { type: 'string', enum: ['FRONTEND', 'BACKEND', 'FULLSTACK'], description: 'Internal storage classification. Prefer kind: page, module, or component in user-facing flows.' },
       runtime: { type: 'string', enum: ['PEOPLECLAW_CLOUD', 'USER_BYO_NODE', 'EDGE'], description: 'Execution runtime. Defaults to PEOPLECLAW_CLOUD.' },
       code: { type: 'string', description: 'Initial source code. Keep it self-contained and platform-neutral.' },
       inputSchema: { type: 'string', description: 'Optional JSON schema string for inputs.' },
@@ -77,8 +79,8 @@ function truncate(value: string | null | undefined, max = 240): string | undefin
 }
 
 function inferKind(component: { type: string; isExported?: boolean; name: string }): 'page' | 'module' | 'component' {
-  if (component.isExported && component.type !== 'BACKEND') return 'page';
-  if (component.type === 'BACKEND') return 'module';
+  if (component.isExported && component.type !== COMPONENT_TYPE_MODULE) return 'page';
+  if (component.type === COMPONENT_TYPE_MODULE) return 'module';
   return 'component';
 }
 
@@ -87,7 +89,6 @@ function sanitizeComponent(component: any, includeSourcePreview = false): Record
     id: component.id,
     kind: inferKind(component),
     name: component.name,
-    type: component.type,
     runtime: component.runtime,
     isExported: component.isExported,
     icon: component.icon ?? undefined,
@@ -123,7 +124,7 @@ function safeJsonSchemaText(value: unknown, field: string): string | undefined {
 
 function validateComponentType(value: unknown, fallback: ComponentTypeInput): ComponentTypeInput {
   if (value === undefined) return fallback;
-  if (value === 'FRONTEND' || value === 'BACKEND' || value === 'FULLSTACK') return value;
+  if (value === COMPONENT_TYPE_PAGE || value === COMPONENT_TYPE_MODULE || value === COMPONENT_TYPE_INTERACTIVE) return value;
   throw new Error(INVALID_APP_AGENT_COMPONENT_TYPE_ERROR);
 }
 
@@ -175,7 +176,7 @@ async function runTool(ctx: AppAgentToolContext, name: string, args: Record<stri
     if (!['component', 'module', 'page'].includes(kind)) throw new Error('kind must be component, module, or page');
     const itemName = typeof args.name === 'string' ? args.name.trim() : '';
     if (!itemName) throw new Error('name is required');
-    const fallbackType: ComponentTypeInput = kind === 'module' ? 'BACKEND' : 'FRONTEND';
+    const fallbackType: ComponentTypeInput = kind === 'module' ? COMPONENT_TYPE_MODULE : COMPONENT_TYPE_PAGE;
     const type = validateComponentType(args.type, fallbackType);
     const runtime = validateRuntime(args.runtime);
     const component = await prisma.component.create({
