@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { relative, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { crmAppTemplate } from '../crm-app';
 import { ecommerceStarterTemplate, type AppTemplate } from '../ecommerce-starter';
@@ -60,5 +61,33 @@ describe('TC-PC-158 Shopify starter source runtime-jargon absence', () => {
     assert.match(source, /SERVER_CALLABLE_COMPONENT_TYPE/);
     assert.match(source, /INTERACTIVE_PAGE_COMPONENT_TYPE/);
     assert.match(source, /STARTER_APP_PRODUCT_BROWSER_NAME/);
+  });
+});
+
+
+describe('TC-PC-159 template test fixture quarantine', () => {
+  it('keeps forbidden runtime-jargon literals only in explicit absence regression tests', () => {
+    const templateDir = new URL('..', import.meta.url);
+    const forbidden = /(?:TODO Stage 3|Published Apps|AI 换脸|公开此组件|\/workflows|ReactFlow|canvas|Canvas|workflow editor|probe graph|FULLSTACK|FRONTEND|BACKEND|Component is not)/;
+    const offenders: string[] = [];
+
+    function scan(dirUrl: URL) {
+      const root = templateDir.pathname;
+      for (const entry of readdirSync(dirUrl)) {
+        const path = join(dirUrl.pathname, entry);
+        const stat = statSync(path);
+        if (stat.isDirectory()) {
+          scan(new URL(entry + '/', dirUrl));
+          continue;
+        }
+        if (!entry.endsWith('.test.ts')) continue;
+        const rel = relative(root, path);
+        const text = readFileSync(path, 'utf8');
+        if (forbidden.test(text) && !rel.includes('absence/')) offenders.push(rel);
+      }
+    }
+
+    scan(templateDir);
+    assert.deepEqual(offenders, []);
   });
 });
