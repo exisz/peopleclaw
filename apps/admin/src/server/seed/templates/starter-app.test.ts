@@ -146,10 +146,10 @@ describe('Starter app template safety', () => {
     };
     const unsupportedType = validateStarterAppConnectorSurface(unsupportedTypeTemplate);
     assert.equal(unsupportedType.ok, false);
-    assert.match(unsupportedType.errors.join(' | '), /connector must be BACKEND/);
+    assert.match(unsupportedType.errors.join(' | '), /connector must be a server-side callable module/);
     assert.throws(
       () => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo', template: unsupportedTypeTemplate }),
-      /starter_connector_surface_invalid: .*connector must be BACKEND/,
+      /starter_connector_surface_invalid: .*connector must be a server-side callable module/,
     );
 
     const unsupportedSignatureTemplate = {
@@ -175,6 +175,37 @@ describe('Starter app template safety', () => {
 
 
 
+
+
+  it('TC-PC-142 keeps connector validation user-facing output free of runtime type vocabulary while preserving internal checks', () => {
+    const unsupportedTypeTemplate = {
+      ...starterAppTemplate,
+      components: starterAppTemplate.components.map((component) =>
+        component.name === STARTER_APP_CONNECTOR_NAME
+          ? { ...component, type: 'FRONTEND' as const }
+          : component.name === STARTER_APP_FULLSTACK_NAME
+            ? { ...component, type: 'BACKEND' as const }
+            : component,
+      ),
+    };
+
+    const validation = validateStarterAppConnectorSurface(unsupportedTypeTemplate);
+    const publicValidationText = validation.errors.join(' | ');
+
+    assert.equal(validation.ok, false);
+    assert.match(publicValidationText, /server-side callable module/);
+    assert.match(publicValidationText, /interactive app page module/);
+    assert.doesNotMatch(publicValidationText, /\b(?:BACKEND|FULLSTACK|FRONTEND)\b/);
+    assert.throws(
+      () => planStarterAppPreviewDeployment({ appId: 'starter-shopify-demo', template: unsupportedTypeTemplate }),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /starter_connector_surface_invalid/);
+        assert.doesNotMatch(error.message, /\b(?:BACKEND|FULLSTACK|FRONTEND)\b/);
+        return true;
+      },
+    );
+  });
 
 
   it('TC-PC-125 runs one-click Shopify starter form through backend CRUD dry-run with audit evidence', () => {

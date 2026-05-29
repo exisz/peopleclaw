@@ -398,7 +398,7 @@ export function validateStarterAppConnectorSurface(template: AppTemplate): Start
   const components = template.components ?? [];
   for (const component of components) {
     if (!SANCTIONED_COMPONENT_TYPES.has(component.type)) {
-      errors.push(`${component.name}: unsupported component type ${component.type}`);
+      errors.push(`${component.name}: unsupported internal component classification`);
     }
   }
 
@@ -406,7 +406,7 @@ export function validateStarterAppConnectorSurface(template: AppTemplate): Start
   if (!connector) {
     errors.push('missing Shopify connector component');
   } else {
-    if (connector.type !== 'BACKEND') errors.push(`${connector.name}: connector must be BACKEND`);
+    if (connector.type !== 'BACKEND') errors.push(`${connector.name}: connector must be a server-side callable module`);
     if (connector.isExported !== true) errors.push(`${connector.name}: connector must be exported for ctx.callApp`);
     if (!/export\s+default\s+async\s+function\s+run\s*\(\s*input\s*:\s*any\s*,\s*ctx\s*:\s*any\s*\)/.test(connector.code)) {
       errors.push(`${connector.name}: connector must expose default async run(input, ctx)`);
@@ -420,7 +420,7 @@ export function validateStarterAppConnectorSurface(template: AppTemplate): Start
   if (!caller) {
     errors.push('missing Shopify caller component');
   } else {
-    if (caller.type !== 'FULLSTACK') errors.push(`${caller.name}: caller must be FULLSTACK`);
+    if (caller.type !== 'FULLSTACK') errors.push(`${caller.name}: caller must be an interactive app page module`);
     if (!/ctx\.callApp\(appId, connectorId, \{ method: 'listProducts' \}\)/.test(caller.code)) {
       errors.push(`${caller.name}: caller must invoke connector through ctx.callApp(appId, connectorId, ...)`);
     }
