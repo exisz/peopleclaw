@@ -1,0 +1,688 @@
+{
+  "config": {
+    "configFile": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/playwright.config.ts",
+    "rootDir": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e",
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/exisz/peopleclaw/commit/81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+        "commitHash": "81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+        "buildHref": "https://github.com/exisz/peopleclaw/actions/runs/26786492077"
+      },
+      "gitCommit": {
+        "shortHash": "81ff170",
+        "hash": "81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+        "subject": "test: finish TC-PC-160 source sweep cleanup",
+        "body": "test: finish TC-PC-160 source sweep cleanup\n",
+        "author": {
+          "name": "exis[ai]",
+          "email": "gotexis@gmail.com",
+          "time": 1780053151000
+        },
+        "committer": {
+          "name": "exis[ai]",
+          "email": "gotexis@gmail.com",
+          "time": 1780053151000
+        },
+        "branch": "main"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/exisz/peopleclaw/commit/81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+            "commitHash": "81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+            "buildHref": "https://github.com/exisz/peopleclaw/actions/runs/26786492077"
+          },
+          "gitCommit": {
+            "shortHash": "81ff170",
+            "hash": "81ff1703112883df11e2dc0ec0c4cbd2697ce075",
+            "subject": "test: finish TC-PC-160 source sweep cleanup",
+            "body": "test: finish TC-PC-160 source sweep cleanup\n",
+            "author": {
+              "name": "exis[ai]",
+              "email": "gotexis@gmail.com",
+              "time": 1780053151000
+            },
+            "committer": {
+              "name": "exis[ai]",
+              "email": "gotexis@gmail.com",
+              "time": 1780053151000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "github"
+      ],
+      [
+        "html"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "journeys/00-apps-list.spec.ts",
+      "file": "journeys/00-apps-list.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "TC0: Apps 列表页 + AppShell",
+          "file": "journeys/00-apps-list.spec.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "/apps 展示 sidebar + Apps 标题 + Create 卡",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8078,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-01T22:43:07.433Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--74529-展示-sidebar-Apps-标题-Create-卡-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--74529-展示-sidebar-Apps-标题-Create-卡-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--74529-展示-sidebar-Apps-标题-Create-卡-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27a5a1942cdcebee5c2d-d8726a0c82d0cd76ce4f",
+              "file": "journeys/00-apps-list.spec.ts",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "/app/:id 锁定当前 app, sidebar 隐藏 (PLANET-1442)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5102,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-01T22:43:15.819Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--94abc-app-sidebar-隐藏-PLANET-1442--chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--94abc-app-sidebar-隐藏-PLANET-1442--chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--94abc-app-sidebar-隐藏-PLANET-1442--chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27a5a1942cdcebee5c2d-83b095c877dd636328f2",
+              "file": "journeys/00-apps-list.spec.ts",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "/settings 展示 sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3039,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-01T22:43:20.977Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--4a208-ppShell-settings-展示-sidebar-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--4a208-ppShell-settings-展示-sidebar-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--4a208-ppShell-settings-展示-sidebar-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27a5a1942cdcebee5c2d-c8089b06dd56933da04d",
+              "file": "journeys/00-apps-list.spec.ts",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "点击 + Create → 模板弹窗 → 选 starter-app → 跳 /app/:id",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4472,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-01T22:43:24.061Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--c59c7--→-选-starter-app-→-跳-app-id-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--c59c7--→-选-starter-app-→-跳-app-id-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-apps-list-TC0--c59c7--→-选-starter-app-→-跳-app-id-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27a5a1942cdcebee5c2d-e663a7f6b842fffd49e4",
+              "file": "journeys/00-apps-list.spec.ts",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/00-prod-bundle-legacy-scan.spec.ts",
+      "file": "journeys/00-prod-bundle-legacy-scan.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "prod-health: production bundle has no legacy workflow/canvas/component strings",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 110,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-06-01T22:43:28.591Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-bundle-le-93f97-ow-canvas-component-strings-chromium/trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d6fb72e842ff8fa72ff7-aa2bc650ab6fd22dde33",
+          "file": "journeys/00-prod-bundle-legacy-scan.spec.ts",
+          "line": 39,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "journeys/00-prod-deployment-freshness.spec.ts",
+      "file": "journeys/00-prod-deployment-freshness.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "prod-health: Ready deployment serves the latest pushed main commit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 937,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-06-01T22:43:28.735Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-deploymen-9d1b1-e-latest-pushed-main-commit-chromium/trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "445b76318e2ecf782eb4-c26d15f4347c3574898c",
+          "file": "journeys/00-prod-deployment-freshness.spec.ts",
+          "line": 21,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "journeys/00-prod-health.spec.ts",
+      "file": "journeys/00-prod-health.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "prod-health: login + apps + create picker",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 4753,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76",
+                    "location": {
+                      "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                      "column": 76,
+                      "line": 19
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 17 |\u001b[39m\n \u001b[90m 18 |\u001b[39m   \u001b[90m// Template picker should appear\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/starter/i\u001b[39m)\u001b[33m.\u001b[39mor(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/template/i\u001b[39m)))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10\u001b[39m_000 })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                        "column": 76,
+                        "line": 19
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n\n  17 |\n  18 |   // Template picker should appear\n> 19 |   await expect(page.getByText(/starter/i).or(page.getByText(/template/i))).toBeVisible({ timeout: 10_000 });\n     |                                                                            ^\n  20 | });\n  21 |\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-06-01T22:43:29.689Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium/test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium/video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                    "column": 76,
+                    "line": 19
+                  }
+                },
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 4647,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76",
+                    "location": {
+                      "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                      "column": 76,
+                      "line": 19
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 17 |\u001b[39m\n \u001b[90m 18 |\u001b[39m   \u001b[90m// Template picker should appear\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/starter/i\u001b[39m)\u001b[33m.\u001b[39mor(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/template/i\u001b[39m)))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10\u001b[39m_000 })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                        "column": 76,
+                        "line": 19
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n\n  17 |\n  18 |   // Template picker should appear\n> 19 |   await expect(page.getByText(/starter/i).or(page.getByText(/template/i))).toBeVisible({ timeout: 10_000 });\n     |                                                                            ^\n  20 | });\n  21 |\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-06-01T22:43:35.028Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry1/test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry1/video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry1/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry1/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                    "column": 76,
+                    "line": 19
+                  }
+                },
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 3370,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76",
+                    "location": {
+                      "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                      "column": 76,
+                      "line": 19
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 17 |\u001b[39m\n \u001b[90m 18 |\u001b[39m   \u001b[90m// Template picker should appear\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/starter/i\u001b[39m)\u001b[33m.\u001b[39mor(page\u001b[33m.\u001b[39mgetByText(\u001b[35m/template/i\u001b[39m)))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10\u001b[39m_000 })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                        "column": 76,
+                        "line": 19
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/starter/i).or(getByText(/template/i))\nExpected: visible\nError: strict mode violation: getByText(/starter/i).or(getByText(/template/i)) resolved to 17 elements:\n    1) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsou9w0001l8049f6zgttm')\n    2) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpvsoob70015l504q4cqkr29')\n    3) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucfchi001jl804p2lo6s7a')\n    4) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucet1x0001kz044ezu3gw2')\n    5) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpucem7o001dl804iavauunx')\n    6) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswyp2s0001jx04qky53veq')\n    7) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy6pc0001lj04q4ti1rm8')\n    8) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmpswy0hr0001js04miokz6n8')\n    9) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhx4s40007l7046nurg0gd')\n    10) <h3 class=\"text-sm font-medium text-foreground truncate\">Starter Store App</h3> aka getByTestId('app-card-cmprhwmle000xjo04bfkuam5o')\n    ...\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/starter/i).or(getByText(/template/i))\u001b[22m\n\n\n  17 |\n  18 |   // Template picker should appear\n> 19 |   await expect(page.getByText(/starter/i).or(page.getByText(/template/i))).toBeVisible({ timeout: 10_000 });\n     |                                                                            ^\n  20 | });\n  21 |\n    at /tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts:19:76"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 2,
+                  "startTime": "2026-06-01T22:43:40.252Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry2/test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry2/video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry2/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-health-prod-health-login-apps-create-picker-chromium-retry2/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/tests/e2e/journeys/00-prod-health.spec.ts",
+                    "column": 76,
+                    "line": 19
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "965f93f44a295ec5af58-929f0590c8c4a19a3411",
+          "file": "journeys/00-prod-health.spec.ts",
+          "line": 9,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "journeys/00-prod-ui-user-language-scan.spec.ts",
+      "file": "journeys/00-prod-ui-user-language-scan.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "prod-ui: app surfaces speak app-building language, not component/runtime internals",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7649,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-06-01T22:43:44.162Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-ui-user-l-0c57b-component-runtime-internals-chromium/test-finished-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-ui-user-l-0c57b-component-runtime-internals-chromium/video.webm"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/tmp/runner/peopleclaw/peopleclaw/peopleclaw/apps/admin/test-results/journeys-00-prod-ui-user-l-0c57b-component-runtime-internals-chromium/trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8ba7cee74c0d1c8f272a-04bc1cfa415b66561de1",
+          "file": "journeys/00-prod-ui-user-language-scan.spec.ts",
+          "line": 29,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-06-01T22:43:06.954Z",
+    "duration": 45037.652,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
