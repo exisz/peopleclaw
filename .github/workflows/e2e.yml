@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -19,6 +19,9 @@ jobs:
   e2e:
     runs-on: [self-hosted, linux, x64, peopleclaw]
     timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
       PLAYWRIGHT_BASE_URL: https://app.peopleclaw.rollersoft.com.au
       E2E_USERNAME: demo_acceptance_test
@@ -167,9 +170,13 @@ jobs:
           else
             DURATION=0; TOTAL=0; PASSED=0; FAILED=0
           fi
-          # Fetch existing CSV from gh-pages
-          git fetch origin gh-pages --depth=1 2>/dev/null || true
-          git show origin/gh-pages:results.csv > public/results.csv 2>/dev/null || echo "timestamp,sha,duration,total,passed,failed" > public/results.csv
+          # Fetch existing CSV from the live Pages site instead of reading a gh-pages branch.
+          # This keeps trend history while avoiding branch writes that trigger Vercel previews.
+          if curl -fsSL --max-time 10 "https://exisz.github.io/peopleclaw/results.csv" -o public/results.csv; then
+            echo "✅ Existing results.csv fetched from GitHub Pages"
+          else
+            echo "timestamp,sha,duration,total,passed,failed" > public/results.csv
+          fi
           echo "$TIMESTAMP,$SHA,$DURATION,$TOTAL,$PASSED,$FAILED" >> public/results.csv
 
       - name: Generate trends.html
@@ -200,13 +207,20 @@ jobs:
           </body></html>
           TRENDSEOF
 
-      - name: Deploy to GitHub Pages
+      - name: Configure GitHub Pages
         if: always()
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          force_orphan: true
+          path: ./public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: always()
+        uses: actions/deploy-pages@v4
 
       - name: Notify Discord on failure (detailed)
         if: failure()
