@@ -86,3 +86,44 @@ No production broker is deployed by this package by default because deployment r
 - Broker audit logs intentionally record token id/label and request path/status, never upstream token values.
 - Customer tokens with empty allowlists cannot list or access Vercel project/deployment data.
 - List endpoints filter upstream Vercel responses to the token allowlist.
+
+## Generic GitHub App workspace commands
+
+`pcv` can mint scoped GitHub App installation tokens and configure local workspace repo remotes. This is generic workspace scaffolding behavior; product workspaces should keep only config/secrets and call these commands from npm scripts.
+
+Required config can be passed as flags or environment variables:
+
+```bash
+GITHUB_APP_ID=4043465
+GITHUB_APP_INSTALLATION_ID=140017718
+GITHUB_APP_PRIVATE_KEY_PATH=secrets/peopleclaw-main.github-app.private-key.pem
+GITHUB_APP_REPOS=exisz/roller-beauty,exisz/beauty-consult-pwa
+# Optional JSON override. Defaults to contents/write, metadata/read, actions/write,
+# issues/write, pull_requests/write, secrets/write, workflows/write.
+GITHUB_APP_PERMISSIONS='{"contents":"write","metadata":"read","actions":"write","issues":"write","pull_requests":"write","secrets":"write","workflows":"write"}'
+```
+
+Commands:
+
+```bash
+# Print a short-lived installation token to stdout.
+pcv github token
+
+# Write secrets/github-token.txt and secrets/github-app-token.json with mode 0600.
+pcv github token --write
+
+# Configure origin remotes for each repo in the allowlist.
+# Default mapping: owner/repo -> repos/<repo-name> under the current directory.
+pcv github configure-remotes
+
+# Mint/write token, then configure remotes in one step.
+pcv github refresh
+```
+
+Useful flags: `--app-id`, `--installation-id`, `--private-key-path`, `--repos`, `--permissions`, `--secrets-dir`, `--root`, and `--token-file`.
+
+Safety rules:
+
+- Keep `GITHUB_APP_REPOS` narrow; the CLI requests tokens for only the configured allowlist.
+- Do not commit `secrets/github-token.txt`, `secrets/github-app-token.json`, or private keys.
+- Prefer `pcv github refresh` in workspace scripts instead of product-specific token scripts.

@@ -2,10 +2,24 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import {
+  DEFAULT_GITHUB_APP_PERMISSIONS,
+  buildAuthenticatedRemoteUrl,
+  parsePermissions,
+  parseRepoList,
+  repoLocalPath,
+  requestInstallationToken,
+  writeGitHubTokenFiles,
+  type GitHubAppConfig,
+} from './core/github-app.js';
 
 type CliConfig = { brokerUrl?: string; token?: string };
 
 type Args = { command: string[]; flags: Record<string, string | boolean> };
+
+const execFileAsync = promisify(execFile);
 
 const CONFIG_PATH = process.env.PCV_CONFIG ?? path.join(os.homedir(), '.config', 'peopleclaw-vercel', 'config.json');
 
@@ -24,8 +38,71 @@ async function main(): Promise<void> {
   if (root === 'deployments' && sub === 'list') return brokerGet(args, `/deployments${queryFromFlags(args, ['teamId', 'projectId', 'limit', 'state', 'target'])}`);
   if (root === 'admin' && sub === 'issue-key') return adminIssueKey(args);
   if (root === 'admin' && sub === 'tokens') return adminGet(args, '/admin/tokens');
+  if (root === 'github' && sub === 'token') { await githubToken(args); return; }
+  if (root === 'github' && sub === 'configure-remotes') return githubConfigureRemotes(args);
+  if (root === 'github' && sub === 'refresh') return githubRefresh(args);
 
   throw new Error(`Unknown command: ${args.command.join(' ')}`);
+}
+
+
+async function githubToken(args: Args): Promise<{ token: string; metadata: Record<string, unknown>; tokenPath?: string; metadataPath?: string }> {
+  const config = githubAppConfig(args);
+  const repos = parseRepoList(config.repos);
+  const issued = await requestInstallationToken(config);
+  const metadata = {
+    appId: config.appId,
+    installationId: config.installationId,
+    repos: repos.map((repo) => repo.fullName),
+    permissions: config.permissions,
+    expiresAt: issued.expiresAt ?? null,
+    issuedAt: new Date().toISOString(),
+    tokenFile: path.join(config.secretsDir, 'github-token.txt'),
+  };
+  if (booleanFlag(args, 'write')) {
+    const files = await writeGitHubTokenFiles(config.secretsDir, issued.token, metadata);
+    printJson({ ok: true, tokenPath: files.tokenPath, metadataPath: files.metadataPath, expiresAt: issued.expiresAt ?? null, repos: metadata.repos });
+    return { token: issued.token, metadata, tokenPath: files.tokenPath, metadataPath: files.metadataPath };
+  }
+  process.stdout.write(`${issued.token}\n`);
+  return { token: issued.token, metadata };
+}
+
+async function githubConfigureRemotes(args: Args, tokenOverride?: string): Promise<void> {
+  const config = githubAppConfig(args, { requirePrivateKey: false });
+  const rootDir = stringFlag(args, 'root') || process.cwd();
+  const tokenPath = stringFlag(args, 'token-file') || path.join(config.secretsDir, 'github-token.txt');
+  const token = tokenOverride ?? (stringFlag(args, 'github-token') || (await fs.readFile(tokenPath, 'utf8')).trim());
+  if (!token) throw new Error(`Missing GitHub token. Run pcv github token --write first or pass --github-token/--token-file.`);
+  const repos = parseRepoList(config.repos);
+  const results: Array<{ repo: string; path: string; remote: string; configured: boolean }> = [];
+  for (const repo of repos) {
+    const localPath = path.resolve(repoLocalPath(rootDir, repo));
+    const remote = buildAuthenticatedRemoteUrl(repo, token);
+    await execFileAsync('git', ['-C', localPath, 'remote', 'set-url', 'origin', remote]);
+    results.push({ repo: repo.fullName, path: localPath, remote: 'origin', configured: true });
+  }
+  printJson({ ok: true, repos: results });
+}
+
+async function githubRefresh(args: Args): Promise<void> {
+  const issued = await githubToken({ ...args, flags: { ...args.flags, write: true } });
+  await githubConfigureRemotes(args, issued.token);
+}
+
+function githubAppConfig(args: Args, options: { requirePrivateKey?: boolean } = {}): GitHubAppConfig {
+  const requirePrivateKey = options.requirePrivateKey ?? true;
+  const appId = stringFlag(args, 'app-id') || process.env.GITHUB_APP_ID;
+  const installationId = stringFlag(args, 'installation-id') || process.env.GITHUB_APP_INSTALLATION_ID;
+  const privateKeyPath = stringFlag(args, 'private-key-path') || process.env.GITHUB_APP_PRIVATE_KEY_PATH || '';
+  const repoValue = stringFlag(args, 'repos') || stringFlag(args, 'repo') || process.env.GITHUB_APP_REPOS || '';
+  const permissions = parsePermissions(stringFlag(args, 'permissions') || process.env.GITHUB_APP_PERMISSIONS);
+  const secretsDir = stringFlag(args, 'secrets-dir') || process.env.GITHUB_APP_SECRETS_DIR || path.join(process.cwd(), 'secrets');
+  if (!appId) throw new Error('Missing GitHub App ID. Use --app-id or GITHUB_APP_ID.');
+  if (!installationId) throw new Error('Missing GitHub App installation ID. Use --installation-id or GITHUB_APP_INSTALLATION_ID.');
+  if (requirePrivateKey && !privateKeyPath) throw new Error('Missing GitHub App private key path. Use --private-key-path or GITHUB_APP_PRIVATE_KEY_PATH.');
+  if (parseRepoList(repoValue).length === 0) throw new Error('Missing GitHub App repo allowlist. Use --repos owner/repo,... or GITHUB_APP_REPOS.');
+  return { appId, installationId, privateKeyPath, repos: repoValue.split(',').map((repo) => repo.trim()).filter(Boolean), permissions, secretsDir };
 }
 
 async function configSet(args: Args): Promise<void> {
@@ -117,6 +194,10 @@ function parseArgs(argv: string[]): Args {
   return { command, flags };
 }
 
+function booleanFlag(args: Args, name: string): boolean {
+  return args.flags[name] === true || args.flags[name] === 'true';
+}
+
 function stringFlag(args: Args, name: string): string | undefined {
   const value = args.flags[name];
   return typeof value === 'string' ? value : undefined;
@@ -163,9 +244,16 @@ Usage:
   pcv deployments list [--projectId NAME_OR_ID] [--limit 20]
   pcv admin issue-key --admin-secret SECRET --label LABEL --project skin-spirit --repo exisz/skin-spirit
   pcv admin tokens --admin-secret SECRET
+  pcv github token [--write] --app-id ID --installation-id ID --private-key-path PATH --repos owner/repo,owner/repo
+  pcv github configure-remotes --repos owner/repo,owner/repo [--root DIR]
+  pcv github refresh --app-id ID --installation-id ID --private-key-path PATH --repos owner/repo,owner/repo [--root DIR]
 
 Environment:
   PCV_BROKER_URL, PCV_TOKEN, PCV_ADMIN_SECRET, PCV_CONFIG
+  GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY_PATH, GITHUB_APP_REPOS, GITHUB_APP_PERMISSIONS
+
+GitHub App defaults:
+  permissions ${JSON.stringify(DEFAULT_GITHUB_APP_PERMISSIONS)}
 `);
 }
 
