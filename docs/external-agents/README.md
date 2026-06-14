@@ -11,7 +11,7 @@ For tenants, the fastest path is the **in-app setup page**:
 https://app.peopleclaw.rollersoft.com.au/app/<APP_ID>/system/external-agent
 ```
 
-Open that page while signed in, choose the target App, click **Create Codex key**, then copy the generated setup block. The page fills in the correct base URL, App ID, and one-time `pc_m2m_…` token for that tenant/app. PeopleClaw stores only a token hash, so the secret is never shown again after creation.
+Open that page while signed in, choose the target App, click **Create Codex key**, then copy the generated setup block and initial agent seed prompt. The page fills in the correct base URL, App ID, and one-time `pc_m2m_…` token for that tenant/app. PeopleClaw stores only a token hash, so the secret is never shown again after creation.
 
 ## Resources
 
@@ -33,7 +33,7 @@ Open that page while signed in, choose the target App, click **Create Codex key*
 2. Open your App, then go to **System → Connect Codex**.
 3. Click **Create Codex key**.
 4. Copy the token immediately. It is revealed once only.
-5. Copy the CLI setup block or the all-in Codex prompt from the page.
+5. Copy the CLI setup block or the initial agent seed prompt from the page.
 6. In the coding-agent workspace, run the safety checks first:
 
 ```bash
@@ -60,6 +60,35 @@ peopleclaw app inspect "$PEOPLECLAW_APP_ID"
 ```
 
 Do **not** paste long-lived shared/static credentials into documentation. Every tenant/user should mint their own app-scoped key from the in-app setup page.
+
+## Initial agent seed prompt template
+
+The copy-paste seed prompt is intentionally repo-agnostic. For a different customer/project, keep the structure the same and change only:
+
+- `REPO_URL`
+- the optional broker/deploy environment block, if the task needs PeopleClaw deploy/broker access
+- the generated PeopleClaw app/token values from **System → Connect Codex**
+
+Template shape:
+
+```text
+You are starting a generic agent workspace for <APP_NAME>.
+
+Repository:
+- REPO_URL=<REPO_URL>
+
+Workspace setup:
+1. Clone this repo and treat it as your agent workspace.
+2. Read the repo's own instructions first (AGENTS.md, README, package scripts, tests, and deployment notes if present).
+3. Keep this prompt structure repo-agnostic: for another project, only REPO_URL and any optional broker/environment block should change.
+
+GitHub authentication note:
+- Plain git clone does not require any PeopleClaw environment variables when the repo is public or this runner already has GitHub authentication.
+- PEOPLECLAW_* and broker tokens are for PeopleClaw API, deploy, or broker actions only; they are not required for plain git clone.
+- If the repo is private and clone fails, stop and ask the operator to connect or authenticate GitHub separately.
+```
+
+Avoid self-referential wording like "use Codex" in this prompt; it may already be pasted into an agent runner. The action should be direct: "clone this repo and treat it as your agent workspace."
 
 ## Drop-in install (customer side)
 

@@ -106,6 +106,10 @@ peopleclaw app inspect "$APP_ID" --json | jq '.counts.components'
 
 Drop the `AGENTS.md` from this package into the root of the repo your agent works in. That file is auto-read by Codex, OpenClaw, Claude Code, Cursor (`.cursorrules`-style discovery), and any other AGENTS.md-aware tool. If your agent uses the **Skill** convention (OpenClaw / Claude Skills), also drop `SKILL.md` next to it.
 
+Use the **System → Connect Codex** seed prompt as a repo-agnostic starter. For another project, keep the prompt structure the same and change only the repo URL plus any optional broker/deploy environment block.
+
+Important clone rule: plain `git clone` does not need PeopleClaw env vars when the repo is public or the runner already has GitHub auth. `PEOPLECLAW_*` and broker tokens are only for PeopleClaw API/deploy/broker actions. If a private repo fails to clone, connect/authenticate GitHub separately instead of trying to recover credentials from PeopleClaw config.
+
 Tell the agent: *"Read AGENTS.md, then perform <task> against the PeopleClaw App."* The skill takes over from there.
 
 ## 7. Next steps

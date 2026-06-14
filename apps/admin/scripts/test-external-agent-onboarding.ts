@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   EXTERNAL_AGENT_ONBOARDING_SCOPES,
   buildCodexOnboardingPrompt,
+  buildExternalAgentSeedPrompt,
   buildPeopleClawCliConfig,
   normalizeBaseUrl,
 } from '../src/client/lib/externalAgentOnboarding.ts';
@@ -30,13 +31,29 @@ const withToken = buildCodexOnboardingPrompt({
   baseUrl: 'https://app.peopleclaw.rollersoft.com.au',
   appId: 'app_123',
   appName: 'Customer Portal',
+  repositoryUrl: 'https://github.com/acme/customer-portal.git',
   token,
 });
 assert.match(withToken, /Customer Portal/);
+assert.match(withToken, /REPO_URL=https:\/\/github\.com\/acme\/customer-portal\.git/);
+assert.match(withToken, /Clone this repo and treat it as your agent workspace/);
 assert.match(withToken, /peopleclaw whoami/);
 assert.match(withToken, /dry-run first/i);
 assert.match(withToken, /--confirm/);
 assert.match(withToken, new RegExp(token));
+assert.match(withToken, /Plain git clone does not require any PeopleClaw environment variables/i);
+assert.match(withToken, /private and clone fails.*authenticate GitHub separately/i);
+assert.match(withToken, /PEOPLECLAW_\* and broker tokens are for PeopleClaw API, deploy, or broker actions only/i);
 assert.doesNotMatch(withToken, /raw SQL.*allowed/i);
+assert.doesNotMatch(withToken, /use Codex/i);
+
+const genericPrompt = buildExternalAgentSeedPrompt({
+  baseUrl: 'https://app.peopleclaw.rollersoft.com.au',
+  appId: 'app_123',
+  brokerEnvBlock: 'export PCV_BROKER_URL=https://broker.example.com\nexport PCV_TOKEN=pcv_example',
+});
+assert.match(genericPrompt, /REPO_URL=<REPO_URL>/);
+assert.match(genericPrompt, /PCV_BROKER_URL=https:\/\/broker\.example\.com/);
+assert.match(genericPrompt, /only REPO_URL and any optional broker\/environment block should change/);
 
 console.log('[test-external-agent-onboarding] ok');

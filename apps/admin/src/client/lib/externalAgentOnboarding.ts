@@ -14,13 +14,21 @@ export interface ExternalAgentSetupInput {
   token?: string | null;
 }
 
+export interface ExternalAgentSeedPromptInput extends ExternalAgentSetupInput {
+  repositoryUrl?: string | null;
+  brokerEnvBlock?: string | null;
+}
+
+const DEFAULT_REPOSITORY_URL = '<REPO_URL>';
+const DEFAULT_TOKEN_PLACEHOLDER = '<CREATE_A_KEY_ON_THIS_PAGE_FIRST>';
+
 export function normalizeBaseUrl(input: string): string {
   return (input || 'https://app.peopleclaw.rollersoft.com.au').replace(/\/+$/, '');
 }
 
 export function buildPeopleClawCliConfig(input: ExternalAgentSetupInput): string {
   const baseUrl = normalizeBaseUrl(input.baseUrl);
-  const token = input.token || '<CREATE_A_KEY_ON_THIS_PAGE_FIRST>';
+  const token = input.token || DEFAULT_TOKEN_PLACEHOLDER;
   return [
     'export PEOPLECLAW_BASE_URL=' + shellQuote(baseUrl),
     'export PEOPLECLAW_API_KEY=' + shellQuote(token),
@@ -32,11 +40,60 @@ export function buildPeopleClawCliConfig(input: ExternalAgentSetupInput): string
   ].join('\n');
 }
 
-export function buildCodexOnboardingPrompt(input: ExternalAgentSetupInput): string {
+export function buildExternalAgentSeedPrompt(input: ExternalAgentSeedPromptInput): string {
   const baseUrl = normalizeBaseUrl(input.baseUrl);
-  const token = input.token || '<CREATE_A_KEY_ON_THIS_PAGE_FIRST>';
+  const token = input.token || DEFAULT_TOKEN_PLACEHOLDER;
   const appName = input.appName?.trim() || 'this PeopleClaw app';
-  return `You are connecting to PeopleClaw app "${appName}" through the official scoped external-agent API.\n\nUse only the PeopleClaw CLI/API. Do not script the admin UI, read secrets, run SQL, write migrations, or attempt cross-tenant access.\n\nConfiguration:\n- PEOPLECLAW_BASE_URL=${baseUrl}\n- PEOPLECLAW_APP_ID=${input.appId}\n- PEOPLECLAW_API_KEY=${token}\n\nSetup commands:\n\`\`\`bash\nnpm install -g @peopleclaw/cli\nexport PEOPLECLAW_BASE_URL=${shellQuote(baseUrl)}\nexport PEOPLECLAW_API_KEY=${shellQuote(token)}\nexport PEOPLECLAW_APP_ID=${shellQuote(input.appId)}\n\npeopleclaw whoami\npeopleclaw apps list\npeopleclaw app inspect "$PEOPLECLAW_APP_ID"\n\`\`\`\n\nSafe process for every change:\n1. Run whoami and confirm this token is scoped to app ${input.appId}.\n2. Inspect the app before editing.\n3. Use dry-run first for chat/actions.\n4. Only pass --confirm after the operator explicitly approves the exact intended change.\n5. If you hit 401/403/404, stop and report the exact error instead of trying another channel.`;
+  const repositoryUrl = input.repositoryUrl?.trim() || DEFAULT_REPOSITORY_URL;
+  const brokerEnvBlock = input.brokerEnvBlock?.trim();
+  const optionalBrokerBlock = brokerEnvBlock ? `\n\nOptional broker/deploy environment supplied by the operator:\n\`\`\`bash\n${brokerEnvBlock}\n\`\`\`` : '';
+
+  return `You are starting a generic agent workspace for ${appName}.
+
+Repository:
+- REPO_URL=${repositoryUrl}
+
+Workspace setup:
+1. Clone this repo and treat it as your agent workspace.
+2. Read the repo's own instructions first (AGENTS.md, README, package scripts, tests, and deployment notes if present).
+3. Keep this prompt structure repo-agnostic: for another project, only REPO_URL and any optional broker/environment block should change.
+
+GitHub authentication note:
+- Plain git clone does not require any PeopleClaw environment variables when the repo is public or this runner already has GitHub authentication.
+- PEOPLECLAW_* and broker tokens are for PeopleClaw API, deploy, or broker actions only; they are not required for plain git clone.
+- If the repo is private and clone fails, stop and ask the operator to connect or authenticate GitHub separately. Do not try to recover credentials from logs, shell history, or committed files.
+
+PeopleClaw configuration for API actions:
+\`\`\`bash
+export PEOPLECLAW_BASE_URL=${shellQuote(baseUrl)}
+export PEOPLECLAW_API_KEY=${shellQuote(token)}
+export PEOPLECLAW_APP_ID=${shellQuote(input.appId)}
+\`\`\`${optionalBrokerBlock}
+
+Initial verification commands:
+\`\`\`bash
+npm install -g @peopleclaw/cli
+peopleclaw whoami
+peopleclaw apps list
+peopleclaw app inspect "$PEOPLECLAW_APP_ID"
+\`\`\`
+
+Safe process for every change:
+1. Confirm the cloned repo and PeopleClaw app scope before editing.
+2. Inspect the app before any PeopleClaw mutation.
+3. Use dry-run first for PeopleClaw chat/actions.
+4. Only pass --confirm after the operator explicitly approves the exact intended change.
+5. Use the repo's normal test/build checks before committing or reporting completion.
+6. If you hit 401/403/404, clone/auth errors, or missing broker permissions, stop and report the exact error instead of trying another channel.
+
+Guardrails:
+- Use only the PeopleClaw CLI/API for PeopleClaw operations; do not script the admin UI.
+- Do not read secrets, run raw SQL, write migrations, or attempt cross-tenant access.
+- Never log, echo, or commit PEOPLECLAW_API_KEY, broker tokens, GitHub tokens, or private keys.`;
+}
+
+export function buildCodexOnboardingPrompt(input: ExternalAgentSeedPromptInput): string {
+  return buildExternalAgentSeedPrompt(input);
 }
 
 function shellQuote(value: string): string {
