@@ -1,4 +1,0 @@
-secrets/*
-!secrets/*.example
-.env
-.env.local

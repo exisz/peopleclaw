@@ -43,17 +43,16 @@ assert.match(withToken, /--confirm/);
 assert.match(withToken, new RegExp(token));
 assert.match(withToken, /Plain git clone does not require any PeopleClaw environment variables/i);
 assert.match(withToken, /private and clone fails.*authenticate GitHub separately/i);
-assert.match(withToken, /PEOPLECLAW_\* and broker tokens are for PeopleClaw API, deploy, or broker actions only/i);
+assert.match(withToken, /PEOPLECLAW_\* variables are for PeopleClaw API actions only/i);
 assert.doesNotMatch(withToken, /raw SQL.*allowed/i);
 assert.doesNotMatch(withToken, /use Codex/i);
 
 const genericPrompt = buildExternalAgentSeedPrompt({
   baseUrl: 'https://app.peopleclaw.rollersoft.com.au',
   appId: 'app_123',
-  brokerEnvBlock: 'export PCV_BROKER_URL=https://broker.example.com\nexport PCV_TOKEN=pcv_example',
 });
 assert.match(genericPrompt, /REPO_URL=<REPO_URL>/);
-assert.match(genericPrompt, /PCV_BROKER_URL=https:\/\/broker\.example\.com/);
-assert.match(genericPrompt, /only REPO_URL and any optional broker\/environment block should change/);
+assert.doesNotMatch(genericPrompt, /PCV_BROKER_URL|PCV_TOKEN|pcv/i);
+assert.match(genericPrompt, /only REPO_URL and PeopleClaw app credentials should change/);
 
 console.log('[test-external-agent-onboarding] ok');
